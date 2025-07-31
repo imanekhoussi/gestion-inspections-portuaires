@@ -5,7 +5,7 @@ import { CreateInspectionDto, UpdateInspectionDto, CloturerInspectionDto, Valide
 import { Inspection } from '../entities/inspection.entity';
 
 @ApiTags('Inspections') // Section "Inspections" dans Swagger
-@Controller('inspection')
+@Controller('inspections')
 export class InspectionController {
   constructor(private readonly inspectionService: InspectionService) {}
 
