@@ -14,7 +14,7 @@ export class InspectionService {
 
   async findAll(): Promise<Inspection[]> {
     return this.inspectionRepository.find({
-      relations: ['typeInspection', 'actifs', 'createur', 'validateur', 'livrables', 'historiqueEtats'],
+      relations: ['typeInspection', 'actifs', 'createur', 'validateur', 'livrables'],
     });
   }
 
@@ -39,8 +39,6 @@ export class InspectionService {
     
     const savedInspection = await this.inspectionRepository.save(inspection);
 
-   
-
     return savedInspection;
   }
 
@@ -60,8 +58,6 @@ export class InspectionService {
     }
 
     const savedInspection = await this.inspectionRepository.save(inspection);
-
-    
 
     return savedInspection;
   }
@@ -83,8 +79,6 @@ export class InspectionService {
 
     const savedInspection = await this.inspectionRepository.save(inspection);
 
-    
-
     return savedInspection;
   }
 
@@ -103,7 +97,6 @@ export class InspectionService {
 
     const savedInspection = await this.inspectionRepository.save(inspection);
 
-    
     return savedInspection;
   }
 
@@ -123,15 +116,13 @@ export class InspectionService {
 
     const savedInspection = await this.inspectionRepository.save(inspection);
 
-   
-
     return savedInspection;
   }
 
   private async findOne(id: number): Promise<Inspection> {
     const inspection = await this.inspectionRepository.findOne({
       where: { id },
-      relations: ['typeInspection', 'actifs', 'createur', 'validateur', 'historiqueEtats'],
+      relations: ['typeInspection', 'actifs', 'createur', 'validateur', 'livrables'],
     });
     
     if (!inspection) {

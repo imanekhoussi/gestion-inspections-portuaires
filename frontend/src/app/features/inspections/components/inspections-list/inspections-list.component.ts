@@ -17,6 +17,14 @@ import { Inspection, InspectionStatut, InspectionPriorite } from '../../../../co
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
+// Interface pour les données transformées
+interface InspectionDisplay extends Omit<Inspection, 'statut'> {
+  actifNom: string;
+  inspecteurNom: string;
+  datePrevue: Date;
+  statut: string; // Override du statut en string pour l'affichage
+}
+
 @Component({
   selector: 'app-inspections-list',
   standalone: true,
@@ -53,7 +61,7 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     'actions'
   ];
 
-  dataSource = new MatTableDataSource<Inspection>();
+  dataSource = new MatTableDataSource<InspectionDisplay>();
   isLoading = true;
   error: string | null = null;
 
@@ -84,11 +92,26 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     this.error = null;
 
     this.inspectionsService.getInspections().subscribe({
-      next: (inspections) => {
-        this.dataSource.data = inspections;
+      next: (inspections: any[]) => {
+        // Transformer les données API en format attendu par le template
+        const transformedInspections: InspectionDisplay[] = inspections.map(inspection => ({
+          ...inspection,
+          // Extraire le nom du premier actif
+          actifNom: inspection.actifs?.[0]?.nom || 'Aucun actif',
+          // Extraire le nom du créateur/inspecteur
+          inspecteurNom: inspection.createur?.nom || 'Non assigné',
+          // Convertir dateDebut en Date si c'est une string
+          datePrevue: typeof inspection.dateDebut === 'string' ? new Date(inspection.dateDebut) : inspection.dateDebut,
+          // Mapper l'état vers statut et convertir en format attendu
+          statut: this.mapEtatToStatut(inspection.etat),
+          // Ajouter une priorité par défaut si elle n'existe pas
+          priorite: inspection.priorite || 'normale'
+        }));
+
+        this.dataSource.data = transformedInspections;
         this.isLoading = false;
         
-        this.snackBar.open(`${inspections.length} inspections chargées`, 'Fermer', {
+        this.snackBar.open(`${transformedInspections.length} inspections chargées`, 'Fermer', {
           duration: 3000,
           panelClass: ['success-snackbar']
         });
@@ -106,6 +129,18 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     });
   }
 
+  // Mapper les états de l'API vers les enum InspectionStatut
+  private mapEtatToStatut(etat: string): string {
+    const mapping: { [key: string]: string } = {
+      'programmee': 'programmée',
+      'en_cours': 'en cours', 
+      'cloturee': 'terminée',
+      'validee': 'validée',
+      'rejetee': 'rejetée'
+    };
+    return mapping[etat] || etat;
+  }
+
   applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource.filter = filterValue.trim().toLowerCase();
@@ -115,35 +150,35 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     }
   }
 
-  getStatutClass(statut: InspectionStatut): string {
-    switch (statut) {
-      case InspectionStatut.PROGRAMMEE:
+  getStatutClass(statut: string): string {
+    switch (statut.toLowerCase()) {
+      case 'programmée':
         return 'status-scheduled';
-      case InspectionStatut.EN_COURS:
+      case 'en cours':
         return 'status-in-progress';
-      case InspectionStatut.TERMINEE:
+      case 'terminée':
         return 'status-completed';
-      case InspectionStatut.VALIDEE:
+      case 'validée':
         return 'status-validated';
-      case InspectionStatut.ANNULEE:
+      case 'rejetée':
         return 'status-cancelled';
       default:
         return '';
     }
   }
 
-  getPrioriteClass(priorite: InspectionPriorite): string {
-    switch (priorite) {
-      case InspectionPriorite.BASSE:
+  getPrioriteClass(priorite: string): string {
+    switch (priorite?.toLowerCase()) {
+      case 'basse':
         return 'priority-low';
-      case InspectionPriorite.NORMALE:
+      case 'normale':
         return 'priority-normal';
-      case InspectionPriorite.HAUTE:
+      case 'haute':
         return 'priority-high';
-      case InspectionPriorite.CRITIQUE:
+      case 'critique':
         return 'priority-critical';
       default:
-        return '';
+        return 'priority-normal';
     }
   }
 
@@ -157,17 +192,17 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     return conformite ? 'conformite-ok' : 'conformite-nok';
   }
 
-  editInspection(inspection: Inspection): void {
+  editInspection(inspection: InspectionDisplay): void {
     console.log('Éditer inspection:', inspection);
     // TODO: Ouvrir dialog d'édition
   }
 
-  viewInspection(inspection: Inspection): void {
+  viewInspection(inspection: InspectionDisplay): void {
     console.log('Voir inspection:', inspection);
     // TODO: Naviguer vers la vue détaillée
   }
 
-  deleteInspection(inspection: Inspection): void {
+  deleteInspection(inspection: InspectionDisplay): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
@@ -185,7 +220,7 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private performDelete(inspection: Inspection): void {
+  private performDelete(inspection: InspectionDisplay): void {
     this.inspectionsService.deleteInspection(inspection.id).subscribe({
       next: () => {
         this.snackBar.open('Inspection supprimée avec succès', 'Fermer', {

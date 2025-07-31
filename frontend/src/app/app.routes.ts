@@ -43,9 +43,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/inspections/components/inspections-list/inspections-list.component').then(m => m.InspectionsListComponent)
       }
     ]
-  },
-  {
-    path: '',
-    redirectTo: '/dashboard'
   }
+  // Removed the duplicate redirect here
 ];
