@@ -1,0 +1,134 @@
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav 
+    #drawer 
+    class="sidenav" 
+    fixedInViewport
+    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="(isHandset$ | async) === false"
+  >
+    <!-- Sidenav Header -->
+    <div class="sidenav-header">
+      <div class="logo-container">
+        <mat-icon class="app-logo">anchor</mat-icon>
+        <div class="app-info">
+          <h3>Port Inspector</h3>
+          <span>Inspections Portuaires</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <mat-nav-list class="navigation-list">
+      <ng-container *ngFor="let item of navigationItems">
+        <!-- Menu items without children -->
+        <a 
+          *ngIf="!item.children" 
+          mat-list-item 
+          [routerLink]="item.route"
+          routerLinkActive="active-route"
+          [routerLinkActiveOptions]="{exact: false}"
+          (click)="closeDrawerIfMobile()"
+        >
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+
+        <!-- Menu items with children -->
+        <mat-expansion-panel 
+          *ngIf="item.children" 
+          class="nav-expansion-panel"
+          [expanded]="isActiveRoute(item.route)"
+        >
+          <mat-expansion-panel-header>
+            <mat-panel-title class="nav-panel-title">
+              <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+              <span>{{ item.label }}</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          
+          <div class="nav-submenu">
+            <a 
+              *ngFor="let child of item.children"
+              mat-list-item 
+              [routerLink]="child.route"
+              routerLinkActive="active-route"
+              (click)="closeDrawerIfMobile()"
+              class="nav-submenu-item"
+            >
+              <mat-icon matListItemIcon>{{ child.icon }}</mat-icon>
+              <span matListItemTitle>{{ child.label }}</span>
+            </a>
+          </div>
+        </mat-expansion-panel>
+      </ng-container>
+    </mat-nav-list>
+
+    <!-- User Info at bottom -->
+    <div class="sidenav-footer" *ngIf="currentUser$ | async as user">
+      <mat-divider></mat-divider>
+      <div class="user-info">
+        <mat-icon class="user-avatar">account_circle</mat-icon>
+        <div class="user-details">
+          <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
+          <span class="user-email">{{ user.email }}</span>
+        </div>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <!-- Top Toolbar -->
+    <mat-toolbar class="main-toolbar" color="primary">
+      <button
+        type="button"
+        aria-label="Toggle sidenav"
+        mat-icon-button
+        (click)="drawer.toggle()"
+        *ngIf="isHandset$ | async"
+        class="menu-button"
+      >
+        <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+      </button>
+      
+      <span class="toolbar-spacer"></span>
+      
+      <!-- User Menu -->
+      <div class="user-menu" *ngIf="currentUser$ | async as user">
+        <button mat-button [matMenuTriggerFor]="userMenu" class="user-button">
+          <mat-icon>account_circle</mat-icon>
+          <span class="user-name-toolbar">{{ user.prenom }}</span>
+          <mat-icon>expand_more</mat-icon>
+        </button>
+        
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <div class="user-menu-header" mat-menu-item disabled>
+            <div class="user-menu-info">
+              <strong>{{ user.prenom }} {{ user.nom }}</strong>
+              <small>{{ user.email }}</small>
+            </div>
+          </div>
+          <mat-divider></mat-divider>
+          <button mat-menu-item>
+            <mat-icon>person</mat-icon>
+            <span>Profil</span>
+          </button>
+          <button mat-menu-item>
+            <mat-icon>settings</mat-icon>
+            <span>Paramètres</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="logout()" class="logout-item">
+            <mat-icon>exit_to_app</mat-icon>
+            <span>Déconnexion</span>
+          </button>
+        </mat-menu>
+      </div>
+    </mat-toolbar>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

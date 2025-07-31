@@ -1,0 +1,123 @@
+// src/app/features/dashboard/components/dashboard/dashboard.component.html
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Tableau de Bord</h1>
+    <p class="dashboard-subtitle">Vue d'ensemble des inspections portuaires</p>
+    <button 
+      mat-fab 
+      color="primary" 
+      class="refresh-button"
+      (click)="refreshData()"
+      [disabled]="isLoading"
+      matTooltip="Actualiser les données"
+    >
+      <mat-icon [class.rotating]="isLoading">refresh</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement des données...</p>
+  </div>
+
+  <!-- Error State -->
+  <mat-card *ngIf="error && !isLoading" class="error-card">
+    <mat-card-content>
+      <div class="error-content">
+        <mat-icon color="warn">error</mat-icon>
+        <div>
+          <h3>Erreur de chargement</h3>
+          <p>{{ error }}</p>
+          <button mat-raised-button color="primary" (click)="refreshData()">
+            Réessayer
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- KPIs Grid -->
+  <div *ngIf="kpis && !isLoading" class="kpis-grid">
+    <app-kpi-card
+      title="Total Inspections"
+      subtitle="Nombre total d'inspections"
+      [value]="kpis.totalInspections"
+      icon="assessment"
+      colorClass="primary"
+    ></app-kpi-card>
+
+    <app-kpi-card
+      title="Programmées"
+      subtitle="Inspections à venir"
+      [value]="kpis.inspectionsProgrammees"
+      icon="schedule"
+      colorClass="warning"
+    ></app-kpi-card>
+
+    <app-kpi-card
+      title="Validées"
+      subtitle="Inspections terminées"
+      [value]="kpis.inspectionsValidees"
+      icon="check_circle"
+      colorClass="success"
+    ></app-kpi-card>
+
+    <app-kpi-card
+      title="Taux de Conformité"
+      subtitle="Pourcentage de conformité"
+      [value]="kpis.tauxConformite"
+      suffix="%"
+      icon="trending_up"
+      colorClass="accent"
+    ></app-kpi-card>
+  </div>
+
+  <!-- Additional Dashboard Content -->
+  <div *ngIf="kpis && !isLoading" class="dashboard-content">
+    <div class="dashboard-row">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Évolution des Inspections</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="placeholder-chart">
+            <mat-icon>bar_chart</mat-icon>
+            <p>Graphique des tendances à venir</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="activity-card">
+        <mat-card-header>
+          <mat-card-title>Activité Récente</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="activity-list">
+            <div class="activity-item">
+              <mat-icon>check_circle</mat-icon>
+              <div>
+                <p>Inspection validée - Quai #3</p>
+                <small>Il y a 2 heures</small>
+              </div>
+            </div>
+            <div class="activity-item">
+              <mat-icon>schedule</mat-icon>
+              <div>
+                <p>Nouvelle inspection programmée</p>
+                <small>Il y a 4 heures</small>
+              </div>
+            </div>
+            <div class="activity-item">
+              <mat-icon>warning</mat-icon>
+              <div>
+                <p>Alerte conformité - Zone A</p>
+                <small>Il y a 1 jour</small>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

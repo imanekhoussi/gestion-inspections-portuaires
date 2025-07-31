@@ -1,0 +1,63 @@
+<div class="map-container">
+  <div class="map-header">
+    <h2>Cartographie des Actifs Portuaires</h2>
+    <div class="map-controls">
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="centerOnTanger()"
+        matTooltip="Centrer sur Tanger"
+      >
+        <mat-icon>my_location</mat-icon>
+        Tanger
+      </button>
+      <button 
+        mat-raised-button 
+        (click)="refreshData()"
+        [disabled]="isLoading"
+        matTooltip="Actualiser les données"
+      >
+        <mat-icon [class.rotating]="isLoading">refresh</mat-icon>
+        Actualiser
+      </button>
+    </div>
+  </div>
+  
+  <div class="map-legend">
+    <h4>Légende - État des actifs</h4>
+    <div class="legend-items">
+      <div class="legend-item">
+        <div class="legend-marker good"></div>
+        <span>Bon état (1-2)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-marker average"></div>
+        <span>État moyen (3)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-marker poor"></div>
+        <span>Mauvais état (4-5)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="map-wrapper">
+    <div 
+      id="map" 
+      class="leaflet-map"
+      [class.loading]="isLoading"
+    ></div>
+    
+    <div *ngIf="isLoading" class="map-loading">
+      <app-loading-spinner message="Chargement de la carte..."></app-loading-spinner>
+    </div>
+    
+    <div *ngIf="error" class="map-error">
+      <mat-icon>error</mat-icon>
+      <p>{{ error }}</p>
+      <button mat-raised-button color="primary" (click)="refreshData()">
+        Réessayer
+      </button>
+    </div>
+  </div>
+</div>

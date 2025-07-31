@@ -1,0 +1,335 @@
+.inspections-container {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background-color: #f5f5f5;
+}
+
+.inspections-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  
+  .header-title {
+    h2 {
+      margin: 0 0 8px 0;
+      color: #1976d2;
+      font-weight: 400;
+      font-size: 2rem;
+    }
+    
+    .header-subtitle {
+      margin: 0;
+      color: #666;
+      font-size: 1rem;
+    }
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+.search-card {
+  margin-bottom: 24px;
+  
+  .search-field {
+    width: 400px;
+    max-width: 100%;
+  }
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+}
+
+.error-card {
+  margin: 20px 0;
+  
+  .error-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    
+    mat-icon {
+      font-size: 48px;
+      height: 48px;
+      width: 48px;
+    }
+    
+    h3 {
+      margin: 0 0 8px 0;
+      color: #d32f2f;
+    }
+    
+    p {
+      margin: 0 0 16px 0;
+      color: #666;
+    }
+  }
+}
+
+.table-card {
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  .inspections-table {
+    width: 100%;
+    
+    th {
+      background-color: #fafafa;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    td {
+      padding: 16px 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+  }
+}
+
+// Styles pour les cellules du tableau
+.inspection-title {
+  strong {
+    display: block;
+    font-size: 0.95rem;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  
+  small {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+  }
+}
+
+.actif-info,
+.inspecteur-info,
+.date-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  
+  .actif-icon,
+  .inspecteur-icon,
+  .date-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+    color: #666;
+  }
+}
+
+// Badges de statut
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.status-scheduled {
+    background-color: #e3f2fd;
+    color: #1976d2;
+  }
+  
+  &.status-in-progress {
+    background-color: #fff3e0;
+    color: #f57c00;
+  }
+  
+  &.status-completed {
+    background-color: #e8f5e8;
+    color: #388e3c;
+  }
+  
+  &.status-validated {
+    background-color: #e0f2f1;
+    color: #00796b;
+  }
+  
+  &.status-cancelled {
+    background-color: #ffebee;
+    color: #d32f2f;
+  }
+}
+
+// Badges de priorité
+.priority-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.priority-low {
+    background-color: #e8f5e8;
+    color: #4caf50;
+  }
+  
+  &.priority-normal {
+    background-color: #e3f2fd;
+    color: #2196f3;
+  }
+  
+  &.priority-high {
+    background-color: #fff3e0;
+    color: #ff9800;
+  }
+  
+  &.priority-critical {
+    background-color: #ffebee;
+    color: #f44336;
+  }
+}
+
+// Icônes de conformité
+.conformite-icon {
+  font-size: 24px;
+  height: 24px;
+  width: 24px;
+  
+  &.conformite-ok {
+    color: #4caf50;
+  }
+  
+  &.conformite-nok {
+    color: #f44336;
+  }
+  
+  &.conformite-unknown {
+    color: #999;
+  }
+}
+
+// Boutons d'action
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  
+  .mat-mdc-icon-button {
+    width: 36px;
+    height: 36px;
+    
+    &.action-view {
+      color: #1976d2;
+      
+      &:hover {
+        background-color: rgba(25, 118, 210, 0.1);
+      }
+    }
+    
+    &.action-edit {
+      color: #ff9800;
+      
+      &:hover {
+        background-color: rgba(255, 152, 0, 0.1);
+      }
+    }
+    
+    &.action-delete {
+      color: #f44336;
+      
+      &:hover {
+        background-color: rgba(244, 67, 54, 0.1);
+      }
+    }
+  }
+}
+
+.rotating {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .inspections-table {
+    .mat-column-description {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .inspections-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    
+    .header-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+  
+  .search-field {
+    width: 100% !important;
+  }
+  
+  .inspections-table {
+    .mat-column-inspecteurNom,
+    .mat-column-conformite {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .inspections-container {
+    padding: 16px;
+  }
+  
+  .inspections-header {
+    .header-title h2 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  .inspections-table {
+    .mat-column-priorite,
+    .mat-column-datePrevue {
+      display: none;
+    }
+    
+    td, th {
+      padding: 12px 4px;
+      font-size: 0.875rem;
+    }
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 2px;
+    
+    .mat-mdc-icon-button {
+      width: 32px;
+      height: 32px;
+    }
+  }
+}
