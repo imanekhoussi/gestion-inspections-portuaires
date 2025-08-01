@@ -29,8 +29,12 @@ export class Actif {
   @Column({ name: 'indice_etat', type: 'int', default: 1 })
   indiceEtat: number;
 
-  @Column({ type: 'geometry', spatialFeatureType: 'Point', srid: 4326, nullable: true })
-  geometry: any;
+  // ✅ GÉOMÉTRIE SIMPLIFIÉE (JSON au lieu de PostGIS)
+  @Column({ type: 'json', nullable: true })
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+  } | null;
 
   @ManyToOne(() => Groupe, groupe => groupe.actifs)
   @JoinColumn({ name: 'id_groupe' })

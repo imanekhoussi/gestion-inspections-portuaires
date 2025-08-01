@@ -1,12 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+// src/famille/famille.controller.ts - REMPLACER COMPLÈTEMENT
+
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { FamilleService } from './famille.service';
 import { CreateFamilleDto, UpdateFamilleDto } from './dto/famille.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // ✅ CORRECTION: chemin complet vers guards
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleUtilisateur } from '../entities/utilisateur.entity';
 
 @ApiTags('Familles')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('familles')
 export class FamilleController {
   constructor(private readonly familleService: FamilleService) {}
@@ -24,20 +29,23 @@ export class FamilleController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Créer une nouvelle famille' })
-  create(@Body() createFamilleDto: CreateFamilleDto) {
-    return this.familleService.create(createFamilleDto);
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Créer une nouvelle famille (Admin seulement)' })
+  create(@Body() createFamilleDto: CreateFamilleDto, @Req() req: any) {
+    return this.familleService.create(createFamilleDto, req.user.id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Mettre à jour une famille' })
-  update(@Param('id') id: string, @Body() updateFamilleDto: UpdateFamilleDto) {
-    return this.familleService.update(+id, updateFamilleDto);
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Mettre à jour une famille (Admin seulement)' })
+  update(@Param('id') id: string, @Body() updateFamilleDto: UpdateFamilleDto, @Req() req: any) {
+    return this.familleService.update(+id, updateFamilleDto, req.user.id);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Supprimer une famille' })
-  remove(@Param('id') id: string) {
-    return this.familleService.remove(+id);
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Supprimer une famille (Admin seulement)' })
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.familleService.remove(+id, req.user.id);
   }
 }

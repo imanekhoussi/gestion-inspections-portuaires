@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { Inspection, EtatInspection } from '../entities/inspection.entity';
 import { Actif } from '../entities/actif.entity';
 
@@ -65,16 +65,17 @@ export class DashboardService {
   }
 
   async getActifsGeoJson() {
-    const actifs = await this.actifRepository.find({
-      relations: ['groupe', 'groupe.famille'],
-      where: { 
-        geometry: { not: null } 
+    // ✅ CORRECTION: Utiliser le bon nom de variable
+    const actifsAvecCoordonnees = await this.actifRepository.find({
+      where: {
+        geometry: Not(IsNull())
       },
+      relations: ['groupe', 'groupe.famille']
     });
 
     return {
       type: 'FeatureCollection',
-      features: actifs.map(actif => ({
+      features: actifsAvecCoordonnees.map(actif => ({ // ✅ CORRECTION: Bon nom de variable
         type: 'Feature',
         properties: {
           id: actif.id,

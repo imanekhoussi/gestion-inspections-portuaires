@@ -1,11 +1,10 @@
-// src/auth/auth.service.ts
-// ===============================================
+// src/auth/auth.service.ts - REMPLACER LE BCRYPTJS PAR BCRYPT
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt'; 
 import { Utilisateur } from '../entities/utilisateur.entity';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
@@ -65,7 +64,7 @@ export class AuthService {
       nom,
       email,
       password: hashedPassword,
-      role: role as any, // Type assertion temporaire
+      role: role as any,
     });
 
     await this.utilisateurRepository.save(user);

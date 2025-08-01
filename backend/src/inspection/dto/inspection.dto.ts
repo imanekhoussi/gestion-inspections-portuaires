@@ -1,50 +1,68 @@
-//  src/inspection/dto/inspection.dto.ts
-import { IsString, IsNotEmpty, IsDateString, IsArray, IsNumber, IsOptional } from 'class-validator';
+// src/inspection/dto/inspection.dto.ts - CORRIGER LA PROPRIÉTÉ MANQUANTE
+
+import { IsString, IsNotEmpty, IsNumber, IsDateString, IsArray, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { EtatInspection } from '../../entities/inspection.entity';
 
 export class CreateInspectionDto {
-  @ApiProperty({ description: 'Titre de l\'inspection' })
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   titre: string;
 
-  @ApiProperty({ description: 'ID du type d\'inspection' })
+  @ApiProperty()
   @IsNumber()
   idType: number;
 
-  @ApiProperty({ description: 'Date de début' })
+  @ApiProperty()
   @IsDateString()
   dateDebut: string;
 
-  @ApiProperty({ description: 'Date de fin' })
+  @ApiProperty()
   @IsDateString()
   dateFin: string;
 
-  @ApiProperty({ description: 'IDs des actifs concernés' })
+  @ApiProperty({ type: [Number], description: 'IDs des actifs concernés' })
   @IsArray()
   @IsNumber({}, { each: true })
-  actifsIds: number[];
+  actifIds: number[];
 }
 
 export class UpdateInspectionDto extends PartialType(CreateInspectionDto) {}
 
+export class UpdateEtatInspectionDto {
+  @ApiProperty({ enum: EtatInspection })
+  @IsEnum(EtatInspection)
+  etat: EtatInspection;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  commentaire?: string;
+}
+
 export class CloturerInspectionDto {
-  @ApiProperty({ description: 'Commentaire de clôture', required: false })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   commentaire?: string;
 }
 
 export class ValiderInspectionDto {
-  @ApiProperty({ description: 'Commentaire de validation', required: false })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   commentaire?: string;
 }
 
 export class RejeterInspectionDto {
-  @ApiProperty({ description: 'Motif du rejet' })
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  motif: string;
+  motifRejet: string; // ✅ CORRECTION: propriété correcte
+
+  // Alias pour compatibilité avec votre controller
+  get motif(): string {
+    return this.motifRejet;
+  }
 }

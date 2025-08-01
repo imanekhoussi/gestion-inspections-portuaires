@@ -1,20 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+// src/groupe/groupe.controller.ts - REMPLACER COMPLÈTEMENT
+
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { GroupeService } from './groupe.service';
 import { CreateGroupeDto, UpdateGroupeDto } from './dto/groupe.dto';
 import { Groupe } from '../entities/groupe.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleUtilisateur } from '../entities/utilisateur.entity';
 
-@ApiTags('Groupes') // Ceci créera une section "Groupes" dans Swagger
-@Controller('groupe')
+@ApiTags('Groupes')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('groupes')
 export class GroupeController {
   constructor(private readonly groupeService: GroupeService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Créer un nouveau groupe' })
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Créer un nouveau groupe (Admin seulement)' })
   @ApiResponse({ status: 201, description: 'Le groupe a été créé avec succès.', type: Groupe })
-  @ApiResponse({ status: 400, description: 'Données invalides.' })
-  create(@Body() createGroupeDto: CreateGroupeDto) {
-    return this.groupeService.create(createGroupeDto);
+  create(@Body() createGroupeDto: CreateGroupeDto, @Req() req: any) {
+    return this.groupeService.create(createGroupeDto, req.user.id);
   }
 
   @Get()
@@ -27,24 +35,23 @@ export class GroupeController {
   @Get(':id')
   @ApiOperation({ summary: 'Récupérer un groupe par ID' })
   @ApiResponse({ status: 200, description: 'Le groupe trouvé.', type: Groupe })
-  @ApiResponse({ status: 404, description: 'Groupe non trouvé.' })
   findOne(@Param('id') id: string) {
     return this.groupeService.findOne(+id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Mettre à jour un groupe' })
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Mettre à jour un groupe (Admin seulement)' })
   @ApiResponse({ status: 200, description: 'Le groupe a été mis à jour.', type: Groupe })
-  @ApiResponse({ status: 404, description: 'Groupe non trouvé.' })
-  update(@Param('id') id: string, @Body() updateGroupeDto: UpdateGroupeDto) {
-    return this.groupeService.update(+id, updateGroupeDto);
+  update(@Param('id') id: string, @Body() updateGroupeDto: UpdateGroupeDto, @Req() req: any) {
+    return this.groupeService.update(+id, updateGroupeDto, req.user.id);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Supprimer un groupe' })
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Supprimer un groupe (Admin seulement)' })
   @ApiResponse({ status: 200, description: 'Le groupe a été supprimé.' })
-  @ApiResponse({ status: 404, description: 'Groupe non trouvé.' })
-  remove(@Param('id') id: string) {
-    return this.groupeService.remove(+id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.groupeService.remove(+id, req.user.id);
   }
 }
