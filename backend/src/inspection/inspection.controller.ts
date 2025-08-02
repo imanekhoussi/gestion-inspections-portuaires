@@ -93,4 +93,28 @@ export class InspectionController {
     const userId = 1; // Temporaire pour les tests
     return this.inspectionService.reprogrammer(+id, new Date(body.nouvelleDate), userId);
   }
+  @Get('by-zone')
+@ApiOperation({ summary: 'Inspections par zone géographique' })
+@ApiQuery({ name: 'site', required: false, description: 'Filtrer par site' })
+@ApiQuery({ name: 'zone', required: false, description: 'Filtrer par zone' })
+findByZone(
+  @Query('site') site?: string,
+  @Query('zone') zone?: string
+) {
+  return this.inspectionService.findByZone(site, zone);
+}
+
+@Get('planification-map')
+@ApiOperation({ summary: 'Données de planification pour carte' })
+@ApiResponse({ status: 200, description: 'Inspections avec localisation' })
+getPlanificationMap() {
+  return this.inspectionService.getPlanificationMap();
+}
+
+@Get('operateur/:operateurId/inspections-locales')
+@ApiOperation({ summary: 'Inspections assignées à un opérateur avec localisation' })
+getInspectionsOperateur(@Param('operateurId') operateurId: string) {
+  return this.inspectionService.getInspectionsOperateur(+operateurId);
+}
+
 }

@@ -1,20 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { ActifService } from './actif.service';
 import { CreateActifDto, UpdateActifDto } from './dto/actif.dto';
 import { Actif } from '../entities/actif.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleUtilisateur } from '../entities/utilisateur.entity';
 
-@ApiTags('Actifs') // Section "Actifs" dans Swagger
+@ApiTags('Actifs')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('actifs')
 export class ActifController {
   constructor(private readonly actifService: ActifService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Créer un nouvel actif (équipement)' })
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Créer un nouvel actif avec coordonnées GPS optionnelles (Admin seulement)' })
   @ApiResponse({ status: 201, description: 'L\'actif a été créé avec succès.', type: Actif })
-  @ApiResponse({ status: 400, description: 'Données invalides.' })
-  create(@Body() createActifDto: CreateActifDto) {
-    return this.actifService.create(createActifDto);
+  create(@Body() createActifDto: CreateActifDto, @Req() req: any) {
+    return this.actifService.create(createActifDto, req.user.id);
   }
 
   @Get()
@@ -24,53 +30,76 @@ export class ActifController {
     return this.actifService.findAll();
   }
 
+  @Get('map-data')
+  @ApiOperation({ summary: 'Données cartographiques pour affichage sur carte interactive' })
+  @ApiResponse({ status: 200, description: 'Points d\'actifs avec coordonnées pour la carte' })
+  getMapData() {
+    return this.actifService.getMapData();
+  }
+
+  @Get('by-coordinates')
+  @ApiOperation({ summary: 'Récupérer les actifs dans un rayon géographique' })
+  @ApiQuery({ name: 'lat', type: Number, description: 'Latitude du point central' })
+  @ApiQuery({ name: 'lng', type: Number, description: 'Longitude du point central' })
+  @ApiQuery({ name: 'radius', type: Number, description: 'Rayon de recherche en mètres (défaut: 1000)' })
+  @ApiResponse({ status: 200, description: 'Actifs dans le rayon spécifié' })
+  findByCoordinates(
+    @Query('lat') lat: number,
+    @Query('lng') lng: number,
+    @Query('radius') radius: number = 1000
+  ) {
+    return this.actifService.findByCoordinates(+lat, +lng, +radius);
+  }
+
+  @Get('statistics-by-zone')
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE)
+  @ApiOperation({ summary: 'Statistiques des actifs regroupées par site et zone' })
+  @ApiResponse({ status: 200, description: 'Statistiques détaillées par zone' })
+  getStatisticsByZone() {
+    return this.actifService.getStatisticsByZone();
+  }
+
   @Get('by-site')
-  @ApiOperation({ summary: 'Récupérer les actifs par site' })
-  @ApiQuery({ name: 'site', type: String, description: 'Nom du site (ex: Port de Tanger Med)' })
-  @ApiResponse({ status: 200, description: 'Actifs du site.', type: [Actif] })
+  @ApiOperation({ summary: 'Récupérer les actifs d\'un site spécifique' })
+  @ApiQuery({ name: 'site', type: String, description: 'Nom du site' })
   findBySite(@Query('site') site: string) {
     return this.actifService.findBySite(site);
   }
 
   @Get('by-groupe/:idGroupe')
-  @ApiOperation({ summary: 'Récupérer les actifs d\'un groupe' })
-  @ApiResponse({ status: 200, description: 'Actifs du groupe.', type: [Actif] })
+  @ApiOperation({ summary: 'Récupérer les actifs d\'un groupe spécifique' })
   findByGroupe(@Param('idGroupe') idGroupe: string) {
     return this.actifService.findByGroupe(+idGroupe);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Récupérer un actif par ID' })
-  @ApiResponse({ status: 200, description: 'L\'actif trouvé.', type: Actif })
-  @ApiResponse({ status: 404, description: 'Actif non trouvé.' })
+  @ApiOperation({ summary: 'Récupérer un actif par son ID' })
   findOne(@Param('id') id: string) {
     return this.actifService.findOne(+id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Mettre à jour un actif' })
-  @ApiResponse({ status: 200, description: 'L\'actif a été mis à jour.', type: Actif })
-  @ApiResponse({ status: 404, description: 'Actif non trouvé.' })
-  update(@Param('id') id: string, @Body() updateActifDto: UpdateActifDto) {
-    return this.actifService.update(+id, updateActifDto);
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Mettre à jour un actif (Admin seulement)' })
+  update(@Param('id') id: string, @Body() updateActifDto: UpdateActifDto, @Req() req: any) {
+    return this.actifService.update(+id, updateActifDto, req.user.id);
   }
 
   @Patch(':id/indice-etat')
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE)
   @ApiOperation({ summary: 'Mettre à jour l\'indice d\'état d\'un actif' })
-  @ApiResponse({ status: 200, description: 'L\'indice d\'état a été mis à jour.', type: Actif })
-  @ApiResponse({ status: 404, description: 'Actif non trouvé.' })
   updateIndiceEtat(
     @Param('id') id: string, 
-    @Body() body: { indiceEtat: number }
+    @Body() body: { indiceEtat: number },
+    @Req() req: any
   ) {
-    return this.actifService.updateIndiceEtat(+id, body.indiceEtat);
+    return this.actifService.updateIndiceEtat(+id, body.indiceEtat, req.user.id);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Supprimer un actif' })
-  @ApiResponse({ status: 200, description: 'L\'actif a été supprimé.' })
-  @ApiResponse({ status: 404, description: 'Actif non trouvé.' })
-  remove(@Param('id') id: string) {
-    return this.actifService.remove(+id);
+  @Roles(RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Supprimer un actif (Admin seulement)' })
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.actifService.remove(+id, req.user.id);
   }
 }
