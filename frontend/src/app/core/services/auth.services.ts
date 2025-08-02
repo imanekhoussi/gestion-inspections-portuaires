@@ -29,12 +29,35 @@ export class AuthService {
       .pipe(
         tap(response => {
           this.setSession(response);
+          // AJOUT: Redirection automatique basée sur le rôle
+          this.redirectUserByRole(response.user);
         }),
         catchError(error => {
           console.error('Erreur de connexion:', error);
           return throwError(() => error);
         })
       );
+  }
+
+  // NOUVELLE MÉTHODE: Redirection basée sur le rôle
+  private redirectUserByRole(user: User): void {
+    if (user.role === 'admin') {
+      console.log('Utilisateur admin détecté, redirection vers /admin/dashboard');
+      setTimeout(() => {
+        this.router.navigateByUrl('/admin/dashboard');
+}, 0);
+    } else {
+      console.log('Utilisateur normal, redirection vers /dashboard');
+      this.router.navigate(['/dashboard']);
+    }
+  }
+
+  // MÉTHODE PUBLIQUE: Pour redirection manuelle si besoin
+  public navigateByRole(): void {
+    const user = this.getCurrentUser();
+    if (user) {
+      this.redirectUserByRole(user);
+    }
   }
 
   logout(): void {
@@ -55,6 +78,12 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return this.hasToken() && !this.isTokenExpired();
+  }
+
+  // NOUVELLE MÉTHODE: Vérifier si l'utilisateur est admin
+  isAdmin(): boolean {
+    const user = this.getCurrentUser();
+    return user?.role === 'admin' || false;
   }
 
   private setSession(authResult: LoginResponse): void {
