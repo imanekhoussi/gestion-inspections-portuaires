@@ -1,0 +1,205 @@
+.admin-section {
+  .famille-form {
+    .form-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: flex-end;
+      
+      .full-width {
+        width: 100%;
+      }
+      
+      .code-field {
+        flex: 1;
+      }
+      
+      .generate-code-btn {
+        height: 56px;
+        margin-bottom: 1.34375em; // Align avec mat-form-field
+        
+        mat-icon {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+}
+
+.table-container {
+  .familles-table {
+    width: 100%;
+    
+    .famille-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      
+      .famille-icon {
+        font-size: 2rem;
+        height: 2rem;
+        width: 2rem;
+        color: #2ecc71;
+      }
+      
+      .famille-details {
+        strong {
+          display: block;
+          font-size: 0.95rem;
+          color: #2c3e50;
+          margin-bottom: 2px;
+        }
+        
+        small {
+          display: block;
+          font-size: 0.8rem;
+          color: #7f8c8d;
+        }
+      }
+    }
+    
+    .code-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .code-icon {
+        font-size: 1.2rem;
+        height: 1.2rem;
+        width: 1.2rem;
+        color: #7f8c8d;
+      }
+      
+      .code-badge {
+        background: #3498db;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+      }
+    }
+    
+    .count-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .count-icon {
+        font-size: 1.5rem;
+        height: 1.5rem;
+        width: 1.5rem;
+        color: #9b59b6;
+      }
+    }
+    
+    .date-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      
+      .date-icon {
+        font-size: 1.2rem;
+        height: 1.2rem;
+        width: 1.2rem;
+        color: #7f8c8d;
+      }
+    }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  
+  .empty-icon {
+    font-size: 4rem;
+    height: 4rem;
+    width: 4rem;
+    color: #bdc3c7;
+    margin-bottom: 16px;
+  }
+  
+  h3 {
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  p {
+    color: #7f8c8d;
+    margin-bottom: 24px;
+  }
+}
+
+.info-card {
+  margin-top: 24px;
+  border: 2px solid #3498db;
+  border-radius: 12px;
+  
+  .mat-mdc-card-header {
+    background: rgba(52, 152, 219, 0.1);
+    
+    .mat-mdc-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #3498db;
+    }
+  }
+  
+  .info-content {
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .info-icon {
+        font-size: 1.5rem;
+        height: 1.5rem;
+        width: 1.5rem;
+        color: #3498db;
+        margin-top: 4px;
+      }
+      
+      strong {
+        display: block;
+        color: #2c3e50;
+        margin-bottom: 4px;
+        font-size: 0.95rem;
+      }
+      
+      p {
+        margin: 0;
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .famille-form .form-row {
+    flex-direction: column;
+    
+    .generate-code-btn {
+      width: 100%;
+      margin-bottom: 0;
+    }
+  }
+  
+  .familles-table {
+    .mat-column-createdAt,
+    .mat-column-nbGroupes {
+      display: none;
+    }
+  }
+}

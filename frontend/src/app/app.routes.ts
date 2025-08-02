@@ -7,6 +7,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/components/login/login.component').then(m => m.LoginComponent)
   },
   {
+  path: 'admin',
+    loadChildren: () => import('./features/admin/admin.routes').then(m => m.adminRoutes)
+  },
+  {
     path: '',
     canActivate: [AuthGuard],
     loadComponent: () => import('./features/layout/components/main-layout/main.layout.component').then(m => m.MainLayoutComponent),
@@ -43,10 +47,5 @@ export const routes: Routes = [
         loadComponent: () => import('./features/inspections/components/inspections-list/inspections-list.component').then(m => m.InspectionsListComponent)
       }
     ]
-<<<<<<< HEAD
-  },
-=======
   }
-  // Removed the duplicate redirect here
->>>>>>> bd32c4e40080aa120dc0b662841c24ebaa1673b0
-];
+]

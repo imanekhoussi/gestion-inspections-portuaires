@@ -1,0 +1,99 @@
+<mat-sidenav-container class="admin-sidenav-container">
+  <mat-sidenav 
+    #drawer 
+    class="admin-sidenav" 
+    fixedInViewport
+    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="(isHandset$ | async) === false"
+  >
+    <!-- Admin Sidenav Header -->
+    <div class="admin-sidenav-header">
+      <div class="admin-logo-container">
+        <mat-icon class="admin-logo">admin_panel_settings</mat-icon>
+        <div class="admin-info">
+          <h3>Administration</h3>
+          <span>Interface de gestion</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <mat-nav-list class="admin-navigation-list">
+      <a 
+        *ngFor="let item of adminMenuItems"
+        mat-list-item 
+        [routerLink]="item.route"
+        routerLinkActive="active-route"
+        [routerLinkActiveOptions]="{exact: false}"
+        (click)="closeDrawerIfMobile()"
+        [matTooltip]="item.description"
+        matTooltipPosition="right"
+      >
+        <mat-icon matListItemIcon 
+          [matBadge]="item.badge" 
+          [matBadgeHidden]="!item.badge"
+          matBadgeColor="warn"
+          matBadgeSize="small">{{ item.icon }}</mat-icon>
+        <span matListItemTitle>{{ item.label }}</span>
+      </a>
+    </mat-nav-list>
+
+    <!-- Back to App Button -->
+    <div class="admin-sidenav-footer">
+      <button 
+        mat-stroked-button 
+        color="primary"
+        (click)="backToApp()"
+        class="back-to-app-btn"
+      >
+        <mat-icon>arrow_back</mat-icon>
+        Retour à l'application
+      </button>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <!-- Admin Toolbar -->
+    <mat-toolbar class="admin-toolbar" color="primary">
+      <button
+        type="button"
+        aria-label="Toggle sidenav"
+        mat-icon-button
+        (click)="drawer.toggle()"
+        *ngIf="isHandset$ | async"
+        class="menu-button"
+      >
+        <mat-icon>menu</mat-icon>
+      </button>
+      
+      <mat-icon class="toolbar-admin-icon">admin_panel_settings</mat-icon>
+      <span class="toolbar-title">Administration Portuaire</span>
+      
+      <span class="toolbar-spacer"></span>
+      
+      <!-- User Info -->
+      <div class="admin-user-info" *ngIf="currentUser$ | async as user">
+        <span class="admin-user-name">{{ user.prenom }} {{ user.nom }}</span>
+        <mat-icon class="admin-badge">verified_user</mat-icon>
+      </div>
+      
+      <button mat-icon-button (click)="logout()" matTooltip="Déconnexion">
+        <mat-icon>exit_to_app</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <!-- Breadcrumb Navigation -->
+    <div class="admin-breadcrumb">
+      <mat-icon>home</mat-icon>
+      <span>Administration</span>
+      <mat-icon class="breadcrumb-separator">chevron_right</mat-icon>
+      <span class="current-section">{{ getCurrentSectionName() }}</span>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="admin-main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

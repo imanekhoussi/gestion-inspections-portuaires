@@ -1,0 +1,696 @@
+// src/app/features/admin/components/arborescence/arborescence.component.scss
+
+.admin-section {
+  padding: 24px;
+  max-width: 1800px;
+  margin: 0 auto;
+
+  // ===== HEADER =====
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e0e0e0;
+
+    .header-content {
+      h1 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 8px 0;
+        font-size: 32px;
+        font-weight: 300;
+        color: #1976d2;
+
+        mat-icon {
+          font-size: 36px;
+          width: 36px;
+          height: 36px;
+        }
+      }
+
+      p {
+        margin: 0;
+        color: #666;
+        font-size: 16px;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+
+      button {
+        mat-icon {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+
+  // ===== LOADING =====
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px;
+    text-align: center;
+
+    mat-spinner {
+      margin-bottom: 24px;
+    }
+
+    p {
+      color: #666;
+      font-size: 16px;
+    }
+  }
+
+  // ===== STATISTIQUES GLOBALES =====
+  .global-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .stat-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+
+      .stat-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .stat-icon {
+          font-size: 32px;
+          width: 32px;
+          height: 32px;
+
+          &.famille-icon {
+            color: #1976d2;
+          }
+
+          &.groupe-icon {
+            color: #388e3c;
+          }
+
+          &.actif-icon {
+            color: #ff9800;
+          }
+        }
+
+        .stat-info {
+          h3 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+          }
+
+          p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+  }
+
+  // ===== CONTRÔLES =====
+  .controls-card {
+    margin-bottom: 24px;
+
+    .controls-form {
+      .controls-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+        align-items: center;
+
+        &.actions-row {
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          
+          button {
+            height: 40px;
+            
+            mat-icon {
+              margin-right: 8px;
+            }
+          }
+        }
+
+        .etat-option {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+        }
+
+        mat-slide-toggle {
+          margin: 8px 0;
+        }
+      }
+    }
+  }
+
+  // ===== LAYOUT PRINCIPAL =====
+  .content-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // ===== ARBORESCENCE =====
+  .tree-card {
+    .tree-container {
+      max-height: 800px;
+      overflow-y: auto;
+      padding: 8px;
+
+      &.compact {
+        .node-content {
+          padding-top: 4px;
+          padding-bottom: 4px;
+        }
+
+        .node-description {
+          display: none;
+        }
+      }
+
+      .structure-tree {
+        .tree-node {
+          .node-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+
+            &:hover {
+              background-color: #f5f5f5;
+            }
+
+            .expand-button {
+              width: 32px;
+              height: 32px;
+              transition: transform 0.2s ease;
+
+              &.expanded {
+                transform: rotate(90deg);
+              }
+
+              mat-icon {
+                font-size: 20px;
+                color: #666;
+              }
+            }
+
+            .node-icon {
+              font-size: 24px;
+              width: 24px;
+              height: 24px;
+              margin-right: 4px;
+            }
+
+            .node-info {
+              flex: 1;
+              min-width: 0;
+
+              .node-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 4px;
+
+                .node-name {
+                  font-size: 14px;
+                  font-weight: 500;
+                  color: #333;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                }
+
+                .node-code {
+                  background: #e0e0e0;
+                  color: #666;
+                  font-size: 10px;
+                  min-height: 18px;
+                  line-height: 18px;
+                  padding: 0 6px;
+                  border-radius: 9px;
+                  font-weight: 500;
+                }
+              }
+
+              .node-description {
+                font-size: 12px;
+                color: #999;
+                margin-top: 2px;
+              }
+            }
+
+            .count-badge {
+              margin-left: auto;
+              color: #1976d2;
+            }
+
+            .etat-chip {
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              padding: 4px 8px;
+              border-radius: 12px;
+              font-size: 10px;
+              font-weight: 500;
+              min-height: 24px;
+              margin-left: auto;
+
+              mat-icon {
+                font-size: 14px;
+                width: 14px;
+                height: 14px;
+              }
+            }
+          }
+
+          &.expandable-node {
+            .node-content {
+              font-weight: 500;
+            }
+          }
+
+          &.leaf-node {
+            .node-content {
+              .node-name {
+                font-weight: 400;
+              }
+            }
+          }
+        }
+      }
+
+      .empty-tree {
+        text-align: center;
+        padding: 64px 32px;
+        color: #666;
+
+        .empty-icon {
+          font-size: 64px;
+          width: 64px;
+          height: 64px;
+          color: #ccc;
+          margin-bottom: 16px;
+        }
+
+        h3 {
+          margin: 0 0 8px 0;
+          font-weight: 400;
+        }
+
+        p {
+          margin: 0 0 24px 0;
+        }
+
+        button {
+          mat-icon {
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+  }
+
+  // ===== STATISTIQUES PAR SITE =====
+  .stats-card {
+    .sites-stats {
+      .site-panel {
+        margin-bottom: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+
+        mat-expansion-panel-header {
+          mat-panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+
+            mat-icon {
+              color: #1976d2;
+            }
+          }
+
+          mat-panel-description {
+            color: #666;
+          }
+        }
+
+        .site-details {
+          padding-top: 16px;
+
+          .etats-distribution {
+            margin-bottom: 24px;
+
+            h4 {
+              margin: 0 0 16px 0;
+              font-size: 14px;
+              font-weight: 500;
+              color: #333;
+            }
+
+            .etat-bars {
+              .etat-bar {
+                display: grid;
+                grid-template-columns: 120px 1fr 40px;
+                gap: 12px;
+                align-items: center;
+                margin-bottom: 8px;
+
+                &.empty {
+                  opacity: 0.5;
+                }
+
+                .etat-label {
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  font-size: 12px;
+
+                  mat-icon {
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                  }
+                }
+
+                .etat-progress {
+                  height: 8px;
+                  background: #e0e0e0;
+                  border-radius: 4px;
+                  overflow: hidden;
+
+                  .etat-bar-fill {
+                    height: 100%;
+                    transition: width 0.3s ease;
+                    border-radius: 4px;
+                  }
+                }
+
+                .etat-count {
+                  font-size: 12px;
+                  font-weight: 600;
+                  text-align: right;
+                  color: #333;
+                }
+              }
+            }
+          }
+
+          .site-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+
+            button {
+              font-size: 12px;
+              
+              mat-icon {
+                margin-right: 4px;
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ===== LÉGENDE =====
+  .legend-card {
+    .legend-content {
+      .legend-section {
+        margin-bottom: 24px;
+
+        h4 {
+          margin: 0 0 12px 0;
+          font-size: 14px;
+          font-weight: 500;
+          color: #333;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .legend-items {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 8px;
+
+          .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+
+            mat-icon {
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+            }
+          }
+        }
+
+        .legend-instructions {
+          p {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            font-size: 13px;
+            color: #666;
+
+            mat-icon {
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+              color: #1976d2;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ===== RESPONSIVE =====
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .section-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+
+    .global-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .controls-card {
+      .controls-form {
+        .controls-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    }
+
+    .content-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .tree-card {
+      .tree-container {
+        max-height: 600px;
+
+        .structure-tree {
+          .tree-node {
+            .node-content {
+              .node-info {
+                .node-header {
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 4px;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .legend-card {
+      .legend-content {
+        .legend-section {
+          .legend-items {
+            grid-template-columns: 1fr;
+          }
+        }
+      }
+    }
+  }
+
+  // ===== ANIMATIONS =====
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .controls-card,
+  .tree-card,
+  .stats-card,
+  .legend-card {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  // ===== SCROLL PERSONNALISÉ =====
+  .tree-container {
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+
+      &:hover {
+        background: #a1a1a1;
+      }
+    }
+  }
+
+  // ===== DARK MODE =====
+  @media (prefers-color-scheme: dark) {
+    .section-header {
+      border-bottom-color: #424242;
+      
+      .header-content {
+        h1 {
+          color: #90caf9;
+        }
+        
+        p {
+          color: #bbb;
+        }
+      }
+    }
+
+    .tree-container {
+      .structure-tree {
+        .tree-node {
+          .node-content {
+            &:hover {
+              background-color: #333;
+            }
+
+            .node-name {
+              color: #fff;
+            }
+
+            .node-description {
+              color: #bbb;
+            }
+
+            .node-code {
+              background: #424242;
+              color: #bbb;
+            }
+          }
+        }
+      }
+
+      .empty-tree {
+        color: #bbb;
+
+        .empty-icon {
+          color: #666;
+        }
+
+        h3 {
+          color: #fff;
+        }
+      }
+    }
+
+    .legend-content {
+      .legend-section {
+        h4 {
+          color: #fff;
+        }
+
+        .legend-items .legend-item {
+          color: #bbb;
+        }
+
+        .legend-instructions p {
+          color: #bbb;
+        }
+      }
+    }
+
+    .site-details {
+      .etats-distribution {
+        h4 {
+          color: #fff;
+        }
+
+        .etat-bars .etat-bar .etat-count {
+          color: #fff;
+        }
+      }
+    }
+  }
+}

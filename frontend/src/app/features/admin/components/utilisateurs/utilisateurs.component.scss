@@ -1,0 +1,269 @@
+.admin-section {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    
+    .header-content {
+      h1 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 8px 0;
+        color: #2c3e50;
+        font-size: 2rem;
+        font-weight: 500;
+        
+        mat-icon {
+          font-size: 2rem;
+          height: 2rem;
+          width: 2rem;
+          color: #e74c3c;
+        }
+      }
+      
+      p {
+        margin: 0;
+        color: #7f8c8d;
+        font-size: 1.1rem;
+      }
+    }
+    
+    .add-button {
+      height: 48px;
+      font-size: 1rem;
+      
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+.form-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  
+  .mat-mdc-card-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    
+    .mat-mdc-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.3rem;
+      
+      mat-icon {
+        font-size: 1.5rem;
+        height: 1.5rem;
+        width: 1.5rem;
+      }
+    }
+  }
+}
+
+.user-form {
+  .form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    
+    .full-width {
+      width: 100%;
+    }
+    
+    .half-width {
+      width: calc(50% - 8px);
+    }
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #ecf0f1;
+    
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+.table-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  
+  .mat-mdc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+    
+    .mat-mdc-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #2c3e50;
+      font-size: 1.2rem;
+    }
+    
+    .header-actions {
+      .search-field {
+        width: 300px;
+      }
+    }
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  
+  .users-table {
+    width: 100%;
+    
+    th {
+      background-color: #34495e;
+      color: white;
+      font-weight: 600;
+      padding: 16px 8px;
+    }
+    
+    td {
+      padding: 16px 8px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    
+    tr:hover {
+      background-color: #f8f9fa;
+    }
+  }
+}
+
+// Styles pour les cellules du tableau
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  .user-avatar {
+    font-size: 2rem;
+    height: 2rem;
+    width: 2rem;
+    color: #3498db;
+  }
+  
+  .user-details {
+    strong {
+      display: block;
+      font-size: 0.95rem;
+      color: #2c3e50;
+      margin-bottom: 2px;
+    }
+    
+    small {
+      display: block;
+      font-size: 0.8rem;
+      color: #7f8c8d;
+    }
+  }
+}
+
+.email-cell, .phone-cell, .date-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  
+  .email-icon, .phone-icon, .date-icon {
+    font-size: 1.2rem;
+    height: 1.2rem;
+    width: 1.2rem;
+    color: #7f8c8d;
+  }
+}
+
+.no-data {
+  color: #bdc3c7;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+// Chips de rôles
+.role-admin {
+  background-color: #e74c3c !important;
+  color: white !important;
+}
+
+.role-inspecteur {
+  background-color: #3498db !important;
+  color: white !important;
+}
+
+.role-viewer {
+  background-color: #95a5a6 !important;
+  color: white !important;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  
+  .mat-mdc-icon-button {
+    width: 40px;
+    height: 40px;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .user-form .form-row {
+    flex-direction: column;
+    
+    .half-width {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-section .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    
+    .add-button {
+      width: 100%;
+    }
+  }
+  
+  .table-card .mat-mdc-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    
+    .header-actions .search-field {
+      width: 100%;
+    }
+  }
+  
+  .users-table {
+    .mat-column-telephone,
+    .mat-column-createdAt {
+      display: none;
+    }
+  }
+}

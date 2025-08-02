@@ -1,0 +1,449 @@
+<!-- src/app/features/admin/components/arborescence/arborescence.component.html -->
+<div class="admin-section">
+  <!-- Header -->
+  <div class="section-header">
+    <div class="header-content">
+      <h1>
+        <mat-icon>account_tree</mat-icon>
+        Vue Arborescence
+      </h1>
+      <p>Structure hiérarchique des familles, groupes et actifs portuaires</p>
+    </div>
+    <div class="header-actions">
+      <button 
+        mat-stroked-button 
+        color="primary"
+        (click)="refreshData()"
+        matTooltip="Actualiser les données"
+      >
+        <mat-icon>refresh</mat-icon>
+        Actualiser
+      </button>
+      <button 
+        mat-stroked-button 
+        color="primary"
+        (click)="exportArborescence()"
+        matTooltip="Exporter en Excel"
+      >
+        <mat-icon>download</mat-icon>
+        Exporter
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicateur de chargement global -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement de l'arborescence...</p>
+  </div>
+
+  <div *ngIf="!isLoading">
+    
+    <!-- Statistiques globales -->
+    <div class="global-stats">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon famille-icon">folder</mat-icon>
+            <div class="stat-info">
+              <h3>{{ globalStats.totalFamilles }}</h3>
+              <p>Familles</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon groupe-icon">group_work</mat-icon>
+            <div class="stat-info">
+              <h3>{{ globalStats.totalGroupes }}</h3>
+              <p>Groupes</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon actif-icon">precision_manufacturing</mat-icon>
+            <div class="stat-info">
+              <h3>{{ globalStats.totalActifs }}</h3>
+              <p>Actifs</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Contrôles et filtres -->
+    <mat-card class="controls-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>tune</mat-icon>
+          Contrôles d'affichage
+        </mat-card-title>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <form [formGroup]="filterForm" class="controls-form">
+          
+          <!-- Ligne 1: Filtres -->
+          <div class="controls-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Rechercher</mat-label>
+              <input 
+                matInput 
+                #searchInput
+                (keyup)="searchInTree(searchInput.value)"
+                placeholder="Nom, code..."
+              >
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>Filtrer par site</mat-label>
+              <mat-select formControlName="site">
+                <mat-option value="">Tous les sites</mat-option>
+                <mat-option *ngFor="let site of availableSites" [value]="site">
+                  {{ site }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>location_on</mat-icon>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>État des actifs</mat-label>
+              <mat-select formControlName="etatActif">
+                <mat-option value="">Tous les états</mat-option>
+                <mat-option *ngFor="let etat of etatActifOptions" [value]="etat.value">
+                  <div class="etat-option">
+                    <mat-icon [style.color]="etat.color">{{ etat.icon }}</mat-icon>
+                    {{ etat.label }}
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>flag</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Ligne 2: Options d'affichage -->
+          <div class="controls-row">
+            <mat-slide-toggle 
+              [(ngModel)]="showMetadata"
+              [ngModelOptions]="{standalone: true}"
+              color="primary"
+            >
+              Afficher les métadonnées
+            </mat-slide-toggle>
+            
+            <mat-slide-toggle 
+              [(ngModel)]="compactView"
+              [ngModelOptions]="{standalone: true}"
+              color="primary"
+            >
+              Vue compacte
+            </mat-slide-toggle>
+            
+            <mat-slide-toggle 
+              formControlName="expandAll"
+              color="primary"
+            >
+              Tout développer
+            </mat-slide-toggle>
+          </div>
+
+          <!-- Ligne 3: Actions rapides -->
+          <div class="controls-row actions-row">
+            <button 
+              mat-stroked-button 
+              type="button"
+              (click)="expandAll()"
+            >
+              <mat-icon>unfold_more</mat-icon>
+              Tout développer
+            </button>
+            
+            <button 
+              mat-stroked-button 
+              type="button"
+              (click)="collapseAll()"
+            >
+              <mat-icon>unfold_less</mat-icon>
+              Tout réduire
+            </button>
+            
+            <button 
+              mat-stroked-button 
+              type="button"
+              (click)="clearFilters()"
+            >
+              <mat-icon>clear_all</mat-icon>
+              Effacer filtres
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Vue en deux colonnes -->
+    <div class="content-layout">
+      
+      <!-- Colonne gauche: Arborescence -->
+      <mat-card class="tree-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>account_tree</mat-icon>
+            Structure hiérarchique
+          </mat-card-title>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="tree-container" [class.compact]="compactView">
+            <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="structure-tree">
+              
+              <!-- Nœud avec enfants (expandable) -->
+              <mat-tree-node *matTreeNodeDef="let node; when: hasChild" class="tree-node expandable-node">
+                <div class="node-content" [style.padding-left.px]="node.level * 20">
+                  
+                  <!-- Bouton d'expansion -->
+                  <button 
+                    mat-icon-button 
+                    (click)="toggleNode(node)"
+                    class="expand-button"
+                    [class.expanded]="node.isExpanded"
+                  >
+                    <mat-icon>
+                      {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+                    </mat-icon>
+                  </button>
+                  
+                  <!-- Icône du nœud -->
+                  <mat-icon 
+                    class="node-icon"
+                    [style.color]="getNodeIconColor(node)"
+                  >
+                    {{ getNodeIcon(node) }}
+                  </mat-icon>
+                  
+                  <!-- Informations du nœud -->
+                  <div class="node-info" (click)="navigateToEntity(node)">
+                    <div class="node-header">
+                      <strong class="node-name">{{ node.nom }}</strong>
+                      <mat-chip class="node-code">{{ node.code }}</mat-chip>
+                    </div>
+                    <div 
+                      class="node-description" 
+                      *ngIf="showMetadata && !compactView"
+                    >
+                      {{ getNodeDescription(node) }}
+                    </div>
+                  </div>
+                  
+                  <!-- Badge de comptage -->
+                  <mat-icon 
+                    *ngIf="node.enfants?.length" 
+                    class="count-badge"
+                    [matBadge]="node.enfants.length"
+                    matBadgeColor="primary"
+                    matBadgeSize="small"
+                  >
+                    {{ node.type === 'famille' ? 'group_work' : 'precision_manufacturing' }}
+                  </mat-icon>
+                </div>
+              </mat-tree-node>
+              
+              <!-- Nœud feuille (sans enfants) -->
+              <mat-tree-node *matTreeNodeDef="let node" class="tree-node leaf-node">
+                <div class="node-content" [style.padding-left.px]="node.level * 20 + 40">
+                  
+                  <!-- Icône du nœud -->
+                  <mat-icon 
+                    class="node-icon"
+                    [style.color]="getNodeIconColor(node)"
+                  >
+                    {{ getNodeIcon(node) }}
+                  </mat-icon>
+                  
+                  <!-- Informations du nœud -->
+                  <div class="node-info" (click)="navigateToEntity(node)">
+                    <div class="node-header">
+                      <strong class="node-name">{{ node.nom }}</strong>
+                      <mat-chip class="node-code">{{ node.code }}</mat-chip>
+                    </div>
+                    <div 
+                      class="node-description" 
+                      *ngIf="showMetadata && !compactView"
+                    >
+                      {{ getNodeDescription(node) }}
+                    </div>
+                  </div>
+                  
+                  <!-- État pour les actifs -->
+                  <mat-chip 
+                    *ngIf="node.type === 'actif' && node.metadata?.etat"
+                    class="etat-chip"
+                    [style.background-color]="getEtatActifColor(node.metadata.etat)"
+                    [style.color]="'white'"
+                  >
+                    <mat-icon>{{ getEtatActifIcon(node.metadata.etat) }}</mat-icon>
+                    {{ node.metadata.etat }}
+                  </mat-chip>
+                </div>
+              </mat-tree-node>
+            </mat-tree>
+            
+            <!-- État vide -->
+            <div *ngIf="dataSource.data.length === 0" class="empty-tree">
+              <mat-icon class="empty-icon">account_tree</mat-icon>
+              <h3>Aucun élément trouvé</h3>
+              <p>Aucun résultat ne correspond aux filtres appliqués</p>
+              <button mat-stroked-button (click)="clearFilters()">
+                <mat-icon>clear_all</mat-icon>
+                Effacer les filtres
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      
+      <!-- Colonne droite: Statistiques par site -->
+      <mat-card class="stats-card" *ngIf="siteStats.length > 0">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>location_on</mat-icon>
+            Statistiques par site
+          </mat-card-title>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="sites-stats">
+            <mat-expansion-panel 
+              *ngFor="let stats of siteStats" 
+              class="site-panel"
+            >
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>location_on</mat-icon>
+                  {{ stats.site }}
+                </mat-panel-title>
+                <mat-panel-description>
+                  {{ stats.totalActifs }} actif(s)
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+              
+              <div class="site-details">
+                <!-- Répartition par état -->
+                <div class="etats-distribution">
+                  <h4>Répartition par état</h4>
+                  <div class="etat-bars">
+                    <div 
+                      *ngFor="let etatOption of etatActifOptions" 
+                      class="etat-bar"
+                      [class.empty]="getActifsParEtat(stats, etatOption.value) === 0"
+                    >
+                      <div class="etat-label">
+                        <mat-icon [style.color]="etatOption.color">{{ etatOption.icon }}</mat-icon>
+                        <span>{{ etatOption.label }}</span>
+                      </div>
+                      <div class="etat-progress">
+                        <div 
+                          class="etat-bar-fill"
+                          [style.width.%]="(getActifsParEtat(stats, etatOption.value) / stats.totalActifs) * 100"
+                          [style.background-color]="etatOption.color"
+                        ></div>
+                      </div>
+                      <span class="etat-count">{{ getActifsParEtat(stats, etatOption.value) }}
+</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Actions pour le site -->
+                <div class="site-actions">
+                  <button 
+                    mat-stroked-button 
+                    size="small"
+                    (click)="filterForm.patchValue({site: stats.site})"
+                  >
+                    <mat-icon>filter_alt</mat-icon>
+                    Filtrer ce site
+                  </button>
+                  <button 
+                    mat-stroked-button 
+                    size="small"
+                    (click)="exportArborescence()"
+                  >
+                    <mat-icon>download</mat-icon>
+                    Exporter
+                  </button>
+                </div>
+              </div>
+            </mat-expansion-panel>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Légende -->
+    <mat-card class="legend-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>help_outline</mat-icon>
+          Légende
+        </mat-card-title>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <div class="legend-content">
+          
+          <!-- Types de nœuds -->
+          <div class="legend-section">
+            <h4>Types d'éléments</h4>
+            <div class="legend-items">
+              <div class="legend-item">
+                <mat-icon style="color: #1976d2;">folder</mat-icon>
+                <span>Famille d'équipements</span>
+              </div>
+              <div class="legend-item">
+                <mat-icon style="color: #388e3c;">group_work</mat-icon>
+                <span>Groupe d'équipements</span>
+              </div>
+              <div class="legend-item">
+                <mat-icon style="color: #666;">precision_manufacturing</mat-icon>
+                <span>Actif individuel</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- États des actifs -->
+          <div class="legend-section">
+            <h4>États des actifs</h4>
+            <div class="legend-items">
+              <div 
+                *ngFor="let etat of etatActifOptions" 
+                class="legend-item"
+              >
+                <mat-icon [style.color]="etat.color">{{ etat.icon }}</mat-icon>
+                <span>{{ etat.label }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Instructions -->
+          <div class="legend-section">
+            <h4>Navigation</h4>
+            <div class="legend-instructions">
+              <p><mat-icon>mouse</mat-icon> Cliquez sur les flèches pour développer/réduire</p>
+              <p><mat-icon>touch_app</mat-icon> Cliquez sur les noms pour naviguer vers l'entité</p>
+              <p><mat-icon>search</mat-icon> Utilisez la recherche pour filtrer en temps réel</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+</div>
