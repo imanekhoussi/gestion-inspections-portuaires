@@ -9,6 +9,7 @@ import { CreateUtilisateurDto, UpdateUtilisateurDto } from './dto/utilisateur.dt
 import { LogHistoriqueService } from '../log-historique/log-historique.service';
 import { TypeAction, TypeEntite } from '../entities/log-historique.entity';
 import * as bcrypt from 'bcrypt';
+import { IsNull } from 'typeorm'; 
 
 @Injectable()
 export class UtilisateurService {
@@ -53,10 +54,11 @@ export class UtilisateurService {
   }
 
   async findAll(): Promise<Utilisateur[]> {
-    return await this.utilisateurRepository.find({
-      select: ['id', 'nom', 'email', 'role', 'telephone', 'photoProfil']
-    });
-  }
+  return await this.utilisateurRepository.find({
+    where: { deletedAt: IsNull() }, // This is the new line
+    select: ['id', 'nom', 'email', 'role', 'telephone', 'photoProfil']
+  });
+}
 
   async findOne(id: number): Promise<Utilisateur> {
     const utilisateur = await this.utilisateurRepository.findOne({
@@ -117,6 +119,6 @@ export class UtilisateurService {
       `Suppression de l'utilisateur ${utilisateur.nom}`
     );
 
-    await this.utilisateurRepository.remove(utilisateur);
+    await this.utilisateurRepository.softRemove(utilisateur);
   }
 }

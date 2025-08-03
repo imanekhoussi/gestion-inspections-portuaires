@@ -163,8 +163,34 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
   pageSize = 10;
   currentPage = 0;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  private _paginator!: MatPaginator;
+  @ViewChild(MatPaginator) set paginator(paginator: MatPaginator) {
+    if (paginator) {
+      this._paginator = paginator;
+      this.dataSource.paginator = this._paginator;
+      this._paginator.page.subscribe(() => {
+        this.filtres.page = this._paginator.pageIndex + 1;
+        this.filtres.limit = this._paginator.pageSize;
+        this.loadInspections();
+      });
+    }
+  }
+
+  private _sort!: MatSort;
+  @ViewChild(MatSort) set sort(sort: MatSort) {
+    if (sort) {
+      this._sort = sort;
+      this.dataSource.sort = this._sort;
+      this._sort.sortChange.subscribe(() => {
+        if (this._paginator) {
+          this._paginator.firstPage();
+        }
+        this.filtres.sortBy = this._sort.active;
+        this.filtres.sortOrder = this._sort.direction as 'asc' | 'desc';
+        this.loadInspections();
+      });
+    }
+  }
 
   constructor(
     private adminService: AdminService,
@@ -180,22 +206,7 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
-
-    // Gestion de la pagination
-    this.paginator.page.subscribe(() => {
-      this.filtres.page = this.paginator.pageIndex + 1;
-      this.filtres.limit = this.paginator.pageSize;
-      this.loadInspections();
-    });
-
-    // Gestion du tri
-    this.sort.sortChange.subscribe(() => {
-      this.filtres.sortBy = this.sort.active;
-      this.filtres.sortOrder = this.sort.direction as 'asc' | 'desc';
-      this.loadInspections();
-    });
+    // La logique est maintenant dans les setters de paginator et sort.
   }
 
   private initForms(): void {
@@ -284,15 +295,23 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
   }
 
   loadInspections(): void {
-    this.adminService.getInspections(this.filtres).subscribe({
-      next: (response: PaginatedResponse<Inspection>) => {
+    this.isLoading = true;
+  
+    const currentFiltres: FiltresInspections = {
+      page: this._paginator ? this._paginator.pageIndex + 1 : 1,
+      limit: this._paginator ? this._paginator.pageSize : 10,
+      sortBy: this._sort ? this._sort.active : 'dateDebut',
+      sortOrder: this._sort ? (this._sort.direction as 'asc' | 'desc') : 'desc',
+    };
+
+    this.adminService.getInspections(currentFiltres).subscribe({
+      next: (response) => {
         this.dataSource.data = response.data;
         this.totalInspections = response.total;
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Erreur lors du chargement des inspections:', error);
-        this.notificationService.showError('Erreur lors du chargement des inspections');
+        this.notificationService.showError('Erreur lors du chargement des inspections.');
         this.isLoading = false;
       }
     });
@@ -393,18 +412,15 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
     const currentActifIds = this.inspectionForm.get('actifIds')?.value || [];
     
     if (checked) {
-      // Ajouter l'actif s'il n'est pas déjà présent
       if (!currentActifIds.includes(actifId)) {
         const newActifIds = [...currentActifIds, actifId];
         this.inspectionForm.patchValue({ actifIds: newActifIds });
       }
     } else {
-      // Retirer l'actif
       const newActifIds = currentActifIds.filter((id: string) => id !== actifId);
       this.inspectionForm.patchValue({ actifIds: newActifIds });
     }
     
-    // Déclencher la validation
     this.inspectionForm.get('actifIds')?.updateValueAndValidity();
   }
 
@@ -528,6 +544,10 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
   }
 
   getActifsNoms(actifIds: string[]): string[] {
+    // MODIFICATION ICI
+    if (!actifIds || actifIds.length === 0) {
+      return [];
+    }
     return actifIds.map(id => {
       const actif = this.actifs.find(a => a.id === id);
       return actif ? actif.nom : 'Actif inconnu';
@@ -549,8 +569,8 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
   applyFilters(): void {
     this.filtres.page = 1;
     this.currentPage = 0;
-    if (this.paginator) {
-      this.paginator.firstPage();
+    if (this._paginator) {
+      this._paginator.firstPage();
     }
     this.loadInspections();
   }

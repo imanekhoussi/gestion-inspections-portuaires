@@ -13,7 +13,7 @@ import { RoleUtilisateur } from '../entities/utilisateur.entity';
 @ApiTags('Utilisateurs')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('utilisateurs')
+@Controller('admin/utilisateurs')
 export class UtilisateurController {
   constructor(private readonly utilisateurService: UtilisateurService) {}
 

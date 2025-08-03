@@ -13,11 +13,23 @@ export class InspectionService {
    
   ) {}
 
-  async findAll(): Promise<Inspection[]> {
-    return this.inspectionRepository.find({
-      relations: ['typeInspection', 'actifs', 'createur', 'validateur', 'livrables'],
-    });
-  }
+  async findAll(options: { page: number; limit: number }): Promise<any> {
+  const { page, limit } = options;
+  const [data, total] = await this.inspectionRepository.findAndCount({
+    take: limit,
+    skip: (page - 1) * limit,
+    relations: ['typeInspection', 'actifs', 'createur', 'validateur', 'livrables'],
+    order: { id: 'DESC' } // Optional: order by newest
+  });
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    lastPage: Math.ceil(total / limit)
+  };
+}
 
   async findByCalendar(startDate: Date, endDate: Date): Promise<Inspection[]> {
     return this.inspectionRepository

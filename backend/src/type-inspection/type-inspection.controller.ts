@@ -13,7 +13,7 @@ import { RoleUtilisateur } from '../entities/utilisateur.entity';
 @ApiTags('Types d\'inspection')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('types-inspection')
+@Controller('admin/types-inspection')
 export class TypeInspectionController {
   constructor(private readonly typeInspectionService: TypeInspectionService) {}
 
