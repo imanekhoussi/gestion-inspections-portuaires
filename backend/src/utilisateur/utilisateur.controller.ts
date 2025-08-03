@@ -7,8 +7,9 @@ import { CreateUtilisateurDto, UpdateUtilisateurDto } from './dto/utilisateur.dt
 import { Utilisateur } from '../entities/utilisateur.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleUtilisateur } from '../entities/utilisateur.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
+
 
 @ApiTags('Utilisateurs')
 @ApiBearerAuth()

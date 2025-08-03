@@ -6,7 +6,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
 
 // Utilisation directe de l'URL API au lieu d'environment
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3000/';
 
 import {
   // Entités
