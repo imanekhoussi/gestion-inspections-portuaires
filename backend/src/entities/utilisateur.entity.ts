@@ -1,5 +1,6 @@
 // src/entities/utilisateur.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { DeleteDateColumn } from 'typeorm';
 
 export enum RoleUtilisateur {
   OPERATEUR = 'operateur',
@@ -29,4 +30,6 @@ export class Utilisateur {
 
   @Column({ name: 'photo_profil', type: 'varchar', length: 255, nullable: true })
   photoProfil: string;
+  @DeleteDateColumn()
+deletedAt?: Date;
 }

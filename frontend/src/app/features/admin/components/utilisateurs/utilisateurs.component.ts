@@ -54,10 +54,11 @@ export class UtilisateursComponent implements OnInit, AfterViewInit {
   selectedUser: Utilisateur | null = null;
   showForm = false;
 
+  
   roles = [
     { value: 'admin', label: 'Administrateur' },
-    { value: 'inspecteur', label: 'Inspecteur' },
-    { value: 'viewer', label: 'Visualiseur' }
+    { value: 'operateur', label: 'Opérateur' },
+    { value: 'maitre_ouvrage', label: 'Maître d\'ouvrage' }
   ];
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;

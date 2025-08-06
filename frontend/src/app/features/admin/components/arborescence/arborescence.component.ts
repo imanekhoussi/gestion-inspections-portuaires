@@ -17,6 +17,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { NestedTreeControl } from '@angular/cdk/tree';
 import { MatTreeNestedDataSource } from '@angular/material/tree';
+import { MatInputModule } from '@angular/material/input';
 
 import { AdminService } from '../../services/admin.service';
 import { NotificationAdminService } from '../../services/notification-admin.service';
@@ -51,6 +52,7 @@ interface SiteStats {
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
+    MatInputModule,
     MatSelectModule,
     MatSlideToggleModule,
     MatTooltipModule,

@@ -277,4 +277,31 @@
       }
     }
   }
+.admin-return-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-return-button mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.refresh-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+@media (max-width: 768px) {
+  .admin-return-button {
+    position: static;
+    margin-bottom: 1rem;
+  }
+}
 }

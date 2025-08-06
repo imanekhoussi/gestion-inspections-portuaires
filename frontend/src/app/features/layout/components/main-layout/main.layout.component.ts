@@ -54,30 +54,50 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   // Initialiser isHandset$ dans le constructeur pour éviter l'erreur
   isHandset$!: Observable<boolean>;
 
-  navigationItems: NavigationItem[] = [
+   navigationItems: NavigationItem[] = [
     {
       label: 'Tableau de Bord',
-      route: '/dashboard',
-      icon: 'dashboard'
+      icon: 'dashboard',
+      route: '/dashboard'
     },
     {
       label: 'Actifs',
-      route: '/actifs',
       icon: 'location_on',
+      route: '/actifs',
       children: [
-        { label: 'Cartographie', route: '/actifs/map', icon: 'map' },
-        { label: 'Liste', route: '/actifs/list', icon: 'list' }
+        {
+          label: 'Cartographie',
+          icon: 'map',
+          route: '/actifs/map'
+        },
+        {
+          label: 'Liste',
+          icon: 'list',
+          route: '/actifs/list'
+        }
+      ]
+    },
+    {
+      label: 'Familles',
+      icon: 'folder',
+      route: '/familles',
+      children: [
+        {
+          label: 'Liste des Familles',
+          icon: 'folder_open',
+          route: '/familles/list'
+        }
       ]
     },
     {
       label: 'Inspections',
-      route: '/inspections',
-      icon: 'assignment'
+      icon: 'assignment',
+      route: '/inspections'
     },
     {
       label: 'Planning',
-      route: '/planning',
-      icon: 'event'
+      icon: 'event',
+      route: '/planning'
     }
   ];
 

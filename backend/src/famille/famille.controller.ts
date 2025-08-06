@@ -12,7 +12,7 @@ import { RoleUtilisateur } from '../entities/utilisateur.entity';
 @ApiTags('Familles')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('familles')
+@Controller('admin/familles')
 export class FamilleController {
   constructor(private readonly familleService: FamilleService) {}
 

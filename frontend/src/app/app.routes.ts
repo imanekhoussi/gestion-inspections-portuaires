@@ -42,6 +42,29 @@ export const routes: Routes = [
           }
         ]
       },
+{
+        path: 'familles',
+        children: [
+          {
+            path: '',
+            redirectTo: 'list',
+            pathMatch: 'full'
+          },
+          {
+            path: 'list',
+            loadComponent: () => import('./features/famille/components/familles-list/familles-list.components').then(m => m.FamillesListComponent)
+          },
+          {
+            path: ':familleId/groupes',
+            loadComponent: () => import('./features/famille/components/groupes-list/groupes-list.component').then(m => m.GroupesListComponent)
+          },
+          {
+            path: 'groupes/:groupeId/actifs',
+            loadComponent: () => import('./features/famille/components/actifs-by-groupe/actifs-by-groupe.component').then(m => m.ActifsByGroupeComponent)
+          }
+        ]
+      },
+
       {
         path: 'inspections',
         loadComponent: () => import('./features/inspections/components/inspections-list/inspections-list.component').then(m => m.InspectionsListComponent)

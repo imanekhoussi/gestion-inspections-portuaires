@@ -8,7 +8,7 @@ import { FamilleService } from './famille/famille.service';
 @ApiTags('Arborescence')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('arborescence')
+@Controller('admin/arborescence')
 export class ArborescenceController {
   constructor(private readonly familleService: FamilleService) {}
 

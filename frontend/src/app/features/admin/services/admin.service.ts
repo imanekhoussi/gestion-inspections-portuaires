@@ -6,7 +6,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
 
 // Utilisation directe de l'URL API au lieu d'environment
-const API_URL = 'http://localhost:3000/';
+const API_URL = 'http://localhost:3000';
 
 import {
   // Entités
@@ -61,9 +61,9 @@ export class AdminService {
       });
     }
 
-    return this.http.get<ApiResponse<Utilisateur[]>>(`${this.apiUrl}/utilisateurs`, { params })
+    
+    return this.http.get<Utilisateur[]>(`${this.apiUrl}/utilisateurs`, { params })
       .pipe(
-        map(response => response.data!),
         tap(users => this.utilisateursSubject.next(users))
       );
   }
@@ -76,10 +76,10 @@ export class AdminService {
       );
   }
 
+  
   updateUtilisateur(id: string, data: UpdateUtilisateurDto): Observable<Utilisateur> {
-    return this.http.put<ApiResponse<Utilisateur>>(`${this.apiUrl}/utilisateurs/${id}`, data)
+    return this.http.patch<Utilisateur>(`${this.apiUrl}/utilisateurs/${id}`, data)
       .pipe(
-        map(response => response.data!),
         tap(() => this.refreshUtilisateurs())
       );
   }
@@ -97,10 +97,10 @@ export class AdminService {
   }
 
   // ===== FAMILLES =====
+ 
   getFamilles(): Observable<Famille[]> {
-    return this.http.get<ApiResponse<Famille[]>>(`${this.apiUrl}/familles`)
+    return this.http.get<Famille[]>(`${this.apiUrl}/familles`)
       .pipe(
-        map(response => response.data!),
         tap(familles => this.famillesSubject.next(familles))
       );
   }
@@ -145,11 +145,10 @@ export class AdminService {
       });
     }
 
-    return this.http.get<ApiResponse<Groupe[]>>(`${this.apiUrl}/groupe`, { params })
-      .pipe(
-        map(response => response.data!),
-        tap(groupes => this.groupesSubject.next(groupes))
-      );
+    return this.http.get<Groupe[]>(`${this.apiUrl}/groupes`, { params })
+    .pipe(
+      tap(groupes => this.groupesSubject.next(groupes))
+    );
   }
 
   createGroupe(data: CreateGroupeDto): Observable<Groupe> {
@@ -192,11 +191,10 @@ export class AdminService {
       });
     }
 
-    return this.http.get<ApiResponse<TypeInspection[]>>(`${this.apiUrl}/types-inspection`, { params })
-      .pipe(
-        map(response => response.data!),
-        tap(types => this.typesInspectionSubject.next(types))
-      );
+    return this.http.get<TypeInspection[]>(`${this.apiUrl}/types-inspection`, { params })
+    .pipe(
+      tap(types => this.typesInspectionSubject.next(types))
+    );
   }
 
   createTypeInspection(data: CreateTypeInspectionDto): Observable<TypeInspection> {
@@ -229,25 +227,21 @@ export class AdminService {
 
   // ===== INSPECTIONS =====
   getInspections(filtres?: FiltresInspections): Observable<PaginatedResponse<Inspection>> {
-    let params = new HttpParams();
-    if (filtres) {
-      Object.keys(filtres).forEach(key => {
-        const value = (filtres as any)[key];
-        if (value !== undefined && value !== null && value !== '') {
-          if (value instanceof Date) {
-            params = params.set(key, value.toISOString());
-          } else {
-            params = params.set(key, value.toString());
-          }
-        }
-      });
-    }
-
-    return this.http.get<PaginatedResponse<Inspection>>(`${this.apiUrl}/inspections`, { params })
-      .pipe(
-        tap(response => this.inspectionsSubject.next(response.data))
-      );
+  let params = new HttpParams();
+  if (filtres) {
+    Object.keys(filtres).forEach(key => {
+      const value = (filtres as any)[key];
+      if (value !== undefined && value !== null && value !== '') {
+        params = params.set(key, value.toString());
+      }
+    });
   }
+
+  return this.http.get<PaginatedResponse<Inspection>>(`${this.apiUrl}/inspections`, { params })
+    .pipe(
+      tap(response => this.inspectionsSubject.next(response.data))
+    );
+}
 
   getInspection(id: string): Observable<Inspection> {
     return this.http.get<ApiResponse<Inspection>>(`${this.apiUrl}/inspections/${id}`)
@@ -304,14 +298,16 @@ export class AdminService {
       });
     }
 
-    return this.http.get<PaginatedResponse<Actif>>(`${this.apiUrl}/actifs`, { params })
+    // MODIFICATION: Utilisation de API_URL au lieu de this.apiUrl pour retirer le préfixe /admin
+    return this.http.get<PaginatedResponse<Actif>>(`${API_URL}/actifs`, { params })
       .pipe(
         tap(response => this.actifsSubject.next(response.data))
       );
   }
 
   createActif(data: CreateActifDto): Observable<Actif> {
-    return this.http.post<ApiResponse<Actif>>(`${this.apiUrl}/actifs`, data)
+    // MODIFICATION: Utilisation de API_URL au lieu de this.apiUrl
+    return this.http.post<ApiResponse<Actif>>(`${API_URL}/actifs`, data)
       .pipe(
         map(response => response.data!),
         tap(() => this.refreshActifs())
@@ -319,7 +315,8 @@ export class AdminService {
   }
 
   updateActif(id: string, data: UpdateActifDto): Observable<Actif> {
-    return this.http.put<ApiResponse<Actif>>(`${this.apiUrl}/actifs/${id}`, data)
+    // MODIFICATION: Utilisation de API_URL au lieu de this.apiUrl
+    return this.http.put<ApiResponse<Actif>>(`${API_URL}/actifs/${id}`, data)
       .pipe(
         map(response => response.data!),
         tap(() => this.refreshActifs())
@@ -327,7 +324,8 @@ export class AdminService {
   }
 
   deleteActif(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/actifs/${id}`)
+    // MODIFICATION: Utilisation de API_URL au lieu de this.apiUrl
+    return this.http.delete<ApiResponse<void>>(`${API_URL}/actifs/${id}`)
       .pipe(
         map(() => void 0),
         tap(() => this.refreshActifs())

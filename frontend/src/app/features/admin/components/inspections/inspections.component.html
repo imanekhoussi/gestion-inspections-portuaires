@@ -484,19 +484,23 @@
               <td mat-cell *matCellDef="let inspection">
                 <div class="actifs-cell">
                   <mat-chip class="actifs-count">
-                    {{ inspection.actifIds.length }}
+                    <!-- MODIFICATION ICI -->
+                    {{ inspection.actifIds?.length || 0 }}
                   </mat-chip>
-                  <div class="actifs-preview" *ngIf="inspection.actifIds.length > 0">
+                  <!-- MODIFICATION ICI -->
+                  <div class="actifs-preview" *ngIf="inspection.actifIds?.length > 0">
                     <small *ngFor="let nom of getActifsNoms(inspection.actifIds).slice(0, 2)">
                       {{ nom }}
                     </small>
-                    <small *ngIf="inspection.actifIds.length > 2">
+                    <!-- MODIFICATION ICI -->
+                    <small *ngIf="inspection.actifIds?.length > 2">
                       +{{ inspection.actifIds.length - 2 }} autres
                     </small>
                   </div>
                 </div>
               </td>
             </ng-container>
+
 
             <!-- Colonne Inspecteur -->
             <ng-container matColumnDef="inspecteur">

@@ -13,7 +13,7 @@ import { RoleUtilisateur } from '../entities/utilisateur.entity';
 @ApiTags('Groupes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('groupes')
+@Controller('admin/groupes')
 export class GroupeController {
   constructor(private readonly groupeService: GroupeService) {}
 

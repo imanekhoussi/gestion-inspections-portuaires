@@ -1,11 +1,25 @@
-// src/app/features/dashboard/components/dashboard/dashboard.component.html
 <div class="dashboard-container">
   <div class="dashboard-header">
     <h1>Tableau de Bord</h1>
     <p class="dashboard-subtitle">Vue d'ensemble des inspections portuaires</p>
+    
+    <!-- Bouton de retour admin -->
     <button 
-      mat-fab 
-      color="primary" 
+      *ngIf="isAdmin()"
+      mat-raised-button
+      color="accent"
+      class="admin-return-button"
+      (click)="goToAdminInterface()"
+      matTooltip="Retour à l'interface d'administration"
+    >
+      <mat-icon>admin_panel_settings</mat-icon>
+      Interface Administration
+    </button>
+
+    <!-- Bouton refresh -->
+    <button
+      mat-fab
+      color="primary"
       class="refresh-button"
       (click)="refreshData()"
       [disabled]="isLoading"

@@ -4,16 +4,21 @@ import { InspectionService } from './inspection.service';
 import { CreateInspectionDto, UpdateInspectionDto, CloturerInspectionDto, ValiderInspectionDto, RejeterInspectionDto } from './dto/inspection.dto';
 import { Inspection } from '../entities/inspection.entity';
 
+
 @ApiTags('Inspections') // Section "Inspections" dans Swagger
-@Controller('inspections')
+@Controller('admin/inspections')
 export class InspectionController {
   constructor(private readonly inspectionService: InspectionService) {}
 
   @Get()
   @ApiOperation({ summary: 'Récupérer toutes les inspections' })
-  @ApiResponse({ status: 200, description: 'Liste de toutes les inspections.', type: [Inspection] })
-  findAll() {
-    return this.inspectionService.findAll();
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Numéro de page' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Éléments par page' })
+  findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10
+  ) {
+    return this.inspectionService.findAll({ page: +page, limit: +limit });
   }
 
   @Get('calendar')

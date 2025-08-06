@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-
+import { Router } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
 import { DashboardKpis } from '../../../../core/models/dashboard.interface';
 import { KpiCardComponent } from '../kpi-card/kpi-card.component';
@@ -30,7 +30,8 @@ export class DashboardComponent implements OnInit {
   isLoading = true;
   error: string | null = null;
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private dashboardService: DashboardService, 
+    private router: Router,) {}
 
   ngOnInit(): void {
     this.loadKpis();
@@ -56,4 +57,13 @@ export class DashboardComponent implements OnInit {
   refreshData(): void {
     this.loadKpis();
   }
+  isAdmin(): boolean {
+  // Vérifiez le rôle de l'utilisateur - adaptez selon votre système d'auth
+  const userRole = localStorage.getItem('userRole'); 
+  return userRole === 'admin';
+}
+
+  goToAdminInterface(): void {
+  this.router.navigate(['/admin/dashboard']);
+}
 }
