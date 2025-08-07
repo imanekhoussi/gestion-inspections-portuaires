@@ -1,5 +1,6 @@
 // src/entities/actif.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinColumn } from 'typeorm';
+import { Point } from 'geojson'; 
 import { Groupe } from './groupe.entity';
 import { Inspection } from './inspection.entity';
 
@@ -29,12 +30,12 @@ export class Actif {
   @Column({ name: 'indice_etat', type: 'int', default: 1 })
   indiceEtat: number;
 
-  // ✅ GÉOMÉTRIE SIMPLIFIÉE (JSON au lieu de PostGIS)
-  @Column({ type: 'json', nullable: true })
-  geometry: {
-    type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
-  } | null;
+  @Column({
+    type: 'geometry',
+    srid: 26191, // Merchich / Nord Maroc coordinate system
+    nullable: true,
+  })
+  geometry: Point | null;
 
   @ManyToOne(() => Groupe, groupe => groupe.actifs)
   @JoinColumn({ name: 'id_groupe' })

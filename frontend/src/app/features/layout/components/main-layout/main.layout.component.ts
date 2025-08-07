@@ -28,77 +28,39 @@ export interface NavigationItem {
   selector: 'app-main-layout',
   standalone: true,
   imports: [
-    CommonModule,
-    AsyncPipe,
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    MatSidenavModule,
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule,
-    MatListModule,
-    MatMenuModule,
-    MatDividerModule,
-    MatExpansionModule
+    CommonModule, AsyncPipe, RouterOutlet, RouterLink, RouterLinkActive,
+    MatSidenavModule, MatToolbarModule, MatButtonModule, MatIconModule,
+    MatListModule, MatMenuModule, MatDividerModule, MatExpansionModule
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss']
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {
   @ViewChild('drawer') drawer!: MatSidenav;
-  
+
   private destroy$ = new Subject<void>();
   currentUser$: Observable<User | null>;
-  
-  // Initialiser isHandset$ dans le constructeur pour éviter l'erreur
-  isHandset$!: Observable<boolean>;
+  isHandset$: Observable<boolean>;
 
-   navigationItems: NavigationItem[] = [
+  // ✅ STEP 1: Add this new property to hold our dynamic list.
+  navigationItems$!: Observable<NavigationItem[]>;
+
+  // This is your original, correct list of navigation items.
+  private baseNavigationItems: NavigationItem[] = [
+    { label: 'Tableau de Bord', icon: 'dashboard', route: '/dashboard' },
     {
-      label: 'Tableau de Bord',
-      icon: 'dashboard',
-      route: '/dashboard'
-    },
-    {
-      label: 'Actifs',
-      icon: 'location_on',
-      route: '/actifs',
+      label: 'Actifs', icon: 'location_on', route: '/actifs',
       children: [
-        {
-          label: 'Cartographie',
-          icon: 'map',
-          route: '/actifs/map'
-        },
-        {
-          label: 'Liste',
-          icon: 'list',
-          route: '/actifs/list'
-        }
+        { label: 'Cartographie', icon: 'map', route: '/actifs/map' },
+        { label: 'Liste', icon: 'list', route: '/actifs/list' }
       ]
     },
     {
-      label: 'Familles',
-      icon: 'folder',
-      route: '/familles',
-      children: [
-        {
-          label: 'Liste des Familles',
-          icon: 'folder_open',
-          route: '/familles/list'
-        }
-      ]
+      label: 'Familles', icon: 'folder', route: '/familles',
+      children: [{ label: 'Liste des Familles', icon: 'folder_open', route: '/familles/list' }]
     },
-    {
-      label: 'Inspections',
-      icon: 'assignment',
-      route: '/inspections'
-    },
-    {
-      label: 'Planning',
-      icon: 'event',
-      route: '/planning'
-    }
+    { label: 'Inspections', icon: 'assignment', route: '/inspections' },
+    { label: 'Planning', icon: 'event', route: '/planning' }
   ];
 
   constructor(
@@ -107,56 +69,38 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     private router: Router
   ) {
     this.currentUser$ = this.authService.currentUser$;
-    
     this.isHandset$ = this.breakpointObserver.observe(Breakpoints.Handset)
-      .pipe(
-        map(result => result.matches),
-        shareReplay()
-      );
+      .pipe(map(result => result.matches), shareReplay());
   }
 
   ngOnInit(): void {
-    // Vérifier l'authentification au démarrage
+    // ✅ STEP 2: Add this logic inside ngOnInit.
+    // This creates the dynamic menu correctly.
+    this.navigationItems$ = this.currentUser$.pipe(
+      map(user => {
+        if (user && user.role === 'admin') {
+          const adminItem: NavigationItem = {
+            label: 'Administration',
+            route: '/admin',
+            icon: 'admin_panel_settings'
+          };
+          // If the user is an admin, return the base list with the admin item.
+          return [...this.baseNavigationItems, adminItem];
+        }
+        // Otherwise, return just the base list.
+        return this.baseNavigationItems;
+      })
+    );
+
+    // This part stays the same.
     this.authService.isAuthenticated$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(isAuth => {
-      if (!isAuth) {
-        this.router.navigate(['/login']);
-      }
+      if (!isAuth) this.router.navigate(['/login']);
     });
   }
 
-  // CORRECTION: Déplacer le getter en dehors de ngOnInit et corriger la logique
-  get navigationItemsWithAdmin(): NavigationItem[] {
-    const baseItems = [...this.navigationItems]; // Créer une copie pour éviter les mutations
-    
-    // Vérifier si l'utilisateur actuel est admin
-    // Note: Cette approche synchrone peut ne pas fonctionner avec les Observables
-    // Une meilleure approche serait d'utiliser un BehaviorSubject ou une propriété reactive
-    this.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
-      if (user && user.role === 'admin') {
-        const adminItem: NavigationItem = {
-          label: 'Administration',
-          route: '/admin',
-          icon: 'admin_panel_settings',
-          children: [
-            { label: 'Dashboard Admin', route: '/admin/dashboard', icon: 'dashboard' },
-            { label: 'Utilisateurs', route: '/admin/utilisateurs', icon: 'people' },
-            { label: 'Types Inspection', route: '/admin/types-inspection', icon: 'rule' },
-            { label: 'Gestion Inspections', route: '/admin/inspections', icon: 'assignment' },
-            { label: 'Arborescence', route: '/admin/arborescence', icon: 'account_tree' }
-          ]
-        };
-        
-        // Ajouter l'item admin s'il n'existe pas déjà
-        if (!baseItems.find(item => item.route === '/admin')) {
-          baseItems.push(adminItem);
-        }
-      }
-    });
-    
-    return baseItems;
-  }
+  // ✅ STEP 3: The broken get navigationItemsWithAdmin() function has been completely removed.
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -171,12 +115,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     return this.router.url.startsWith(route);
   }
 
-  // Méthode pour gérer la fermeture du drawer sur mobile
   closeDrawerIfMobile(): void {
     this.isHandset$.pipe(takeUntil(this.destroy$)).subscribe(isHandset => {
-      if (isHandset && this.drawer) {
-        this.drawer.close();
-      }
+      if (isHandset && this.drawer) this.drawer.close();
     });
   }
 }

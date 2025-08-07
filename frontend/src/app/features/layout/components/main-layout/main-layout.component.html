@@ -20,7 +20,7 @@
 
     <!-- Navigation Menu -->
     <mat-nav-list class="navigation-list">
-      <ng-container *ngFor="let item of navigationItems">
+      <ng-container *ngFor="let item of navigationItems$ | async">
         <!-- Menu items without children -->
         <a 
           *ngIf="!item.children" 

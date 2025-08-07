@@ -16,12 +16,15 @@ export class ActifService {
 
   async create(createActifDto: CreateActifDto, createdBy: number): Promise<Actif> {
     const { latitude, longitude, ...actifData } = createActifDto;
-    
-    const geometry: { type: 'Point'; coordinates: [number, number] } | null = 
-      (latitude && longitude) ? {
-        type: 'Point',
-        coordinates: [longitude, latitude]
-      } : null;
+
+    // This part now needs to transform coordinates before saving
+    let geometry = null;
+    if (latitude && longitude) {
+        const result = await this.actifRepository.query(
+            `SELECT ST_Transform(ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326), 26191) as geom`
+        );
+        geometry = result[0].geom;
+    }
 
     const actif = this.actifRepository.create({
       ...actifData,
@@ -53,6 +56,40 @@ export class ActifService {
       relations: ['groupe', 'groupe.famille']
     });
   }
+  
+  async getActifsAsGeoJSON(): Promise<any> {
+    const query = this.actifRepository
+      .createQueryBuilder('actif')
+      .select([
+        'actif.id as id',
+        'actif.nom as nom',
+        'actif.site as site',
+        'actif.zone as zone',
+        'actif.indiceEtat as "indiceEtat"',
+        'ST_AsGeoJSON(ST_Transform(actif.geometry, 4326)) as geometry',
+      ])
+      .where('actif.geometry IS NOT NULL');
+
+    const results = await query.getRawMany();
+
+    const features = results.map((item: any) => ({
+      type: 'Feature',
+      geometry: JSON.parse(item.geometry),
+      properties: {
+        id: item.id,
+        nom: item.nom,
+        site: item.site,
+        zone: item.zone,
+        indiceEtat: item.indiceEtat,
+      },
+    }));
+
+    return {
+      type: 'FeatureCollection',
+      features,
+    };
+  }
+
 
   async findOne(id: number): Promise<Actif> {
     const actif = await this.actifRepository.findOne({
@@ -157,38 +194,7 @@ export class ActifService {
     return updatedActif;
   }
 
-  async findByCoordinates(lat: number, lng: number, radius: number): Promise<Actif[]> {
-    const actifs = await this.findAll();
-
-    return actifs.filter(actif => {
-      if (!actif.geometry || !actif.geometry.coordinates) return false;
-      
-      const [actifLng, actifLat] = actif.geometry.coordinates;
-      const distance = this.calculateDistance(lat, lng, actifLat, actifLng);
-      
-      return distance <= radius;
-    });
-  }
-
-  async getMapData(): Promise<any[]> {
-    const actifs = await this.findAll();
-
-    return actifs
-      .filter(actif => actif.geometry && actif.geometry.coordinates)
-      .map(actif => ({
-        id: actif.id,
-        nom: actif.nom,
-        site: actif.site,
-        zone: actif.zone,
-        indiceEtat: actif.indiceEtat,
-        coordinates: actif.geometry ? actif.geometry.coordinates : [0, 0],
-        groupe: actif.groupe?.nom,
-        famille: actif.groupe?.famille?.nom,
-        status: actif.indiceEtat >= 4 ? 'good' : 
-                actif.indiceEtat >= 2 ? 'warning' : 'critical'
-      }));
-  }
-
+ 
   async getStatisticsByZone(): Promise<any[]> {
     const result = await this.actifRepository
       .createQueryBuilder('actif')
@@ -213,27 +219,21 @@ export class ActifService {
     }));
   }
 
-  // ✅ UNE SEULE MÉTHODE calculateTotalDistance
-  private calculateTotalDistance(actifs: Actif[]): number {
-    let totalDistance = 0;
-    
-    for (let i = 0; i < actifs.length - 1; i++) {
-      if (actifs[i].geometry?.coordinates && actifs[i + 1].geometry?.coordinates) {
-        const coords1 = actifs[i].geometry!.coordinates;
-        const coords2 = actifs[i + 1].geometry!.coordinates;
-        
-        totalDistance += this.calculateDistance(
-          coords1[1], coords1[0], // lat1, lng1
-          coords2[1], coords2[0]  // lat2, lng2
-        );
-      }
-    }
-    
-    return totalDistance;
+  async findByCoordinates(lat: number, lng: number, radius: number): Promise<Actif[]> {
+    const actifs = await this.findAll();
+
+    return actifs.filter(actif => {
+      if (!actif.geometry || !actif.geometry.coordinates) return false;
+      
+      const [actifLng, actifLat] = actif.geometry.coordinates;
+      const distance = this.calculateDistance(lat, lng, actifLat, actifLng);
+      
+      return distance <= radius;
+    });
   }
 
   private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const R = 6371000; // Rayon de la Terre en mètres
+    const R = 6371000; // Earth's radius in meters
     const dLat = this.toRadians(lat2 - lat1);
     const dLng = this.toRadians(lng2 - lng1);
     

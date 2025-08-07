@@ -30,11 +30,11 @@ export class ActifController {
     return this.actifService.findAll();
   }
 
-  @Get('map-data')
-  @ApiOperation({ summary: 'Données cartographiques pour affichage sur carte interactive' })
-  @ApiResponse({ status: 200, description: 'Points d\'actifs avec coordonnées pour la carte' })
-  getMapData() {
-    return this.actifService.getMapData();
+  @Get('geojson')
+  @ApiOperation({ summary: 'Récupérer les actifs au format GeoJSON pour la cartographie' })
+  @ApiResponse({ status: 200, description: 'A GeoJSON FeatureCollection of the assets.' })
+  getActifsGeoJSON(): Promise<any> {
+    return this.actifService.getActifsAsGeoJSON();
   }
 
   @Get('by-coordinates')
