@@ -3,10 +3,13 @@
   height: 100vh;
 }
 
+/* --- Main Sidenav Layout --- */
 .sidenav {
   width: 280px;
   background: #fafafa;
   border-right: 1px solid #e0e0e0;
+
+  
 }
 
 .sidenav-header {
@@ -118,11 +121,8 @@
 }
 
 .sidenav-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
+ background: white;
+  border-top: 1px solid #e0e0e0; /* Adds a nice separator line */
   
   .user-info {
     display: flex;
@@ -227,4 +227,16 @@
       font-size: 1.1rem;
     }
   }
+}
+/* This is the wrapper div you add in the HTML */
+.sidenav-content-wrapper {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto; /* Header, Content, Footer */
+}
+
+/* This makes the list scroll correctly */
+.navigation-list {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
