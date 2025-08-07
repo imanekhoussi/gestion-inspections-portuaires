@@ -1,0 +1,104 @@
+.actifs-container {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background-color: #f5f5f5;
+}
+
+.actifs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.header-title h2 {
+  margin: 0 0 8px 0;
+  color: #1976d2;
+  font-weight: 400;
+  font-size: 2rem;
+}
+
+.header-subtitle {
+  margin: 0;
+  color: #666;
+  font-size: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.search-card {
+  margin-bottom: 24px;
+}
+
+.search-field {
+  width: 400px;
+  max-width: 100%;
+}
+
+.actif-name strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.actif-name small {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  font-style: italic;
+}
+
+.site-info, .zone-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.site-icon, .zone-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+  color: #666;
+}
+
+.etat-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.etat-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.etat-good { background-color: #e8f5e8; color: #4caf50; }
+.etat-average { background-color: #fff3e0; color: #ff9800; }
+.etat-poor { background-color: #ffebee; color: #f44336; }
+
+.etat-score {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.rotating {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

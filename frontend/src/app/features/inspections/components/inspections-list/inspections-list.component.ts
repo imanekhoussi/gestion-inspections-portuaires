@@ -88,46 +88,59 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
   }
 
   loadInspections(): void {
-    this.isLoading = true;
-    this.error = null;
+  this.isLoading = true;
+  this.error = null;
 
-    this.inspectionsService.getInspections().subscribe({
-      next: (inspections: any[]) => {
-        // Transformer les données API en format attendu par le template
-        const transformedInspections: InspectionDisplay[] = inspections.map(inspection => ({
-          ...inspection,
-          // Extraire le nom du premier actif
-          actifNom: inspection.actifs?.[0]?.nom || 'Aucun actif',
-          // Extraire le nom du créateur/inspecteur
-          inspecteurNom: inspection.createur?.nom || 'Non assigné',
-          // Convertir dateDebut en Date si c'est une string
-          datePrevue: typeof inspection.dateDebut === 'string' ? new Date(inspection.dateDebut) : inspection.dateDebut,
-          // Mapper l'état vers statut et convertir en format attendu
-          statut: this.mapEtatToStatut(inspection.etat),
-          // Ajouter une priorité par défaut si elle n'existe pas
-          priorite: inspection.priorite || 'normale'
-        }));
+  // The type <any> is used because the backend returns a paginated object.
+  this.inspectionsService.getInspections().subscribe({
+    next: (response: any) => { // Renamed to 'response' for clarity
+      // Access the 'data' property which contains the array of inspections
+      const inspectionsArray = response.data;
 
-        this.dataSource.data = transformedInspections;
+      // Add a check to ensure the data is actually an array
+      if (!Array.isArray(inspectionsArray)) {
+        console.error('Invalid response format: Expected an array of inspections.', response);
+        this.error = 'Le format de la réponse du serveur est invalide.';
         this.isLoading = false;
-        
-        this.snackBar.open(`${transformedInspections.length} inspections chargées`, 'Fermer', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des inspections:', error);
-        this.error = 'Erreur lors du chargement des inspections';
-        this.isLoading = false;
-        
-        this.snackBar.open('Erreur lors du chargement', 'Fermer', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
+        return;
       }
-    });
-  }
+
+      // Map the correct array
+      const transformedInspections: InspectionDisplay[] = inspectionsArray.map(inspection => ({
+        ...inspection,
+        actifNom: inspection.actifs?.[0]?.nom || 'Aucun actif',
+        inspecteurNom: inspection.createur?.nom || 'Non assigné',
+        datePrevue: typeof inspection.dateDebut === 'string' ? new Date(inspection.dateDebut) : inspection.dateDebut,
+        statut: this.mapEtatToStatut(inspection.etat),
+        priorite: inspection.priorite || 'normale'
+      }));
+
+      this.dataSource.data = transformedInspections;
+      
+      // (Recommended) Update the paginator's total length from the response
+      if (this.paginator) {
+        this.paginator.length = response.total;
+      }
+
+      this.isLoading = false;
+      
+      this.snackBar.open(`${transformedInspections.length} inspections chargées sur ${response.total}`, 'Fermer', {
+        duration: 3000,
+        panelClass: ['success-snackbar']
+      });
+    },
+    error: (error) => {
+      console.error('Erreur lors du chargement des inspections:', error);
+      this.error = 'Erreur lors du chargement des inspections. Vérifiez la console pour plus de détails.';
+      this.isLoading = false;
+      
+      this.snackBar.open('Erreur lors du chargement', 'Fermer', {
+        duration: 5000,
+        panelClass: ['error-snackbar']
+      });
+    }
+  });
+}
 
   // Mapper les états de l'API vers les enum InspectionStatut
   private mapEtatToStatut(etat: string): string {

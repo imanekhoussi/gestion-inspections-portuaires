@@ -8,11 +8,13 @@ import { Inspection } from '../../../core/models/inspection.interface';
   providedIn: 'root'
 })
 export class InspectionsService {
-  private readonly API_URL = environment.apiUrl;
+  // ✅ FIX: Added '/admin' to the base API path
+  private readonly API_URL = `${environment.apiUrl}/admin`;
 
   constructor(private http: HttpClient) {}
 
   getInspections(): Observable<Inspection[]> {
+    // This will now correctly call /admin/inspections
     return this.http.get<Inspection[]>(`${this.API_URL}/inspections`);
   }
 

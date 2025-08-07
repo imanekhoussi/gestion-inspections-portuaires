@@ -1,1 +1,155 @@
-<p>actifs-list works!</p>
+<div class="actifs-container">
+  <div class="actifs-header">
+    <div class="header-title">
+      <h2>Liste des Actifs Portuaires</h2>
+      <p class="header-subtitle">Gestion des équipements et infrastructures</p>
+    </div>
+    
+    <div class="header-actions">
+      <button 
+        mat-raised-button 
+        color="primary"
+        (click)="refreshData()"
+        [disabled]="isLoading"
+        matTooltip="Actualiser la liste"
+      >
+        <mat-icon [class.rotating]="isLoading">refresh</mat-icon>
+        Actualiser
+      </button>
+      
+      <button 
+        mat-raised-button 
+        routerLink="/actifs/map"
+        matTooltip="Voir la carte"
+      >
+        <mat-icon>map</mat-icon>
+        Carte
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="search-card">
+    <mat-card-content>
+      <mat-form-field class="search-field" appearance="outline">
+        <mat-label>Rechercher un actif</mat-label>
+        <input 
+          matInput 
+          (keyup)="applyFilter($event)" 
+          placeholder="Nom, site, zone..."
+        >
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <app-loading-spinner message="Chargement des actifs..."></app-loading-spinner>
+  </div>
+
+  <mat-card *ngIf="error && !isLoading" class="error-card">
+    <mat-card-content>
+      <div class="error-content">
+        <mat-icon color="warn">error</mat-icon>
+        <div>
+          <h3>Erreur de chargement</h3>
+          <p>{{ error }}</p>
+          <button mat-raised-button color="primary" (click)="refreshData()">
+            Réessayer
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card *ngIf="!isLoading && !error" class="table-card">
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort class="actifs-table">
+          
+          <ng-container matColumnDef="nom">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom</th>
+            <td mat-cell *matCellDef="let actif">
+              <div class="actif-name">
+                <strong>{{ actif.nom }}</strong>
+                <small *ngIf="actif.description">{{ actif.description | slice:0:40 }}{{ actif.description.length > 40 ? '...' : '' }}</small>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="site">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Site</th>
+            <td mat-cell *matCellDef="let actif">
+              <div class="site-info">
+                <mat-icon class="site-icon">business</mat-icon>
+                {{ actif.site }}
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="zone">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Zone</th>
+            <td mat-cell *matCellDef="let actif">
+              <div class="zone-info">
+                <mat-icon class="zone-icon">place</mat-icon>
+                {{ actif.zone }}
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="indiceEtat">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>État</th>
+            <td mat-cell *matCellDef="let actif">
+              <div class="etat-container">
+                <span class="etat-badge" [ngClass]="getEtatClass(actif.indiceEtat)">
+                  {{ getEtatText(actif.indiceEtat) }}
+                </span>
+                <span class="etat-score">({{ actif.indiceEtat }}/5)</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let actif">
+              <div class="action-buttons">
+                <button 
+                  mat-icon-button 
+                  matTooltip="Voir sur la carte"
+                  class="action-map"
+                  (click)="showOnMap(actif)"
+                >
+                  <mat-icon>location_on</mat-icon>
+                </button>
+                
+                <button 
+                  mat-icon-button 
+                  matTooltip="Voir les détails"
+                  class="action-view"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                
+                <button 
+                  mat-icon-button 
+                  matTooltip="Modifier"
+                  class="action-edit"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+
+      <mat-paginator 
+        [pageSizeOptions]="[10, 25, 50, 100]" 
+        showFirstLastButtons
+        [pageSize]="25"
+      ></mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>
