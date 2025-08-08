@@ -14,24 +14,40 @@ export class ActifService {
     private logService: LogHistoriqueService,
   ) {}
 
+  /**
+   * Creates a new asset.
+   * This method now handles geometry data (Point, LineString, Polygon)
+   * sent from the frontend drawing tool.
+   */
   async create(createActifDto: CreateActifDto, createdBy: number): Promise<Actif> {
-    const { latitude, longitude, ...actifData } = createActifDto;
+    // Destructure the DTO to separate geometry parts from the rest of the data
+    const { geometryType, coordinates, ...actifData } = createActifDto;
 
-    // This part now needs to transform coordinates before saving
-    let geometry = null;
-    if (latitude && longitude) {
-        const result = await this.actifRepository.query(
-            `SELECT ST_Transform(ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326), 26191) as geom`
+    let geometryForDb = null;
+    // Check if both geometry type and coordinates are provided
+    if (geometryType && coordinates) {
+        // Construct a valid GeoJSON object here on the backend
+        const geoJsonObject = {
+            type: geometryType,
+            coordinates: coordinates,
+        };
+        const geoJsonString = JSON.stringify(geoJsonObject);
+
+        // This query securely converts the GeoJSON text into a native PostGIS geometry
+        // and reprojects it from WGS84 (4326) to your local system (26191)
+        const queryResult = await this.actifRepository.query(
+            `SELECT ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 26191) as geom`,
+            [geoJsonString]
         );
-        geometry = result[0].geom;
+        geometryForDb = queryResult[0].geom;
     }
 
-    const actif = this.actifRepository.create({
+    const newActif = this.actifRepository.create({
       ...actifData,
-      geometry
+      geometry: geometryForDb,
     });
 
-    const savedActif = await this.actifRepository.save(actif);
+    const savedActif = await this.actifRepository.save(newActif);
 
     await this.logService.enregistrerLog(
       TypeAction.CREATION,
@@ -39,11 +55,11 @@ export class ActifService {
       savedActif.id,
       createdBy,
       null,
-      { 
-        nom: savedActif.nom, 
-        site: savedActif.site, 
+      {
+        nom: savedActif.nom,
+        site: savedActif.site,
         zone: savedActif.zone,
-        hasCoordinates: !!geometry
+        hasGeometry: !!geometryForDb
       },
       `Création de l'actif ${savedActif.nom}`
     );
@@ -56,7 +72,7 @@ export class ActifService {
       relations: ['groupe', 'groupe.famille']
     });
   }
-  
+
   async getActifsAsGeoJSON(): Promise<any> {
     const query = this.actifRepository
       .createQueryBuilder('actif')
@@ -96,11 +112,11 @@ export class ActifService {
       where: { id },
       relations: ['groupe', 'groupe.famille']
     });
-    
+
     if (!actif) {
       throw new NotFoundException(`Actif avec l'ID ${id} non trouvé`);
     }
-    
+
     return actif;
   }
 
@@ -120,23 +136,28 @@ export class ActifService {
 
   async update(id: number, updateActifDto: UpdateActifDto, updatedBy: number): Promise<Actif> {
     const actif = await this.findOne(id);
-    const ancienEtat = { 
-      nom: actif.nom, 
-      site: actif.site, 
-      zone: actif.zone, 
-      indiceEtat: actif.indiceEtat 
+    const ancienEtat = {
+      nom: actif.nom,
+      site: actif.site,
+      zone: actif.zone,
+      indiceEtat: actif.indiceEtat
     };
 
-    const { latitude, longitude, ...restUpdateData } = updateActifDto;
+    // This update logic will need to be adapted similarly to the create method
+    // if you want to allow geometry updates in the future.
+    const { geometryType, coordinates, ...restUpdateData } = updateActifDto;
     const updateData: any = { ...restUpdateData };
-    
-    if (latitude && longitude) {
-      updateData.geometry = {
-        type: 'Point' as const,
-        coordinates: [longitude, latitude]
-      };
+
+    if (geometryType && coordinates) {
+      const geoJsonObject = { type: geometryType, coordinates: coordinates };
+      const geoJsonString = JSON.stringify(geoJsonObject);
+      const queryResult = await this.actifRepository.query(
+          `SELECT ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 26191) as geom`,
+          [geoJsonString]
+      );
+      updateData.geometry = queryResult[0].geom;
     }
-    
+
     Object.assign(actif, updateData);
     const updatedActif = await this.actifRepository.save(actif);
 
@@ -146,11 +167,11 @@ export class ActifService {
       id,
       updatedBy,
       ancienEtat,
-      { 
-        nom: updatedActif.nom, 
-        site: updatedActif.site, 
-        zone: updatedActif.zone, 
-        indiceEtat: updatedActif.indiceEtat 
+      {
+        nom: updatedActif.nom,
+        site: updatedActif.site,
+        zone: updatedActif.zone,
+        indiceEtat: updatedActif.indiceEtat
       },
       `Modification de l'actif ${updatedActif.nom}`
     );
@@ -160,7 +181,7 @@ export class ActifService {
 
   async remove(id: number, deletedBy: number): Promise<void> {
     const actif = await this.findOne(id);
-    
+
     await this.logService.enregistrerLog(
       TypeAction.SUPPRESSION,
       TypeEntite.ACTIF,
@@ -177,7 +198,7 @@ export class ActifService {
   async updateIndiceEtat(id: number, nouvelIndice: number, updatedBy: number): Promise<Actif> {
     const actif = await this.findOne(id);
     const ancienIndice = actif.indiceEtat;
-    
+
     actif.indiceEtat = nouvelIndice;
     const updatedActif = await this.actifRepository.save(actif);
 
@@ -194,7 +215,7 @@ export class ActifService {
     return updatedActif;
   }
 
- 
+
   async getStatisticsByZone(): Promise<any[]> {
     const result = await this.actifRepository
       .createQueryBuilder('actif')
@@ -220,33 +241,24 @@ export class ActifService {
   }
 
   async findByCoordinates(lat: number, lng: number, radius: number): Promise<Actif[]> {
-    const actifs = await this.findAll();
+    const origin = {
+        type: 'Point',
+        coordinates: [lng, lat],
+    };
+    const geoJsonString = JSON.stringify(origin);
 
-    return actifs.filter(actif => {
-      if (!actif.geometry || !actif.geometry.coordinates) return false;
-      
-      const [actifLng, actifLat] = actif.geometry.coordinates;
-      const distance = this.calculateDistance(lat, lng, actifLat, actifLng);
-      
-      return distance <= radius;
-    });
+    // Using ST_DWithin for efficient geographic search in the database
+    const query = this.actifRepository
+      .createQueryBuilder('actif')
+      .where(`ST_DWithin(
+          ST_Transform(actif.geometry, 4326)::geography,
+          ST_SetSRID(ST_GeomFromGeoJSON(:origin), 4326)::geography,
+          :radius
+      )`, { origin: geoJsonString, radius: radius })
+      .setParameters({ origin: geoJsonString, radius });
+
+    return await query.getMany();
   }
 
-  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const R = 6371000; // Earth's radius in meters
-    const dLat = this.toRadians(lat2 - lat1);
-    const dLng = this.toRadians(lng2 - lng1);
-    
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-      
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-    return R * c;
-  }
 
-  private toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
-  }
 }

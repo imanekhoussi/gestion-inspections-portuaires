@@ -16,6 +16,9 @@ import { ActifsService } from '../../services/actifs.service';
 import { Actif } from '../../../../core/models/actif.interface';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ActifFormDialogComponent } from '../actif-form-dialog/actif-form-dialog.component';
+
 @Component({
   selector: 'app-actifs-list',
   standalone: true,
@@ -32,9 +35,9 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
     MatInputModule,
     MatTooltipModule,
     MatSnackBarModule,
-    LoadingSpinnerComponent
+    LoadingSpinnerComponent,
+    MatDialogModule
   ],
-  // ✅ FIX: Corrected the path to match your actual HTML file name
   templateUrl: './actifs-list.html',
   styleUrls: ['./actifs-list.scss']
 })
@@ -49,7 +52,8 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
 
   constructor(
     private actifsService: ActifsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -59,6 +63,27 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+  }
+
+  openAddActifDialog(): void {
+    const dialogRef = this.dialog.open(ActifFormDialogComponent, {
+      width: '95vw',
+      maxWidth: '1400px',
+      height: '95vh',
+      maxHeight: '900px',
+      disableClose: true,
+      panelClass: 'custom-dialog-container'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open(`Actif "${result.nom}" créé avec succès !`, 'Fermer', {
+          duration: 3000,
+          panelClass: ['success-snackbar']
+        });
+        this.refreshData();
+      }
+    });
   }
 
   loadActifs(): void {
@@ -115,11 +140,26 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
   
   showOnMap(actif: Actif): void {
     if (actif.geometry && actif.geometry.coordinates) {
-      const longitude = actif.geometry.coordinates[0];
-      const latitude = actif.geometry.coordinates[1];
+      let longitude: number, latitude: number;
+      
+      // Handle different geometry types with proper type casting
+      if (actif.geometry.type === 'Point') {
+        const coords = actif.geometry.coordinates as [number, number];
+        [longitude, latitude] = coords;
+      } else if (actif.geometry.type === 'LineString') {
+        const coords = actif.geometry.coordinates as number[][];
+        [longitude, latitude] = coords[0];
+      } else if (actif.geometry.type === 'Polygon') {
+        const coords = actif.geometry.coordinates as number[][][];
+        [longitude, latitude] = coords[0][0];
+      } else {
+        this.snackBar.open(`Type de géométrie non supporté: ${actif.geometry.type}`, 'Fermer', {
+          duration: 3000
+        });
+        return;
+      }
       
       const mapUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-      
       window.open(mapUrl, '_blank');
       
     } else {
@@ -127,5 +167,19 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
         duration: 3000
       });
     }
+  }
+
+  editActif(actif: Actif): void {
+    // TODO: Implement edit functionality
+    this.snackBar.open(`Édition de l'actif "${actif.nom}" - Fonctionnalité à venir`, 'Fermer', {
+      duration: 2000
+    });
+  }
+
+  viewDetails(actif: Actif): void {
+    // TODO: Implement view details functionality
+    this.snackBar.open(`Détails de l'actif "${actif.nom}" - Fonctionnalité à venir`, 'Fermer', {
+      duration: 2000
+    });
   }
 }

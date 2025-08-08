@@ -18,17 +18,19 @@ export interface ActifGroupe {
 export interface Actif {
   id: number;
   nom: string;
+  code: string;
   description?: string;
   site: string;
   zone: string;
+  ouvrage: string;
   indiceEtat: number;
   dateCreation: Date;
   dateDerniereMaintenance?: Date;
   idGroupe: number;
   groupe?: ActifGroupe;
   geometry?: {
-    type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
+    type: 'Point' | 'LineString' | 'Polygon';
+    coordinates: number[] | number[][] | number[][][];
   };
   // Additional properties for enhanced filtering
   tags?: string[];
@@ -36,13 +38,25 @@ export interface Actif {
   statut?: 'ACTIF' | 'MAINTENANCE' | 'HORS_SERVICE';
 }
 
+export interface CreateActifDto {
+  nom: string;
+  code: string;
+  site: string;
+  zone: string;
+  ouvrage: string;
+  idGroupe: number;
+  indiceEtat?: number;
+  geometryType?: 'Point' | 'LineString' | 'Polygon';
+  coordinates?: any[];
+}
+
 export interface ActifGeoJSON {
   type: 'FeatureCollection';
   features: Array<{
     type: 'Feature';
     geometry: {
-      type: 'Point';
-      coordinates: [number, number];
+      type: 'Point' | 'LineString' | 'Polygon';
+      coordinates: number[] | number[][] | number[][][];
     };
     properties: {
       id: number;

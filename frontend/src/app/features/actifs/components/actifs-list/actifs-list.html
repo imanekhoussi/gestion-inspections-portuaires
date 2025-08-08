@@ -6,22 +6,29 @@
     </div>
     
     <div class="header-actions">
-      <button 
-        mat-raised-button 
+      <button
+        mat-raised-button
+        color="accent"
+        (click)="openAddActifDialog()"
+        matTooltip="Créer un nouvel actif">
+        <mat-icon>add</mat-icon>
+        Ajouter un Actif
+      </button>
+
+      <button
+        mat-raised-button
         color="primary"
         (click)="refreshData()"
         [disabled]="isLoading"
-        matTooltip="Actualiser la liste"
-      >
+        matTooltip="Actualiser la liste">
         <mat-icon [class.rotating]="isLoading">refresh</mat-icon>
         Actualiser
       </button>
-      
-      <button 
-        mat-raised-button 
-        routerLink="/actifs/map"
-        matTooltip="Voir la carte"
-      >
+
+      <button
+        mat-raised-button
+        routerLink="/actifs/cartographie"
+        matTooltip="Voir la carte">
         <mat-icon>map</mat-icon>
         Carte
       </button>
@@ -71,7 +78,7 @@
             <td mat-cell *matCellDef="let actif">
               <div class="actif-name">
                 <strong>{{ actif.nom }}</strong>
-                <small *ngIf="actif.description">{{ actif.description | slice:0:40 }}{{ actif.description.length > 40 ? '...' : '' }}</small>
+                <small *ngIf="actif.code">Code: {{ actif.code }}</small>
               </div>
             </td>
           </ng-container>
@@ -115,7 +122,7 @@
                 <button 
                   mat-icon-button 
                   matTooltip="Voir sur la carte"
-                  class="action-map"
+                  color="primary"
                   (click)="showOnMap(actif)"
                 >
                   <mat-icon>location_on</mat-icon>
@@ -124,7 +131,8 @@
                 <button 
                   mat-icon-button 
                   matTooltip="Voir les détails"
-                  class="action-view"
+                  color="accent"
+                  (click)="viewDetails(actif)"
                 >
                   <mat-icon>visibility</mat-icon>
                 </button>
@@ -132,7 +140,7 @@
                 <button 
                   mat-icon-button 
                   matTooltip="Modifier"
-                  class="action-edit"
+                  (click)="editActif(actif)"
                 >
                   <mat-icon>edit</mat-icon>
                 </button>

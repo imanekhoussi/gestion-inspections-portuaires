@@ -102,3 +102,90 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+// Custom styles for the dialog
+:host ::ng-deep {
+  .custom-dialog-container {
+    .mat-mdc-dialog-container {
+      --mdc-dialog-container-color: white;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .success-snackbar {
+    --mdc-snackbar-container-color: #4caf50;
+    --mdc-snackbar-supporting-text-color: white;
+  }
+
+  .error-snackbar {
+    --mdc-snackbar-container-color: #f44336;
+    --mdc-snackbar-supporting-text-color: white;
+  }
+
+  .warning-snackbar {
+    --mdc-snackbar-container-color: #ff9800;
+    --mdc-snackbar-supporting-text-color: white;
+  }
+}
+
+// Loading and error states
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.error-card {
+  margin-top: 20px;
+  
+  .error-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+    }
+    
+    h3 {
+      margin: 0 0 8px 0;
+      color: #d32f2f;
+    }
+    
+    p {
+      margin: 0 0 16px 0;
+      color: #666;
+    }
+  }
+}
+
+// Table enhancements
+.table-card {
+  .table-container {
+    overflow: auto;
+    max-height: 600px;
+  }
+
+  .actifs-table {
+    width: 100%;
+    
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    td, th {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    tr:hover {
+      background: #f5f5f5;
+    }
+  }
+}

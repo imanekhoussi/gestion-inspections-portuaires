@@ -4,7 +4,8 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { 
-  Actif, 
+  Actif,
+  CreateActifDto, 
   ActifGeoJSON, 
   ActifFamille, 
   ActifGroupe, 
@@ -20,6 +21,12 @@ export class ActifsService {
 
   constructor(private http: HttpClient) {}
 
+  createActif(actifData: CreateActifDto): Observable<Actif> {
+    return this.http.post<Actif>(`${this.API_URL}/actifs`, actifData)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
   // Basic CRUD operations
   getActifs(): Observable<Actif[]> {
     return this.http.get<Actif[]>(`${this.API_URL}/actifs`)

@@ -1,50 +1,58 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, IsIn } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 
 export class CreateActifDto {
-  @ApiProperty({ description: 'Site où se trouve l\'actif', example: 'Port de Tanger Med' })
+  @ApiProperty({ description: 'Site where the asset is located', example: 'Port de Tanger Med' })
   @IsString()
   @IsNotEmpty()
   site: string;
 
-  @ApiProperty({ description: 'Zone spécifique dans le site', example: 'Terminal 1' })
+  @ApiProperty({ description: 'Specific zone within the site', example: 'Terminal 1' })
   @IsString()
   @IsNotEmpty()
   zone: string;
 
-  @ApiProperty({ description: 'Type d\'ouvrage', example: 'Quai d\'accostage' })
+  @ApiProperty({ description: 'Type of structure', example: 'Quai d\'accostage' })
   @IsString()
   @IsNotEmpty()
   ouvrage: string;
 
-  @ApiProperty({ description: 'Nom de l\'actif', example: 'Grue mobile A1' })
+  @ApiProperty({ description: 'Name of the asset', example: 'Grue mobile A1' })
   @IsString()
   @IsNotEmpty()
   nom: string;
 
-  @ApiProperty({ description: 'Code unique de l\'actif', example: 'GM-A1-001' })
+  @ApiProperty({ description: 'Unique code for the asset', example: 'GM-A1-001' })
   @IsString()
   @IsNotEmpty()
   code: string;
 
-  @ApiProperty({ description: 'ID du groupe auquel appartient l\'actif' })
+  @ApiProperty({ description: 'ID of the group the asset belongs to' })
   @IsNumber()
   idGroupe: number;
 
-  @ApiProperty({ description: 'Indice d\'état (1=critique, 5=excellent)', minimum: 1, maximum: 5, required: false })
+  @ApiProperty({ description: 'Condition index (1=critical, 5=excellent)', required: false, default: 3 })
   @IsOptional()
   @IsNumber()
   indiceEtat?: number;
 
-  @ApiProperty({ description: 'Latitude GPS (optionnel)', example: 35.7595, required: false })
+  @ApiProperty({
+    description: "The type of geometry drawn on the map.",
+    enum: ['Point', 'LineString', 'Polygon'],
+    required: false
+  })
   @IsOptional()
-  @IsNumber()
-  latitude?: number;
+  @IsString()
+  @IsIn(['Point', 'LineString', 'Polygon'])
+  geometryType?: 'Point' | 'LineString' | 'Polygon';
 
-  @ApiProperty({ description: 'Longitude GPS (optionnel)', example: -5.8340, required: false })
+  @ApiProperty({
+    description: "The array of coordinates for the geometry in WGS84 (EPSG:4326).",
+    required: false
+  })
   @IsOptional()
-  @IsNumber()
-  longitude?: number;
+  @IsArray()
+  coordinates?: any[];
 }
 
 export class UpdateActifDto extends PartialType(CreateActifDto) {}
