@@ -1,267 +1,212 @@
-<div class="dialog-wrapper">
-  <h2 mat-dialog-title>
-    <mat-icon>add_business</mat-icon>
-    Créer un nouvel Actif Portuaire
-  </h2>
+<!-- Modern Asset Creation Dialog -->
+<div class="dialog-header">
+  <div class="header-content">
+    <div class="header-icon">
+      <mat-icon>engineering</mat-icon>
+    </div>
+    <div class="header-text">
+      <h1>Créer un nouvel actif</h1>
+      <p>Définissez les propriétés et la localisation géographique de votre actif</p>
+    </div>
+  </div>
+</div>
 
-  <mat-dialog-content class="dialog-content-container">
-    <!-- Form Column with Scroll -->
-    <div class="form-column">
-      <div class="form-scroll-container">
-        <mat-card class="form-card">
-          <mat-card-header>
-            <mat-card-title>
-              <mat-icon>info</mat-icon>
-              Informations de l'actif
-            </mat-card-title>
-            <mat-card-subtitle>
-              Saisissez les détails de votre nouvel actif portuaire
-            </mat-card-subtitle>
-          </mat-card-header>
-          
-          <mat-card-content>
-            <form [formGroup]="actifForm" class="form-grid">
-              <!-- Basic Information Section -->
-              <div class="form-section">
-                <h3 class="section-title">
-                  <mat-icon>label</mat-icon>
-                  Identification
-                </h3>
-                
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Nom de l'actif</mat-label>
-                  <input matInput formControlName="nom" placeholder="Ex: Grue mobile TC1-A1">
-                  <mat-icon matSuffix>label</mat-icon>
-                  <mat-hint>Nom descriptif de l'équipement ou infrastructure</mat-hint>
-                  <mat-error *ngIf="isFieldInvalid('nom')">{{ getFieldError('nom') }}</mat-error>
-                </mat-form-field>
+<mat-dialog-content>
+  <!-- Form Section -->
+  <section class="form-section">
+    <div class="form-container">
+      <div class="section-title">
+        <mat-icon>settings</mat-icon>
+        Informations générales
+      </div>
+      
+      <form [formGroup]="actifForm" class="form-grid">
+        <!-- Basic Information -->
+        <div class="form-row single">
+          <mat-form-field appearance="outline">
+            <mat-label>Nom de l'actif</mat-label>
+            <input matInput 
+                   formControlName="nom" 
+                   placeholder="Ex: Grue mobile TC1-A1">
+            <mat-icon matSuffix>label</mat-icon>
+            <mat-error *ngIf="isFieldInvalid('nom')">
+              {{ getFieldError('nom') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Code unique</mat-label>
-                  <input matInput formControlName="code" placeholder="Ex: GM-TC1-A1-001" style="text-transform: uppercase;">
-                  <mat-icon matSuffix>qr_code</mat-icon>
-                  <mat-hint>Code d'identification unique (lettres, chiffres, tirets)</mat-hint>
-                  <mat-error *ngIf="isFieldInvalid('code')">{{ getFieldError('code') }}</mat-error>
-                </mat-form-field>
-              </div>
+        <div class="form-row single">
+          <mat-form-field appearance="outline">
+            <mat-label>Code unique</mat-label>
+            <input matInput 
+                   formControlName="code" 
+                   placeholder="Ex: GM-TC1-A1-001"
+                   style="text-transform: uppercase;">
+            <mat-icon matSuffix>qr_code</mat-icon>
+            <mat-error *ngIf="isFieldInvalid('code')">
+              {{ getFieldError('code') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-              <!-- Location Section -->
-              <div class="form-section">
-                <h3 class="section-title">
-                  <mat-icon>place</mat-icon>
-                  Localisation
-                </h3>
+        <!-- Location Information -->
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Site portuaire</mat-label>
+            <mat-select formControlName="site">
+              <mat-option *ngFor="let site of siteOptions" [value]="site.value">
+                {{ site.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>location_city</mat-icon>
+          </mat-form-field>
+        </div>
 
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Site portuaire</mat-label>
-                  <mat-select formControlName="site">
-                    <mat-option *ngFor="let site of siteOptions" [value]="site.value">
-                      <div class="select-option">
-                        <mat-icon class="option-icon">{{ site.icon }}</mat-icon>
-                        <span>{{ site.label }}</span>
-                      </div>
-                    </mat-option>
-                  </mat-select>
-                  <mat-icon matSuffix>business</mat-icon>
-                  <mat-hint>Terminal ou zone principale</mat-hint>
-                </mat-form-field>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Zone spécifique</mat-label>
+            <mat-select formControlName="zone">
+              <mat-option *ngFor="let zone of zoneOptions" [value]="zone.value">
+                {{ zone.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>map</mat-icon>
+          </mat-form-field>
+        </div>
 
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Zone spécifique</mat-label>
-                  <mat-select formControlName="zone">
-                    <mat-option *ngFor="let zone of zoneOptions" [value]="zone.value">
-                      <div class="select-option">
-                        <mat-icon class="option-icon">{{ zone.icon }}</mat-icon>
-                        <span>{{ zone.label }}</span>
-                      </div>
-                    </mat-option>
-                  </mat-select>
-                  <mat-icon matSuffix>place</mat-icon>
-                  <mat-hint>Secteur détaillé dans le site</mat-hint>
-                </mat-form-field>
-              </div>
+        <!-- Classification -->
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Type d'ouvrage</mat-label>
+            <mat-select formControlName="ouvrage">
+              <mat-option *ngFor="let ouvrage of ouvrageOptions" [value]="ouvrage.value">
+                {{ ouvrage.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>construction</mat-icon>
+          </mat-form-field>
+        </div>
 
-              <!-- Technical Section -->
-              <div class="form-section">
-                <h3 class="section-title">
-                  <mat-icon>build</mat-icon>
-                  Caractéristiques techniques
-                </h3>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Groupe d'appartenance</mat-label>
+            <mat-select formControlName="idGroupe">
+              <mat-option *ngFor="let groupe of groupeOptions" [value]="groupe.value">
+                {{ groupe.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>category</mat-icon>
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+  </section>
 
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Type d'ouvrage</mat-label>
-                  <mat-select formControlName="ouvrage">
-                    <mat-option *ngFor="let ouvrage of ouvrageOptions" [value]="ouvrage.value">
-                      <div class="select-option">
-                        <mat-icon class="option-icon">{{ ouvrage.icon }}</mat-icon>
-                        <span>{{ ouvrage.label }}</span>
-                      </div>
-                    </mat-option>
-                  </mat-select>
-                  <mat-icon matSuffix>category</mat-icon>
-                  <mat-hint>Classification de l'infrastructure</mat-hint>
-                </mat-form-field>
+  <!-- Map Section -->
+  <section class="map-section">
+    <!-- Map Toolbar -->
+    <div class="map-toolbar">
+      <div class="geometry-status">
+        <div class="status-chip" [class.empty]="!hasGeometry" [class.defined]="hasGeometry">
+          <mat-icon>{{ hasGeometry ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+          <span>{{ hasGeometry ? 'Géométrie définie' : 'Aucune géométrie' }}</span>
+          <span *ngIf="hasGeometry" class="geometry-type">
+            ({{ getGeometryTypeLabel(actifForm.get('geometryType')?.value) }})
+          </span>
+        </div>
+        <mat-error *ngIf="isFieldInvalid('coordinates')" class="error-text">
+          <mat-icon>warning</mat-icon>
+          Géométrie requise
+        </mat-error>
+      </div>
 
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Groupe d'appartenance</mat-label>
-                  <mat-select formControlName="idGroupe">
-                    <mat-option *ngFor="let groupe of groupeOptions" [value]="groupe.value">
-                      <div class="select-option">
-                        <mat-icon class="option-icon">{{ groupe.icon }}</mat-icon>
-                        <span>{{ groupe.label }}</span>
-                      </div>
-                    </mat-option>
-                  </mat-select>
-                  <mat-icon matSuffix>group_work</mat-icon>
-                  <mat-hint>Famille technique de l'actif</mat-hint>
-                </mat-form-field>
-              </div>
+      <div class="toolbar-actions">
+        <!-- Add Geometry Menu -->
+        <button *ngIf="!hasGeometry" 
+                mat-raised-button 
+                class="draw-menu-trigger"
+                [matMenuTriggerFor]="drawMenu">
+          <mat-icon>add_location_alt</mat-icon>
+          Ajouter géométrie
+        </button>
+        <mat-menu #drawMenu="matMenu">
+          <button mat-menu-item (click)="startDrawing('Point')">
+            <mat-icon>place</mat-icon>
+            <span>Marquer un point</span>
+          </button>
+          <button mat-menu-item (click)="startDrawing('LineString')">
+            <mat-icon>timeline</mat-icon>
+            <span>Dessiner une ligne</span>
+          </button>
+          <button mat-menu-item (click)="startDrawing('Polygon')">
+            <mat-icon>crop_free</mat-icon>
+            <span>Délimiter une zone</span>
+          </button>
+        </mat-menu>
 
-              <!-- Geometry Status Section -->
-              <div class="form-section">
-                <h3 class="section-title">
-                  <mat-icon>map</mat-icon>
-                  Géométrie
-                </h3>
-                
-                <div class="geometry-info-card">
-                  <div class="geometry-status-display">
-                    <mat-chip [color]="hasGeometry ? 'primary' : 'warn'">
-                      <mat-icon matChipAvatar>{{ hasGeometry ? 'check_circle' : 'location_off' }}</mat-icon>
-                      {{ hasGeometry ? 'Géométrie définie' : 'Aucune géométrie' }}
-                    </mat-chip>
-                    
-                    <div class="geometry-details" *ngIf="hasGeometry">
-                      <span class="geometry-type">
-                        Type: {{ getGeometryTypeLabel(actifForm.get('geometryType')?.value) }}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <mat-error *ngIf="isFieldInvalid('coordinates')" class="geometry-error">
-                    <mat-icon>error</mat-icon>
-                    Veuillez dessiner une géométrie sur la carte
-                  </mat-error>
-                </div>
-              </div>
-            </form>
-          </mat-card-content>
-        </mat-card>
+        <!-- Edit/Delete Actions -->
+        <ng-container *ngIf="hasGeometry">
+          <button mat-fab 
+                  class="action-button edit"
+                  (click)="editGeometry()"
+                  matTooltip="Modifier la géométrie">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-fab 
+                  class="action-button delete"
+                  (click)="deleteGeometry()"
+                  matTooltip="Supprimer la géométrie">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </ng-container>
       </div>
     </div>
 
-    <!-- Map Column -->
-    <div class="map-column">
-      <mat-card class="map-card">
-        <mat-card-header class="map-header">
-          <div class="map-title-section">
-            <mat-card-title>
-              <mat-icon>map</mat-icon>
-              Carte de Tanger Med
-            </mat-card-title>
-            <mat-card-subtitle>
-              Dessinez la géométrie de votre actif sur la carte
-            </mat-card-subtitle>
-          </div>
-          
-          <div class="map-actions">
-            <button mat-icon-button (click)="centerOnTangerMed()" matTooltip="Centrer sur Tanger Med" color="primary">
-              <mat-icon>my_location</mat-icon>
-            </button>
-          </div>
-        </mat-card-header>
-
-        <mat-card-content class="map-content">
-          <!-- Drawing Tools Toolbar -->
-          <div class="drawing-toolbar">
-            <div class="toolbar-section">
-              <span class="toolbar-label">
-                <mat-icon>edit</mat-icon>
-                Outils de dessin
-              </span>
-              
-              <mat-button-toggle-group 
-                [value]="currentDrawingType" 
-                appearance="standard"
-                class="drawing-tools-group">
-                <mat-button-toggle 
-                  *ngFor="let type of drawingTypes"
-                  [value]="type.value"
-                  (click)="addDrawInteraction(type.value)"
-                  [matTooltip]="type.tooltip"
-                  class="drawing-tool-btn">
-                  <mat-icon>{{ type.icon }}</mat-icon>
-                  <span>{{ type.label }}</span>
-                </mat-button-toggle>
-              </mat-button-toggle-group>
-            </div>
-
-            <div class="toolbar-section">
-              <span class="toolbar-label">
-                <mat-icon>layers</mat-icon>
-                Vue
-              </span>
-              
-              <div class="view-controls">
-                <button 
-                  mat-stroked-button 
-                  (click)="switchBaseMap('osm')"
-                  class="view-btn"
-                  [class.active]="selectedBaseMap === 'osm'">
-                  <mat-icon>map</mat-icon>
-                  Plan
-                </button>
-                <button 
-                  mat-stroked-button
-                  (click)="switchBaseMap('satellite')" 
-                  class="view-btn"
-                  [class.active]="selectedBaseMap === 'satellite'">
-                  <mat-icon>satellite_alt</mat-icon>
-                  Satellite
-                </button>
-              </div>
-            </div>
-
-            <div class="toolbar-section">
-              <button 
-                mat-stroked-button 
-                color="warn"
-                (click)="clearDrawing()" 
-                [disabled]="!hasGeometry"
-                matTooltip="Effacer le dessin"
-                class="clear-btn">
-                <mat-icon>clear</mat-icon>
-                Effacer
-              </button>
-            </div>
-          </div>
-
-          <!-- Map Container -->
-          <div id="drawing-map" class="map-container"></div>
-        </mat-card-content>
-      </mat-card>
+    <!-- Map Container -->
+    <div class="map-container-wrapper">
+      <div id="drawing-map"></div>
+      
+      <!-- Map Controls -->
+      <div class="map-controls">
+        <button mat-fab 
+                class="control-button"
+                (click)="centerOnTangerMed()"
+                matTooltip="Centrer sur Tanger Med">
+          <mat-icon>my_location</mat-icon>
+        </button>
+        <button mat-fab 
+                class="control-button"
+                (click)="switchBaseMap()"
+                [matTooltip]="isSatelliteView ? 'Vue plan' : 'Vue satellite'">
+          <mat-icon>{{ isSatelliteView ? 'map' : 'satellite_alt' }}</mat-icon>
+        </button>
+      </div>
     </div>
-  </mat-dialog-content>
+  </section>
+</mat-dialog-content>
 
-  <mat-dialog-actions align="end" class="dialog-actions">
-    <button mat-button (click)="onCancel()" [disabled]="isSaving" class="cancel-btn">
-      <mat-icon>cancel</mat-icon>
+<!-- Dialog Actions -->
+<mat-dialog-actions>
+  <div class="actions-left">
+    <mat-icon>info</mat-icon>
+    <span>Tous les champs marqués * sont obligatoires</span>
+  </div>
+  
+  <div class="actions-right">
+    <button mat-stroked-button 
+            class="cancel-button"
+            (click)="onCancel()">
       Annuler
     </button>
-    <button 
-      mat-raised-button 
-      color="primary" 
-      (click)="onSave()" 
-      [disabled]="isSaving || actifForm.invalid"
-      class="save-btn">
-      <mat-icon *ngIf="!isSaving">save</mat-icon>
-      <mat-progress-spinner 
-        *ngIf="isSaving" 
-        mode="indeterminate" 
-        diameter="20">
-      </mat-progress-spinner>
-      <span *ngIf="!isSaving">Créer l'actif</span>
-      <span *ngIf="isSaving">Création...</span>
+    <button mat-raised-button 
+            class="save-button"
+            (click)="onSave()" 
+            [disabled]="actifForm.invalid || isSaving">
+      <div class="button-content">
+        <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!isSaving">save</mat-icon>
+        <span>{{ isSaving ? 'Création en cours...' : 'Créer l\'actif' }}</span>
+      </div>
     </button>
-  </mat-dialog-actions>
-</div>
+  </div>
+</mat-dialog-actions>
