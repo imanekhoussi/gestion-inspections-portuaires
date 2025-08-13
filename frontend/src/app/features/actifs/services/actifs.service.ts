@@ -86,13 +86,14 @@ export class ActifsService {
       );
   }
 
-  getGroupes(): Observable<ActifGroupe[]> {
-    return this.http.get<ActifGroupe[]>(`${this.API_URL}/groupes`)
-      .pipe(
-        retry(1),
-        catchError(this.handleError)
-      );
-  }
+  getGroupes(): Observable<any[]> {
+  return this.http.get<any[]>(`${this.API_URL}/admin/groupes`)
+    .pipe(
+      retry(1),
+      catchError(this.handleError)
+    );
+}
+
 
   getGroupesByFamille(familleId: number): Observable<ActifGroupe[]> {
     return this.http.get<ActifGroupe[]>(`${this.API_URL}/familles/${familleId}/groupes`)

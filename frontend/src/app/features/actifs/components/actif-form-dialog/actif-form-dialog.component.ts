@@ -90,12 +90,8 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
     { value: 'Équipement de manutention', label: 'Équipement de manutention', icon: 'precision_manufacturing' },
   ];
 
-  groupeOptions: DropdownOption[] = [
-    { value: 1, label: 'Infrastructures Portuaires', icon: 'foundation' },
-    { value: 2, label: 'Équipements de Manutention', icon: 'smart_toy' },
-    { value: 5, label: 'Bâtiments et Structures', icon: 'apartment' },
-    { value: 4, label: 'Réseaux et Utilités', icon: 'cable' },
-  ];
+  groupeOptions: DropdownOption[] = []; // Sera rempli depuis la BDD
+  isLoadingGroupes = false;
 
   constructor(
     private fb: FormBuilder,
@@ -121,8 +117,9 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   ngOnInit(): void {
-    this.setupFormValidation();
-  }
+  this.setupFormValidation();
+  this.loadGroupesFromDatabase();
+}
 
   ngAfterViewInit(): void {
     // Delay map initialization to ensure DOM is ready
@@ -497,4 +494,61 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
     };
     return labels[type] || 'Géométrie';
   };
+  private loadGroupesFromDatabase(): void {
+    this.isLoadingGroupes = true;
+    
+    this.actifsService.getGroupes().subscribe({
+      next: (groupes) => {
+        console.log('✅ Groupes chargés depuis la BDD:', groupes);
+        
+        this.groupeOptions = groupes.map(groupe => ({
+          value: groupe.id,
+          label: groupe.nom,
+          icon: this.getGroupeIcon(groupe.nom)
+        }));
+        
+        this.isLoadingGroupes = false;
+        
+        this.snackBar.open(
+          `✅ ${groupes.length} groupes chargés`, 
+          '', 
+          { duration: 2000 }
+        );
+      },
+      error: (error) => {
+        console.error('❌ Erreur lors du chargement des groupes:', error);
+        this.isLoadingGroupes = false;
+        
+        this.groupeOptions = [
+          { value: 1, label: 'Quais et Appontements', icon: 'anchor' },
+          { value: 2, label: 'Digues et Jetées', icon: 'waves' },
+          { value: 3, label: 'Grues Portuaires', icon: 'construction' },
+          { value: 4, label: 'Portiques', icon: 'view_column' },
+          { value: 5, label: 'Éclairage de Sécurité', icon: 'light_mode' },
+          { value: 6, label: 'Transformateurs', icon: 'electrical_services' },
+          { value: 7, label: 'Tableaux Électriques', icon: 'developer_board' }
+        ];
+        
+        this.snackBar.open(
+          '⚠️ Impossible de charger les groupes. Utilisation des valeurs par défaut.', 
+          'Fermer', 
+          { duration: 5000 }
+        );
+      }
+    });
+  }
+
+  private getGroupeIcon(nom: string): string {
+    const nomLower = nom.toLowerCase();
+    
+    if (nomLower.includes('quai') || nomLower.includes('appontement')) return 'anchor';
+    if (nomLower.includes('digue') || nomLower.includes('jetée')) return 'waves';
+    if (nomLower.includes('grue')) return 'construction';
+    if (nomLower.includes('portique')) return 'view_column';
+    if (nomLower.includes('éclairage')) return 'light_mode';
+    if (nomLower.includes('transformateur')) return 'electrical_services';
+    if (nomLower.includes('tableau')) return 'developer_board';
+    
+    return 'category';
+  }
 }

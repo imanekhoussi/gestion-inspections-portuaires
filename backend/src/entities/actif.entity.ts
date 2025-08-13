@@ -1,6 +1,5 @@
 // src/entities/actif.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinColumn } from 'typeorm';
-import { Point } from 'geojson'; 
 import { Groupe } from './groupe.entity';
 import { Inspection } from './inspection.entity';
 
@@ -24,18 +23,23 @@ export class Actif {
   @Column({ type: 'varchar', length: 50, unique: true })
   code: string;
 
+  // CORRECTION: Le nom de la colonne en BDD est 'id_groupe'
+  // Mais on veut l'utiliser comme 'idGroupe' dans le code
   @Column({ name: 'id_groupe' })
   idGroupe: number;
 
-  @Column({ name: 'indice_etat', type: 'int', default: 1 })
+  // CORRECTION: Le nom de la colonne en BDD est 'indice_etat'
+  // Mais on veut l'utiliser comme 'indiceEtat' dans le code
+  @Column({ name: 'indice_etat', type: 'int' })
   indiceEtat: number;
 
+  // CORRECTION: Géométrie PostGIS - colonne 'geometry'
   @Column({
     type: 'geometry',
-    srid: 26191, // Merchich / Nord Maroc coordinate system
+    spatialFeatureType: 'Geometry', // Supporte Point, LineString, Polygon
     nullable: true,
   })
-  geometry: Point | null;
+  geometry: any;
 
   @ManyToOne(() => Groupe, groupe => groupe.actifs)
   @JoinColumn({ name: 'id_groupe' })
