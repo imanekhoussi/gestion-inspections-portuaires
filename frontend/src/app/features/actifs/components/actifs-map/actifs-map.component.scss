@@ -580,4 +580,72 @@
       }
     }
   }
+
+  // Ajoutez ces styles dans votre fichier .scss existant
+
+::ng-deep .ol-legend-custom {
+  .selected-actif-info {
+    background: #e3f2fd;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    border-left: 4px solid #2196f3;
+    
+    strong {
+      color: #1976d2;
+    }
+    
+    small {
+      color: #666;
+      font-family: monospace;
+    }
+  }
+  
+  .selected-state {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2196f3;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px #2196f3;
+  }
+  
+  .back-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 12px;
+    font-size: 13px;
+    
+    &:hover {
+      background: #1976d2;
+    }
+  }
+}
+
+::ng-deep .ol-popup {
+  .selected-badge {
+    background: #2196f3;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  
+  .popup-btn.primary {
+    background: #4caf50;
+    color: white;
+    border: none;
+    
+    &:hover {
+      background: #45a049;
+    }
+  }
+}
 }

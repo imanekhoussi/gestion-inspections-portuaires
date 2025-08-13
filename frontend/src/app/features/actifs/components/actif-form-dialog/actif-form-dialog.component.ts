@@ -12,6 +12,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 
+import { Inject } from '@angular/core'; 
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';  
+import { Actif } from '../../../../core/models/actif.interface';  
 import { ActifsService } from '../../services/actifs.service';
 import { CreateActifDto } from '../../../../core/models/actif.interface';
 
@@ -58,6 +61,9 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
   hasGeometry = false;
   isSatelliteView = false;
 
+  isEditMode = false;
+  dialogTitle = 'Créer un nouvel actif';
+
   private map!: Map;
   private drawSource = new VectorSource();
   private drawInteraction?: Draw;
@@ -97,7 +103,9 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<ActifFormDialogComponent>,
     private actifsService: ActifsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    @Inject(MAT_DIALOG_DATA) public data?: { actif?: Actif, mode?: 'create' | 'edit' }  // ← AJOUTER
+
   ) {
     // Initialize form in constructor to avoid TypeScript error
     this.actifForm = this.createForm();
@@ -119,6 +127,11 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
   ngOnInit(): void {
   this.setupFormValidation();
   this.loadGroupesFromDatabase();
+     this.isEditMode = this.data?.mode === 'edit';
+  this.dialogTitle = this.isEditMode ? 'Modifier l\'actif' : 'Créer un nouvel actif';
+  
+  if (this.isEditMode && this.data?.actif) {
+  this.loadActifForEdit(this.data.actif);}
 }
 
   ngAfterViewInit(): void {
@@ -410,33 +423,46 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private performSave(): void {
-    this.isSaving = true;
-    
-    const newActifData: CreateActifDto = {
-      ...this.actifForm.value,
-      idGroupe: Number(this.actifForm.value.idGroupe)
-    };
+  this.isSaving = true;
+  
+  // Récupérer les données du formulaire, en incluant le code même s'il est désactivé
+  const formValue = this.actifForm.getRawValue();
+  const actifData: CreateActifDto = {
+    ...formValue,
+    idGroupe: Number(formValue.idGroupe)
+  };
 
-    this.actifsService.createActif(newActifData).subscribe({
-      next: (createdActif) => this.handleSaveSuccess(createdActif),
+  console.log('🚀 Données envoyées:', actifData);
+
+  if (this.isEditMode && this.data?.actif?.id) {
+    // Mode édition
+    this.actifsService.updateActif(this.data.actif.id, actifData).subscribe({
+      next: (updatedActif) => this.handleSaveSuccess(updatedActif, 'modifié'),
+      error: (error) => this.handleSaveError(error)
+    });
+  } else {
+    // Mode création
+    this.actifsService.createActif(actifData).subscribe({
+      next: (createdActif) => this.handleSaveSuccess(createdActif, 'créé'),
       error: (error) => this.handleSaveError(error)
     });
   }
+}
 
-  private handleSaveSuccess(createdActif: any): void {
-    this.isSaving = false;
-    
-    this.snackBar.open(
-      `✓ Actif "${createdActif.nom}" créé avec succès!`, 
-      'Fermer', 
-      { 
-        duration: 4000,
-        panelClass: ['success-snackbar']
-      }
-    );
-    
-    this.dialogRef.close(createdActif);
-  }
+  private handleSaveSuccess(actif: any, action: string): void {
+  this.isSaving = false;
+  
+  this.snackBar.open(
+    `✓ Actif "${actif.nom}" ${action} avec succès!`, 
+    'Fermer', 
+    { 
+      duration: 4000,
+      panelClass: ['success-snackbar']
+    }
+  );
+  
+  this.dialogRef.close(actif);
+}
 
   private handleSaveError(error: any): void {
     this.isSaving = false;
@@ -551,4 +577,39 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
     
     return 'category';
   }
+
+  private loadActifForEdit(actif: Actif): void {
+  // Attendre que les groupes soient chargés
+  const loadDataWhenReady = () => {
+    if (this.groupeOptions.length > 0) {
+      this.actifForm.patchValue({
+        nom: actif.nom,
+        code: actif.code,
+        site: actif.site,
+        zone: actif.zone,
+        ouvrage: actif.ouvrage,
+        idGroupe: actif.idGroupe || actif.groupe?.id
+      });
+
+      // Charger la géométrie si elle existe
+      if (actif.geometry) {
+        this.actifForm.patchValue({
+          geometryType: actif.geometry.type,
+          coordinates: actif.geometry.coordinates
+        });
+        
+        this.hasGeometry = true;
+      }
+      
+      // Désactiver le code en mode édition
+      this.actifForm.get('code')?.disable();
+      
+      this.snackBar.open(`Chargement des données de "${actif.nom}"`, '', { duration: 2000 });
+    } else {
+      setTimeout(loadDataWhenReady, 100);
+    }
+  };
+  
+  loadDataWhenReady();
+}
 }

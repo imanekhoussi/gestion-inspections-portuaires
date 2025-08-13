@@ -70,12 +70,14 @@ export class ActifsService {
       );
   }
 
+  
+
   getActifById(id: number): Observable<Actif> {
-    return this.http.get<Actif>(`${this.API_URL}/actifs/${id}`)
-      .pipe(
-        catchError(this.handleError)
-      );
-  }
+  return this.http.get<Actif>(`${this.API_URL}/actifs/${id}`)
+    .pipe(
+      catchError(this.handleError)
+    );
+}
 
   // Family and Group operations
   getFamilles(): Observable<ActifFamille[]> {
@@ -217,4 +219,11 @@ export class ActifsService {
     console.error('ActifsService error:', errorMessage, error);
     return throwError(() => new Error(errorMessage));
   }
+
+  updateActif(id: number, actifData: any): Observable<Actif> {
+  return this.http.put<Actif>(`${this.API_URL}/actifs/${id}`, actifData)
+    .pipe(
+      catchError(this.handleError)
+    );
+}
 }

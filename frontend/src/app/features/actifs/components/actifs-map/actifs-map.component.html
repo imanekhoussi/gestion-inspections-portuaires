@@ -1,5 +1,13 @@
 <div class="map-container">
   <div class="map-header">
+    <button *ngIf="selectedActif" 
+          mat-raised-button 
+          color="primary" 
+          (click)="goBackToList()"
+          matTooltip="Retour à la liste des actifs">
+    <mat-icon>arrow_back</mat-icon>
+    Retour à la liste
+  </button>
     <h2>Cartographie des Actifs Portuaires</h2>
     <div class="map-controls">
       <button 

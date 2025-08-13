@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router'; // ← AJOUTER
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -8,9 +9,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
-
 import { ActifsService } from '../../services/actifs.service';
-import { ActifGeoJSON } from '../../../../core/models/actif.interface';
+import { ActifGeoJSON, Actif } from '../../../../core/models/actif.interface'; 
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 
 // OpenLayers and ol-ext imports
@@ -28,6 +28,8 @@ import { Style, Circle, Fill, Stroke, Text } from 'ol/style';
 import Overlay from 'ol/Overlay';
 import LayerSwitcher from 'ol-ext/control/LayerSwitcher';
 import FullScreen from 'ol/control/FullScreen';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
 
 interface FilterOption {
   value: string;
@@ -69,6 +71,10 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = true;
   error: string | null = null;
   
+  // 🔥 NOUVEAU: Pour gérer un actif spécifique
+  selectedActifId: number | null = null;
+  selectedActif: Actif | null = null;
+  
   // Filter options
   siteFilters: FilterOption[] = [];
   zoneFilters: FilterOption[] = [];
@@ -87,14 +93,25 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private actifsService: ActifsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private route: ActivatedRoute, // ← AJOUTER
+    private router: Router // ← AJOUTER
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // 🔥 NOUVEAU: Écouter les paramètres de l'URL
+    this.route.queryParams.subscribe(params => {
+      if (params['actifId']) {
+        this.selectedActifId = +params['actifId'];
+        this.loadSpecificActif(this.selectedActifId);
+      } else {
+        this.loadActifs();
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     this.initializeMap();
-    this.loadActifs();
   }
 
   ngOnDestroy(): void {
@@ -114,7 +131,93 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private getStyleByIndice(indice: number): Style {
+  // 🔥 NOUVELLE MÉTHODE: Charger un actif spécifique
+  private loadSpecificActif(actifId: number): void {
+    this.isLoading = true;
+    this.error = null;
+
+    // Charger les détails de l'actif
+    this.actifsService.getActifById(actifId).subscribe({
+      next: (actif) => {
+        this.selectedActif = actif;
+        this.displaySingleActif(actif);
+      },
+      error: (error) => {
+        console.error('Erreur chargement actif:', error);
+        this.error = 'Erreur lors du chargement de l\'actif';
+        this.isLoading = false;
+        this.snackBar.open('Actif non trouvé', 'Fermer', { duration: 5000 });
+      }
+    });
+  }
+
+  // 🔥 NOUVELLE MÉTHODE: Afficher un seul actif
+  private displaySingleActif(actif: Actif): void {
+    this.actifVectorSource.clear();
+
+    if (actif.geometry && actif.geometry.coordinates) {
+      // Créer une feature pour cet actif
+      const feature = this.createActifFeature(actif);
+      this.actifVectorSource.addFeature(feature);
+
+      // Zoomer sur cet actif
+      const geometry = feature.getGeometry();
+      if (geometry) {
+        this.map.getView().fit(geometry.getExtent(), {
+          padding: [100, 100, 100, 100],
+          maxZoom: 18,
+          duration: 1500
+        });
+      }
+
+      this.snackBar.open(`Actif "${actif.nom}" localisé`, '', { 
+        duration: 3000,
+        panelClass: ['success-snackbar']
+      });
+    } else {
+      this.snackBar.open('Cet actif n\'a pas de coordonnées GPS', 'Fermer', { 
+        duration: 4000,
+        panelClass: ['warning-snackbar']
+      });
+    }
+
+    this.isLoading = false;
+  }
+
+  // 🔥 NOUVELLE MÉTHODE: Créer une feature pour un actif
+  // 🔥 MÉTHODE CORRIGÉE
+private createActifFeature(actif: Actif): Feature {
+  const geoJsonFormat = new GeoJSON();
+  
+  const featureOrFeatures = geoJsonFormat.readFeature({
+    type: 'Feature',
+    geometry: actif.geometry,
+    properties: {
+      id: actif.id,
+      nom: actif.nom,
+      code: actif.code,
+      site: actif.site,
+      zone: actif.zone,
+      indiceEtat: actif.indiceEtat,
+      isSelected: true // Marquer comme sélectionné
+    }
+  }, {
+    dataProjection: 'EPSG:4326',
+    featureProjection: 'EPSG:3857'
+  });
+
+  // S'assurer qu'on retourne un seul Feature
+  if (Array.isArray(featureOrFeatures)) {
+    return featureOrFeatures[0];
+  }
+  return featureOrFeatures;
+}
+
+  public goBackToList(): void {
+  this.router.navigate(['/actifs/list']);
+}
+
+  private getStyleByIndice(indice: number, isSelected: boolean = false): Style {
     let color: string;
     let textColor = 'white';
     
@@ -124,6 +227,22 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       color = '#ff9800'; // Orange - Average state  
     } else {
       color = '#f44336'; // Red - Poor state
+    }
+
+    // Style spécial pour l'actif sélectionné
+    if (isSelected) {
+      return new Style({
+        image: new Circle({
+          radius: 15, // Plus gros
+          fill: new Fill({ color: '#2196f3' }), // Bleu
+          stroke: new Stroke({ color: 'white', width: 4 }) // Bordure plus épaisse
+        }),
+        text: new Text({
+          text: indice.toString(),
+          fill: new Fill({ color: 'white' }),
+          font: 'bold 14px sans-serif'
+        })
+      });
     }
 
     return new Style({
@@ -168,7 +287,8 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       properties: { title: 'Actifs Portuaires' },
       style: (feature) => {
         const indice = feature.get('indiceEtat') || 1;
-        return this.getStyleByIndice(indice);
+        const isSelected = feature.get('isSelected') || false;
+        return this.getStyleByIndice(indice, isSelected);
       }
     });
 
@@ -214,6 +334,49 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  
+
+  // 🔥 MODIFIER la méthode de création du popup pour l'actif sélectionné
+  private createPopupContent(properties: any): string {
+    const { nom, site, zone, indiceEtat, description, id, code } = properties;
+    let statusClass: string, statusText: string;
+
+    if (indiceEtat <= 2) {
+      statusClass = 'status-good';
+      statusText = 'Bon état';
+    } else if (indiceEtat === 3) {
+      statusClass = 'status-average'; 
+      statusText = 'État moyen';
+    } else {
+      statusClass = 'status-poor';
+      statusText = 'Mauvais état';
+    }
+
+    const isSelected = this.selectedActif?.id === id;
+    const selectedBadge = isSelected ? '<div class="selected-badge">📍 Actif sélectionné</div>' : '';
+
+    return `
+      ${selectedBadge}
+      <h3 class="popup-title">${nom || 'Actif sans nom'}</h3>
+      <div class="popup-details">
+        <div class="detail-item"><strong>Code:</strong> ${code || 'N/A'}</div>
+        <div class="detail-item"><strong>Site:</strong> ${site || 'Non spécifié'}</div>
+        <div class="detail-item"><strong>Zone:</strong> ${zone || 'Non spécifiée'}</div>
+        <div class="detail-item">
+          <strong>État:</strong> 
+          <span class="status-badge ${statusClass}">${statusText} (${indiceEtat || 'N/A'}/5)</span>
+        </div>
+        ${description ? `<div class="detail-item"><strong>Description:</strong> ${description}</div>` : ''}
+      </div>
+      <div class="popup-actions">
+        <button class="popup-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${properties.lat || 0},${properties.lng || 0}', '_blank')">
+          Ouvrir dans Maps
+        </button>
+        ${isSelected ? '<button class="popup-btn primary">✓ Actif localisé</button>' : ''}
+      </div>
+    `;
+  }
+
   private addMapControls(): void {
     // Add layer switcher
     const layerSwitcher = new LayerSwitcher();
@@ -234,6 +397,10 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     legendElement.innerHTML = `
       <div class="legend-content">
         <h4>État des Actifs</h4>
+        ${this.selectedActif ? `<div class="selected-actif-info">
+          <strong>🎯 ${this.selectedActif.nom}</strong><br>
+          <small>${this.selectedActif.code}</small>
+        </div>` : ''}
         <div class="legend-items">
           <div class="legend-item">
             <div class="legend-symbol good-state"></div>
@@ -247,7 +414,14 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
             <div class="legend-symbol poor-state"></div>
             <span>Mauvais état (4-5)</span>
           </div>
+          ${this.selectedActif ? `<div class="legend-item">
+            <div class="legend-symbol selected-state"></div>
+            <span>Actif sélectionné</span>
+          </div>` : ''}
         </div>
+        ${this.selectedActif ? `<button class="back-btn" onclick="window.location.href='/actifs/list'">
+          ← Retour à la liste
+        </button>` : ''}
       </div>
     `;
 
@@ -258,6 +432,11 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private createFilterPanel(): void {
+    // Masquer le panneau de filtres si on affiche un actif spécifique
+    if (this.selectedActif) {
+      return;
+    }
+
     const filterElement = document.createElement('div');
     filterElement.className = 'ol-filter-panel';
     filterElement.innerHTML = `
@@ -604,41 +783,6 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     return result;
   }
 
-  private createPopupContent(properties: any): string {
-    const { nom, site, zone, indiceEtat, description, id } = properties;
-    let statusClass: string, statusText: string;
-
-    if (indiceEtat <= 2) {
-      statusClass = 'status-good';
-      statusText = 'Bon état';
-    } else if (indiceEtat === 3) {
-      statusClass = 'status-average'; 
-      statusText = 'État moyen';
-    } else {
-      statusClass = 'status-poor';
-      statusText = 'Mauvais état';
-    }
-
-    return `
-      <h3 class="popup-title">${nom || 'Actif sans nom'}</h3>
-      <div class="popup-details">
-        <div class="detail-item"><strong>Site:</strong> ${site || 'Non spécifié'}</div>
-        <div class="detail-item"><strong>Zone:</strong> ${zone || 'Non spécifiée'}</div>
-        <div class="detail-item">
-          <strong>État:</strong> 
-          <span class="status-badge ${statusClass}">${statusText} (${indiceEtat || 'N/A'}/5)</span>
-        </div>
-        ${description ? `<div class="detail-item"><strong>Description:</strong> ${description}</div>` : ''}
-        <div class="detail-item"><strong>ID:</strong> ${id}</div>
-      </div>
-      <div class="popup-actions">
-        <button class="popup-btn" onclick="console.log('Voir détails actif ID:', ${id})">
-          Voir détails
-        </button>
-      </div>
-    `;
-  }
-
   public centerOnTanger(): void {
     this.map.getView().animate({
       center: fromLonLat(this.DEFAULT_COORDS),
@@ -648,7 +792,11 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public refreshData(): void {
-    this.loadActifs();
+    if (this.selectedActifId) {
+      this.loadSpecificActif(this.selectedActifId);
+    } else {
+      this.loadActifs();
+    }
   }
 
   public zoomToActifs(): void {

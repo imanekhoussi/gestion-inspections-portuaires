@@ -11,11 +11,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
-
+import { ActifDetailsDialogComponent } from '../actif-details-dialog/actif-details-dialog.component';
 import { ActifsService } from '../../services/actifs.service';
 import { Actif } from '../../../../core/models/actif.interface';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
-
+import { Router } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActifFormDialogComponent } from '../actif-form-dialog/actif-form-dialog.component';
 
@@ -53,7 +53,8 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
   constructor(
     private actifsService: ActifsService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -138,48 +139,71 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
     this.loadActifs();
   }
   
-  showOnMap(actif: Actif): void {
-    if (actif.geometry && actif.geometry.coordinates) {
-      let longitude: number, latitude: number;
-      
-      // Handle different geometry types with proper type casting
-      if (actif.geometry.type === 'Point') {
-        const coords = actif.geometry.coordinates as [number, number];
-        [longitude, latitude] = coords;
-      } else if (actif.geometry.type === 'LineString') {
-        const coords = actif.geometry.coordinates as number[][];
-        [longitude, latitude] = coords[0];
-      } else if (actif.geometry.type === 'Polygon') {
-        const coords = actif.geometry.coordinates as number[][][];
-        [longitude, latitude] = coords[0][0];
-      } else {
-        this.snackBar.open(`Type de géométrie non supporté: ${actif.geometry.type}`, 'Fermer', {
-          duration: 3000
-        });
-        return;
+  // 🗺️ BOUTON 1: Localiser sur la carte
+showOnMap(actif: Actif): void {
+  if (actif.geometry && actif.geometry.coordinates) {
+    // 🔥 REDIRECTION vers la carte avec l'ID de l'actif
+    this.router.navigate(['/actifs/map'], { 
+      queryParams: { 
+        actifId: actif.id,
+        action: 'locate'
       }
-      
-      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-      window.open(mapUrl, '_blank');
-      
-    } else {
-      this.snackBar.open(`L'actif '${actif.nom}' n'a pas de coordonnées GPS.`, 'Fermer', {
-        duration: 3000
-      });
+    });
+    
+    this.snackBar.open(`Localisation de "${actif.nom}" sur la carte...`, '', {
+      duration: 2000,
+      panelClass: ['info-snackbar']
+    });
+    
+  } else {
+    this.snackBar.open(`L'actif "${actif.nom}" n'a pas de coordonnées GPS.`, 'Fermer', {
+      duration: 3000,
+      panelClass: ['warning-snackbar']
+    });
+  }
+}
+
+// 👁️ BOUTON 2: Voir les détails (version simple)
+viewDetails(actif: Actif): void {
+  const dialogRef = this.dialog.open(ActifDetailsDialogComponent, {
+    width: '700px',
+    maxWidth: '90vw',
+    data: { actif: actif },
+    panelClass: 'custom-dialog-container'
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    if (result === 'edit') {
+      // Si l'utilisateur clique sur "Modifier" dans les détails
+      this.editActif(actif);
     }
-  }
+  });
+}
 
-  editActif(actif: Actif): void {
-    // TODO: Implement edit functionality
-    this.snackBar.open(`Édition de l'actif "${actif.nom}" - Fonctionnalité à venir`, 'Fermer', {
-      duration: 2000
-    });
-  }
+// ✏️ BOUTON 3: Modifier l'actif
+editActif(actif: Actif): void {
+  const dialogRef = this.dialog.open(ActifFormDialogComponent, {
+    width: '95vw',
+    maxWidth: '1400px',
+    height: '95vh',
+    maxHeight: '900px',
+    data: { 
+      actif: actif,
+      mode: 'edit'
+    },
+    disableClose: true,
+    panelClass: 'custom-dialog-container'
+  });
 
-  viewDetails(actif: Actif): void {
-    // TODO: Implement view details functionality
-    this.snackBar.open(`Détails de l'actif "${actif.nom}" - Fonctionnalité à venir`, 'Fermer', {
-      duration: 2000
-    });
-  }
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      this.snackBar.open(`Actif "${result.nom}" modifié avec succès !`, 'Fermer', {
+        duration: 3000,
+        panelClass: ['success-snackbar']
+      });
+      this.refreshData();
+    }
+  });
+}
+  
 }
