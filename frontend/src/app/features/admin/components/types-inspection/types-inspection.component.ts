@@ -85,7 +85,7 @@ export class TypesInspectionComponent implements OnInit, AfterViewInit {
   frequenceOptions: FrequenceOption[] = [
     {
       value: 'Quotidienne',
-      label: 'Quotidienne',
+      label: 'Journalière',
       description: 'Inspection chaque jour',
       color: '#e74c3c',
       icon: 'today'

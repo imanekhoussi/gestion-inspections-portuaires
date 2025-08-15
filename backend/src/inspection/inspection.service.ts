@@ -39,22 +39,24 @@ async findByCalendar(startDate: Date, endDate: Date): Promise<any[]> {
     },
   });
 
-  // Map the inspections to the format FullCalendar needs
+  // Map the inspections to the format the Angular frontend expects
   return inspections.map((inspection) => {
-    let eventColor = '#1976d2'; // Default blue for 'PROGRAMMEE'
+    let statusString: 'Planifiée' | 'Terminée' | 'Annulée' | 'Rejetée' | 'Autre' = 'Autre';
 
     switch (inspection.etat) {
-      case 'validee':
-        eventColor = '#28a745'; // Green
+      case EtatInspection.PROGRAMMEE:
+        statusString = 'Planifiée';
         break;
-      case 'en_cours':
-        eventColor = '#ffc107'; // Yellow
+      case EtatInspection.VALIDEE:
+        statusString = 'Terminée';
         break;
-      case 'cloturee':
-        eventColor = '#6c757d'; // Grey
+      case EtatInspection.REJETEE:
+        statusString = 'Rejetée';
         break;
-      case 'rejetee':
-        eventColor = '#dc3545'; // Red
+      // NOTE: There is no direct match for 'Annulée' in your EtatInspection enum.
+      // We will map CLOTUREE to 'Annulée' as an example, but you may need to adjust this logic.
+      case EtatInspection.CLOTUREE:
+        statusString = 'Annulée';
         break;
     }
 
@@ -63,8 +65,7 @@ async findByCalendar(startDate: Date, endDate: Date): Promise<any[]> {
       title: inspection.titre,
       start: inspection.dateDebut,
       end: inspection.dateFin,
-      color: eventColor,
-      allDay: true, // This makes events span the entire day cell
+      status: statusString, // ✅ FIX: Send the status string instead of a color
     };
   });
 }
