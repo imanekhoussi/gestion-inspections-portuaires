@@ -1,0 +1,16 @@
+.calendar-container {
+  // Adds some breathing room around the whole page
+  padding: 24px;
+}
+
+.page-header {
+  // Adds space below the "Calendrier des Inspections" title
+  margin-bottom: 24px;
+
+  h2 {
+    // Styles the main title
+    font-size: 2rem;
+    font-weight: 500;
+    margin: 0;
+  }
+}

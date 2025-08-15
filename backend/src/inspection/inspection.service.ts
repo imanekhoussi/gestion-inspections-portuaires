@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Inspection, EtatInspection } from '../entities/inspection.entity';
 import { CreateInspectionDto, UpdateInspectionDto } from './dto/inspection.dto';
 import { Actif } from '../entities/actif.entity';
+import { Between } from 'typeorm';
 
 @Injectable()
 export class InspectionService {
@@ -31,17 +32,42 @@ export class InspectionService {
   };
 }
 
-  async findByCalendar(startDate: Date, endDate: Date): Promise<Inspection[]> {
-    return this.inspectionRepository
-      .createQueryBuilder('inspection')
-      .leftJoinAndSelect('inspection.typeInspection', 'typeInspection')
-      .leftJoinAndSelect('inspection.actifs', 'actifs')
-      .where('inspection.dateDebut BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      })
-      .getMany();
-  }
+async findByCalendar(startDate: Date, endDate: Date): Promise<any[]> {
+  const inspections = await this.inspectionRepository.find({
+    where: {
+      dateDebut: Between(startDate, endDate),
+    },
+  });
+
+  // Map the inspections to the format FullCalendar needs
+  return inspections.map((inspection) => {
+    let eventColor = '#1976d2'; // Default blue for 'PROGRAMMEE'
+
+    switch (inspection.etat) {
+      case 'validee':
+        eventColor = '#28a745'; // Green
+        break;
+      case 'en_cours':
+        eventColor = '#ffc107'; // Yellow
+        break;
+      case 'cloturee':
+        eventColor = '#6c757d'; // Grey
+        break;
+      case 'rejetee':
+        eventColor = '#dc3545'; // Red
+        break;
+    }
+
+    return {
+      id: inspection.id.toString(),
+      title: inspection.titre,
+      start: inspection.dateDebut,
+      end: inspection.dateFin,
+      color: eventColor,
+      allDay: true, // This makes events span the entire day cell
+    };
+  });
+}
 
   async create(createInspectionDto: CreateInspectionDto, userId: number): Promise<Inspection> {
     const inspection = this.inspectionRepository.create({
