@@ -221,7 +221,7 @@ export class ActifsService {
   }
 
   updateActif(id: number, actifData: any): Observable<Actif> {
-  return this.http.put<Actif>(`${this.API_URL}/actifs/${id}`, actifData)
+  return this.http.patch<Actif>(`${this.API_URL}/actifs/${id}`, actifData)
     .pipe(
       catchError(this.handleError)
     );
