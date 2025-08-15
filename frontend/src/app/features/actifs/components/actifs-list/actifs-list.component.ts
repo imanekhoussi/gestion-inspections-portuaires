@@ -66,12 +66,21 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
     this.dataSource.sort = this.sort;
   }
 
+  // 🔥 UNE SEULE méthode openAddActifDialog - CORRIGÉE
   openAddActifDialog(): void {
+    console.log('➕ Ouverture du dialog de création d\'actif');
+    
+    const dialogData = {
+      mode: 'create' as const  // Mode explicite
+      // Pas d'actif car c'est une création
+    };
+    
     const dialogRef = this.dialog.open(ActifFormDialogComponent, {
       width: '95vw',
       maxWidth: '1400px',
       height: '95vh',
       maxHeight: '900px',
+      data: dialogData,
       disableClose: true,
       panelClass: 'custom-dialog-container'
     });
@@ -83,6 +92,8 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
           panelClass: ['success-snackbar']
         });
         this.refreshData();
+      } else {
+        console.log('🚫 Création annulée');
       }
     });
   }
@@ -140,70 +151,78 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
   }
   
   // 🗺️ BOUTON 1: Localiser sur la carte
-showOnMap(actif: Actif): void {
-  if (actif.geometry && actif.geometry.coordinates) {
-    // 🔥 REDIRECTION vers la carte avec l'ID de l'actif
-    this.router.navigate(['/actifs/map'], { 
-      queryParams: { 
-        actifId: actif.id,
-        action: 'locate'
+  showOnMap(actif: Actif): void {
+    if (actif.geometry && actif.geometry.coordinates) {
+      // 🔥 REDIRECTION vers la carte avec l'ID de l'actif
+      this.router.navigate(['/actifs/map'], { 
+        queryParams: { 
+          actifId: actif.id,
+          action: 'locate'
+        }
+      });
+      
+      this.snackBar.open(`Localisation de "${actif.nom}" sur la carte...`, '', {
+        duration: 2000,
+        panelClass: ['info-snackbar']
+      });
+      
+    } else {
+      this.snackBar.open(`L'actif "${actif.nom}" n'a pas de coordonnées GPS.`, 'Fermer', {
+        duration: 3000,
+        panelClass: ['warning-snackbar']
+      });
+    }
+  }
+
+  // 👁️ BOUTON 2: Voir les détails (version simple)
+  viewDetails(actif: Actif): void {
+    const dialogRef = this.dialog.open(ActifDetailsDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      data: { actif: actif },
+      panelClass: 'custom-dialog-container'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'edit') {
+        // Si l'utilisateur clique sur "Modifier" dans les détails
+        this.editActif(actif);
       }
     });
+  }
+
+  // ✏️ BOUTON 3: Modifier l'actif - CORRIGÉ
+  editActif(actif: Actif): void {
+    console.log('🔧 Ouverture du dialog d\'édition pour:', actif);
     
-    this.snackBar.open(`Localisation de "${actif.nom}" sur la carte...`, '', {
-      duration: 2000,
-      panelClass: ['info-snackbar']
+    // 🔥 CORRECTION: S'assurer que toutes les données nécessaires sont passées
+    const dialogData = {
+      actif: actif,           // L'actif complet à modifier
+      mode: 'edit' as const   // Mode explicite avec typage strict
+    };
+    
+    console.log('📦 Données passées au dialog:', dialogData);
+    
+    const dialogRef = this.dialog.open(ActifFormDialogComponent, {
+      width: '95vw',
+      maxWidth: '1400px',
+      height: '95vh',
+      maxHeight: '900px',
+      data: dialogData,  // 🔥 Utiliser l'objet structuré
+      disableClose: true,
+      panelClass: 'custom-dialog-container'
     });
-    
-  } else {
-    this.snackBar.open(`L'actif "${actif.nom}" n'a pas de coordonnées GPS.`, 'Fermer', {
-      duration: 3000,
-      panelClass: ['warning-snackbar']
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open(`Actif "${result.nom}" modifié avec succès !`, 'Fermer', {
+          duration: 3000,
+          panelClass: ['success-snackbar']
+        });
+        this.refreshData();
+      } else {
+        console.log('🚫 Modification annulée');
+      }
     });
   }
-}
-
-// 👁️ BOUTON 2: Voir les détails (version simple)
-viewDetails(actif: Actif): void {
-  const dialogRef = this.dialog.open(ActifDetailsDialogComponent, {
-    width: '700px',
-    maxWidth: '90vw',
-    data: { actif: actif },
-    panelClass: 'custom-dialog-container'
-  });
-
-  dialogRef.afterClosed().subscribe(result => {
-    if (result === 'edit') {
-      // Si l'utilisateur clique sur "Modifier" dans les détails
-      this.editActif(actif);
-    }
-  });
-}
-
-// ✏️ BOUTON 3: Modifier l'actif
-editActif(actif: Actif): void {
-  const dialogRef = this.dialog.open(ActifFormDialogComponent, {
-    width: '95vw',
-    maxWidth: '1400px',
-    height: '95vh',
-    maxHeight: '900px',
-    data: { 
-      actif: actif,
-      mode: 'edit'
-    },
-    disableClose: true,
-    panelClass: 'custom-dialog-container'
-  });
-
-  dialogRef.afterClosed().subscribe(result => {
-    if (result) {
-      this.snackBar.open(`Actif "${result.nom}" modifié avec succès !`, 'Fermer', {
-        duration: 3000,
-        panelClass: ['success-snackbar']
-      });
-      this.refreshData();
-    }
-  });
-}
-  
 }

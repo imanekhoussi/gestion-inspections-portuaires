@@ -5,8 +5,13 @@
       <mat-icon>engineering</mat-icon>
     </div>
     <div class="header-text">
-      <h1>Créer un nouvel actif</h1>
-      <p>Définissez les propriétés et la localisation géographique de votre actif</p>
+      <h1>{{ isEditMode ? 'Modifier l\'actif' : 'Créer un nouvel actif' }}</h1>
+<p>
+  {{ isEditMode 
+      ? 'Modifiez les propriétés et la localisation géographique de votre actif'
+      : 'Définissez les propriétés et la localisation géographique de votre actif' }}
+</p>
+
     </div>
   </div>
 </div>
@@ -205,7 +210,12 @@
       <div class="button-content">
         <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
         <mat-icon *ngIf="!isSaving">save</mat-icon>
-        <span>{{ isSaving ? 'Création en cours...' : 'Créer l\'actif' }}</span>
+      <span>
+  {{ isSaving 
+      ? (isEditMode ? 'Modification en cours...' : 'Création en cours...') 
+      : (isEditMode ? 'Modifier l\'actif' : 'Créer l\'actif') }}
+</span>
+
       </div>
     </button>
   </div>
