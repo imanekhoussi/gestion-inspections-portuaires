@@ -4,14 +4,14 @@
 }
 
 .admin-sidenav {
-  width: 300px;
+  width: 250px;
   background: #2c3e50;
   color: white;
 }
 
 .admin-sidenav-header {
   padding: 24px 16px 16px;
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #2980b9, #1f5f99);
   color: white;
   
   .admin-logo-container {
@@ -48,7 +48,7 @@
     margin: 4px 16px;
     border-radius: 8px;
     transition: all 0.3s ease;
-    color: #bdc3c7;
+    color: white !important; /* This makes all sidebar font white by default */
     
     &:hover {
       background-color: rgba(52, 73, 94, 0.7);
@@ -56,17 +56,18 @@
     }
     
     &.active-route {
-      background-color: rgba(231, 76, 60, 0.2);
-      color: #e74c3c;
-      border-left: 4px solid #e74c3c;
+      background-color: #3498db; 
+      color: white !important;
+      font-weight: 500;
+      border-left: none;
       
       .mat-icon {
-        color: #e74c3c;
+        color: white !important;  
       }
     }
     
     .mat-icon {
-      color: inherit;
+      color: white !important; /* This ensures the icons are also white */
       font-size: 20px;
     }
   }
@@ -96,7 +97,7 @@
   top: 0;
   z-index: 1000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  background: linear-gradient(90deg, #e74c3c, #c0392b) !important;
+  background: linear-gradient(90deg, #2980b9, #1f5f99) !important;
   
   .toolbar-admin-icon {
     margin-right: 12px;
@@ -124,7 +125,7 @@
     }
     
     .admin-badge {
-      color: #f1c40f;
+      color: #f39c12;
       font-size: 20px;
     }
   }
@@ -146,7 +147,7 @@
   }
   
   .current-section {
-    color: #e74c3c;
+    color: #2980b9;
     font-weight: 500;
   }
 }
@@ -171,14 +172,16 @@
       display: none;
     }
   }
-  .admin-container {
+}
+
+.admin-container {
   padding: 0;
   background-color: #f8f9fa;
   min-height: 100vh;
 }
 
 .admin-welcome {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #2980b9, #1f5f99);
   color: white;
   padding: 40px 24px;
   margin: -24px -24px 24px -24px;
@@ -258,13 +261,13 @@
       }
       
       &.families-icon {
-        background: rgba(46, 204, 113, 0.1);
-        color: #2ecc71;
+        background: rgba(22, 160, 133, 0.1);
+        color: #16a085;
       }
       
       &.groups-icon {
-        background: rgba(155, 89, 182, 0.1);
-        color: #9b59b6;
+        background: rgba(142, 68, 173, 0.1);
+        color: #8e44ad;
       }
       
       &.inspections-icon {
@@ -323,6 +326,8 @@
   }
 }
 
+// Port-specific additional styling
+
 @media (max-width: 768px) {
   .admin-welcome {
     padding: 24px 16px;
@@ -342,4 +347,12 @@
     gap: 16px;
   }
 }
+/* --- Force Admin Sidebar Text to White --- */
+
+.admin-sidenav .mdc-list-item__primary-text {
+  color: white !important;
+}
+
+.admin-sidenav .mat-icon {
+  color: white !important;
 }
