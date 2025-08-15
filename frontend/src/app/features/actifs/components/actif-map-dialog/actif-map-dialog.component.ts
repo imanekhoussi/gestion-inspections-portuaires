@@ -65,7 +65,6 @@ import { Geometry } from 'ol/geom';
 
     <div class="map-dialog-content">
       <div id="actif-map" class="map-container"></div>
-      
       <div class="map-controls">
         <button mat-fab 
                 class="control-button"

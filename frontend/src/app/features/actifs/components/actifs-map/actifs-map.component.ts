@@ -153,39 +153,54 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // 🔥 NOUVELLE MÉTHODE: Afficher un seul actif
   private displaySingleActif(actif: Actif): void {
-    this.actifVectorSource.clear();
+  this.actifVectorSource.clear();
 
-    if (actif.geometry && actif.geometry.coordinates) {
-      // Créer une feature pour cet actif
-      const feature = this.createActifFeature(actif);
-      this.actifVectorSource.addFeature(feature);
+  if (actif.geometry && actif.geometry.coordinates) {
+    // Créer une feature pour cet actif
+    const feature = this.createActifFeature(actif);
+    this.actifVectorSource.addFeature(feature);
 
-      // Zoomer sur cet actif
-      const geometry = feature.getGeometry();
-      if (geometry) {
-        this.map.getView().fit(geometry.getExtent(), {
-          padding: [100, 100, 100, 100],
-          maxZoom: 18,
-          duration: 1500
-        });
+    // Zoomer sur cet actif avec padding adapté au type
+    const geometry = feature.getGeometry();
+    if (geometry) {
+      const geometryType = actif.geometry.type;
+      let padding = [100, 100, 100, 100];
+      let maxZoom = 18;
+
+      // 🔥 ADAPTER le zoom selon le type de géométrie
+      if (geometryType === 'Point') {
+        maxZoom = 18;
+        padding = [50, 50, 50, 50];
+      } else if (geometryType === 'LineString') {
+        maxZoom = 16;
+        padding = [100, 100, 100, 100];
+      } else if (geometryType === 'Polygon') {
+        maxZoom = 15;
+        padding = [150, 150, 150, 150];
       }
 
-      this.snackBar.open(`Actif "${actif.nom}" localisé`, '', { 
-        duration: 3000,
-        panelClass: ['success-snackbar']
-      });
-    } else {
-      this.snackBar.open('Cet actif n\'a pas de coordonnées GPS', 'Fermer', { 
-        duration: 4000,
-        panelClass: ['warning-snackbar']
+      this.map.getView().fit(geometry.getExtent(), {
+        padding: padding,
+        maxZoom: maxZoom,
+        duration: 1500
       });
     }
 
-    this.isLoading = false;
+    this.snackBar.open(`Actif "${actif.nom}" localisé`, '', { 
+      duration: 3000,
+      panelClass: ['success-snackbar']
+    });
+  } else {
+    this.snackBar.open('Cet actif n\'a pas de coordonnées GPS', 'Fermer', { 
+      duration: 4000,
+      panelClass: ['warning-snackbar']
+    });
   }
 
-  // 🔥 NOUVELLE MÉTHODE: Créer une feature pour un actif
-  // 🔥 MÉTHODE CORRIGÉE
+  this.isLoading = false;
+}
+
+  
 private createActifFeature(actif: Actif): Feature {
   const geoJsonFormat = new GeoJSON();
   
@@ -199,7 +214,8 @@ private createActifFeature(actif: Actif): Feature {
       site: actif.site,
       zone: actif.zone,
       indiceEtat: actif.indiceEtat,
-      isSelected: true // Marquer comme sélectionné
+      isSelected: true,
+      geometryType: actif.geometry?.type// Marquer comme sélectionné
     }
   }, {
     dataProjection: 'EPSG:4326',
@@ -217,47 +233,74 @@ private createActifFeature(actif: Actif): Feature {
   this.router.navigate(['/actifs/list']);
 }
 
-  private getStyleByIndice(indice: number, isSelected: boolean = false): Style {
-    let color: string;
-    let textColor = 'white';
-    
-    if (indice <= 2) {
-      color = '#4caf50'; // Green - Good state
-    } else if (indice === 3) {
-      color = '#ff9800'; // Orange - Average state  
-    } else {
-      color = '#f44336'; // Red - Poor state
-    }
+  private getStyleByIndice(indice: number, isSelected: boolean = false, geometryType?: string): Style {
+  let color: string;
+  let textColor = 'white';
+  
+  if (indice <= 2) {
+    color = '#4caf50'; // Green - Good state
+  } else if (indice === 3) {
+    color = '#ff9800'; // Orange - Average state  
+  } else {
+    color = '#f44336'; // Red - Poor state
+  }
 
-    // Style spécial pour l'actif sélectionné
-    if (isSelected) {
-      return new Style({
-        image: new Circle({
-          radius: 15, // Plus gros
-          fill: new Fill({ color: '#2196f3' }), // Bleu
-          stroke: new Stroke({ color: 'white', width: 4 }) // Bordure plus épaisse
-        }),
-        text: new Text({
-          text: indice.toString(),
-          fill: new Fill({ color: 'white' }),
-          font: 'bold 14px sans-serif'
-        })
-      });
-    }
-
+  // 🔥 NOUVEAU: Style différent selon le type de géométrie
+  if (geometryType === 'LineString') {
     return new Style({
-      image: new Circle({
-        radius: 10,
-        fill: new Fill({ color }),
-        stroke: new Stroke({ color: 'white', width: 2 })
+      stroke: new Stroke({ 
+        color: isSelected ? '#2196f3' : color, 
+        width: isSelected ? 6 : 4,
+        lineDash: isSelected ? [15, 10] : undefined
       }),
       text: new Text({
-        text: indice.toString(),
-        fill: new Fill({ color: textColor }),
-        font: 'bold 12px sans-serif'
+        text: isSelected ? `🎯 ${indice}` : indice.toString(),
+        fill: new Fill({ color: isSelected ? '#2196f3' : color }),
+        font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
+        stroke: new Stroke({ color: 'white', width: 2 }),
+        placement: 'line',
+        maxAngle: Math.PI / 4
+      })
+    });
+  } 
+  
+  else if (geometryType === 'Polygon') {
+    return new Style({
+      fill: new Fill({ 
+        color: isSelected ? 'rgba(33, 150, 243, 0.3)' : `${color}40` // 40 = 25% opacity
+      }),
+      stroke: new Stroke({ 
+        color: isSelected ? '#2196f3' : color, 
+        width: isSelected ? 4 : 2,
+        lineDash: isSelected ? [10, 5] : undefined
+      }),
+      text: new Text({
+        text: isSelected ? `🎯 ${indice}` : indice.toString(),
+        fill: new Fill({ color: isSelected ? '#2196f3' : color }),
+        font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
+        stroke: new Stroke({ color: 'white', width: 2 })
+      })
+    });
+  } 
+  
+  else { // Point par défaut
+    return new Style({
+      image: new Circle({
+        radius: isSelected ? 15 : 10,
+        fill: new Fill({ color: isSelected ? '#2196f3' : color }),
+        stroke: new Stroke({ 
+          color: 'white', 
+          width: isSelected ? 4 : 2 
+        })
+      }),
+      text: new Text({
+        text: isSelected ? `🎯 ${indice}` : indice.toString(),
+        fill: new Fill({ color: 'white' }),
+        font: isSelected ? 'bold 14px sans-serif' : 'bold 12px sans-serif'
       })
     });
   }
+}
 
   private initializeMap(): void {
     // Base layers
@@ -281,16 +324,18 @@ private createActifFeature(actif: Actif): Feature {
       properties: { title: 'Fonds de carte' }
     });
 
-    // Create the actifs layer
-    this.actifLayer = new VectorLayer({
-      source: this.actifVectorSource,
-      properties: { title: 'Actifs Portuaires' },
-      style: (feature) => {
-        const indice = feature.get('indiceEtat') || 1;
-        const isSelected = feature.get('isSelected') || false;
-        return this.getStyleByIndice(indice, isSelected);
-      }
-    });
+   this.actifLayer = new VectorLayer({
+    source: this.actifVectorSource,
+    properties: { title: 'Actifs Portuaires' },
+    style: (feature) => {
+      const indice = feature.get('indiceEtat') || 1;
+      const isSelected = feature.get('isSelected') || false;
+      const geometry = feature.getGeometry();
+      const geometryType = geometry?.getType(); // 🔥 RÉCUPÉRER LE TYPE
+      
+      return this.getStyleByIndice(indice, isSelected, geometryType);
+    }
+  });
 
     // Create popup overlay
     this.popupOverlay = new Overlay({
@@ -368,12 +413,7 @@ private createActifFeature(actif: Actif): Feature {
         </div>
         ${description ? `<div class="detail-item"><strong>Description:</strong> ${description}</div>` : ''}
       </div>
-      <div class="popup-actions">
-        <button class="popup-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${properties.lat || 0},${properties.lng || 0}', '_blank')">
-          Ouvrir dans Maps
-        </button>
-        ${isSelected ? '<button class="popup-btn primary">✓ Actif localisé</button>' : ''}
-      </div>
+      
     `;
   }
 
