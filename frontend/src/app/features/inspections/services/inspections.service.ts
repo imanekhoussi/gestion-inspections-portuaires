@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams  } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { Inspection } from '../../../core/models/inspection.interface';
-
+import { EventInput } from '@fullcalendar/core';
 @Injectable({
   providedIn: 'root'
 })
@@ -32,5 +32,11 @@ export class InspectionsService {
 
   deleteInspection(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/inspections/${id}`);
+  }
+  getInspectionsForCalendar(start: string, end: string): Observable<EventInput[]> {
+    const params = new HttpParams()
+      .set('startDate', start)
+      .set('endDate', end);
+    return this.http.get<EventInput[]>(`${this.API_URL}/calendar`, { params });
   }
 }

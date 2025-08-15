@@ -42,10 +42,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   currentUser$: Observable<User | null>;
   isHandset$: Observable<boolean>;
 
-  // ✅ STEP 1: Add this new property to hold our dynamic list.
   navigationItems$!: Observable<NavigationItem[]>;
 
-  // This is your original, correct list of navigation items.
   private baseNavigationItems: NavigationItem[] = [
     { label: 'Tableau de Bord', icon: 'dashboard', route: '/dashboard' },
     {
@@ -60,7 +58,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       children: [{ label: 'Liste des Familles', icon: 'folder_open', route: '/familles/list' }]
     },
     { label: 'Inspections', icon: 'assignment', route: '/inspections' },
-    { label: 'Planning', icon: 'event', route: '/planning' }
+    // ✅ FIX: The route for 'Planning' now correctly points to the calendar.
+    { label: 'Planning', icon: 'event', route: '/planning/calendar' }
   ];
 
   constructor(
@@ -74,8 +73,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // ✅ STEP 2: Add this logic inside ngOnInit.
-    // This creates the dynamic menu correctly.
     this.navigationItems$ = this.currentUser$.pipe(
       map(user => {
         if (user && user.role === 'admin') {
@@ -84,23 +81,18 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             route: '/admin',
             icon: 'admin_panel_settings'
           };
-          // If the user is an admin, return the base list with the admin item.
           return [...this.baseNavigationItems, adminItem];
         }
-        // Otherwise, return just the base list.
         return this.baseNavigationItems;
       })
     );
 
-    // This part stays the same.
     this.authService.isAuthenticated$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(isAuth => {
       if (!isAuth) this.router.navigate(['/login']);
     });
   }
-
-  // ✅ STEP 3: The broken get navigationItemsWithAdmin() function has been completely removed.
 
   ngOnDestroy(): void {
     this.destroy$.next();

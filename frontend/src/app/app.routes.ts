@@ -7,7 +7,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/components/login/login.component').then(m => m.LoginComponent)
   },
   {
-  path: 'admin',
+    path: 'admin',
     loadChildren: () => import('./features/admin/admin.routes').then(m => m.adminRoutes)
   },
   {
@@ -42,7 +42,7 @@ export const routes: Routes = [
           }
         ]
       },
-{
+      {
         path: 'familles',
         children: [
           {
@@ -64,11 +64,16 @@ export const routes: Routes = [
           }
         ]
       },
-
       {
         path: 'inspections',
         loadComponent: () => import('./features/inspections/components/inspections-list/inspections-list.component').then(m => m.InspectionsListComponent)
+      },
+      
+      // ✅ --- THIS IS THE NEW ROUTE YOU NEED TO ADD ---
+      {
+        path: 'planning/calendar',
+        loadComponent: () => import('./features/inspections/components/inspections-calendar/inspections-calendar').then(m => m.InspectionsCalendarComponent)
       }
     ]
   }
-]
+];
