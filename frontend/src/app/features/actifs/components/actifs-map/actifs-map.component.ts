@@ -88,7 +88,7 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedBaseMap = 'osm';
   
   // Coordinates are [longitude, latitude] for OpenLayers
-  private readonly DEFAULT_COORDS: [number, number] = [-5.8340, 35.7595];
+  private readonly DEFAULT_COORDS: [number, number] = [-5.50308 ,35.88187];
   private readonly DEFAULT_ZOOM = 13;
 
   constructor(
@@ -313,7 +313,7 @@ private createActifFeature(actif: Actif): Feature {
       source: new XYZ({
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attributions: 'Tiles © Esri',
-        maxZoom: 19
+       // maxZoom: 19
       }),
       properties: { title: 'Satellite', baseLayer: true },
       visible: false
@@ -354,8 +354,9 @@ private createActifFeature(actif: Actif): Feature {
       view: new View({
         center: fromLonLat(this.DEFAULT_COORDS),
         zoom: this.DEFAULT_ZOOM,
-        maxZoom: 19,
-        minZoom: 8
+        projection:"EPSG:3857"
+       // maxZoom: 19,
+       // minZoom: 8
       }),
       overlays: [this.popupOverlay]
     });
@@ -426,7 +427,7 @@ private createActifFeature(actif: Actif): Feature {
     const fullScreen = new FullScreen();
     this.map.addControl(fullScreen);
 
-    // Create custom legend and filter panel
+   
     this.createCustomLegend();
     this.createFilterPanel();
   }
@@ -600,11 +601,11 @@ private createActifFeature(actif: Actif): Feature {
           
           if (features.length > 0) {
             const extent = this.actifVectorSource.getExtent();
-            this.map.getView().fit(extent, {
-              padding: [50, 50, 50, 50],
-              duration: 1000,
-              maxZoom: 16
-            });
+            //this.map.getView().fit(extent, {
+              //padding: [50, 50, 50, 50],
+              //duration: 1000,
+              //maxZoom: 16
+           //:});
             
             this.snackBar.open(`${features.length} actifs chargés avec succès`, 'Fermer', {
               duration: 3000,
@@ -711,7 +712,7 @@ private createActifFeature(actif: Actif): Feature {
         const filter = this.siteFilters[i];
         siteHtml += `
           <div class="filter-checkbox">
-            <input type="checkbox" id="site-${filter.value}" ${filter.checked ? 'checked' : ''}>
+            <input type="checkbox"  id="site-${filter.value}" ${filter.checked ? 'checked' : ''}>
             <label for="site-${filter.value}">${filter.label} (${filter.count})</label>
           </div>
         `;
