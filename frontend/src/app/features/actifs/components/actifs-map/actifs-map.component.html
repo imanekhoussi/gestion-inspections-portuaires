@@ -1,28 +1,59 @@
 <div class="map-container">
   <div class="map-header">
-    <button *ngIf="selectedActif" mat-raised-button color="primary" (click)="goBackToList()" matTooltip="Retour à la liste des actifs">
+    <!-- Back button for single actif view -->
+    <button *ngIf="selectedActif" 
+            mat-raised-button 
+            color="primary" 
+            (click)="goBackToList()"
+            matTooltip="Retour à la liste des actifs">
       <mat-icon>arrow_back</mat-icon>
       Retour à la liste
     </button>
+    
     <h2>Cartographie des Actifs Portuaires</h2>
+    
+    <!-- Control buttons -->
     <div class="map-controls">
-      <button *ngIf="!selectedActif" mat-raised-button [color]="isFilterPanelVisible ? 'primary' : 'basic'" (click)="toggleFilterPanel()" matTooltip="Afficher/Masquer les filtres">
+      <!-- Toggle panels buttons -->
+      <button *ngIf="!selectedActif"
+              mat-raised-button 
+              [color]="isFilterPanelVisible ? 'primary' : 'basic'"
+              (click)="toggleFilterPanel()"
+              matTooltip="Afficher/Masquer les filtres">
         <mat-icon>filter_list</mat-icon>
         Filtres
       </button>
-      <button mat-raised-button [color]="isLegendVisible ? 'accent' : 'basic'" (click)="toggleLegend()" matTooltip="Afficher/Masquer la légende">
+      
+      <button mat-raised-button 
+              [color]="isLegendVisible ? 'accent' : 'basic'"
+              (click)="toggleLegend()"
+              matTooltip="Afficher/Masquer la légende">
         <mat-icon>legend_toggle</mat-icon>
         Légende
       </button>
-      <button mat-raised-button color="primary" (click)="centerOnTanger()" matTooltip="Centrer sur Tanger">
+      
+      <!-- Map navigation buttons -->
+      <button mat-raised-button 
+              color="primary" 
+              (click)="centerOnTanger()"
+              matTooltip="Centrer sur Tanger">
         <mat-icon>my_location</mat-icon>
-        Le port
+        Tanger
       </button>
-      <button mat-raised-button color="accent" (click)="zoomToActifs()" [disabled]="isLoading" matTooltip="Voir tous les actifs">
+      
+      <button mat-raised-button 
+              color="accent"
+              (click)="zoomToActifs()"
+              [disabled]="isLoading"
+              matTooltip="Voir tous les actifs">
         <mat-icon>zoom_out_map</mat-icon>
         Voir tout
       </button>
-      <button mat-raised-button (click)="refreshData()" [disabled]="isLoading" matTooltip="Actualiser les données">
+      
+      <button mat-raised-button 
+              (click)="refreshData()"
+              [disabled]="isLoading"
+              matTooltip="Actualiser les données">
         <mat-icon [class.rotating]="isLoading">refresh</mat-icon>
         Actualiser
       </button>
@@ -30,109 +61,156 @@
   </div>
 
   <div class="map-wrapper">
-    <div id="map" class="ol-map" [class.loading]="isLoading"></div>
+    <!-- OpenLayers map container -->
+    <div id="map" class="ol-map" [class.loading]="isLoading">
+      
+      <!-- Draggable Filter Panel -->
+      <div *ngIf="!selectedActif && isFilterPanelVisible" 
+           class="floating-panel filter-panel"
+           cdkDrag
+           cdkDragBoundary=".map-wrapper">
+        <div class="panel-header" cdkDragHandle>
+          <div class="panel-title">
+            <mat-icon>filter_list</mat-icon>
+            <h4>Filtres</h4>
+          </div>
+          <button mat-icon-button (click)="toggleFilterPanel()" matTooltip="Fermer">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        
+        <div class="panel-content">
+          <!-- Base Map Selection -->
+          <div class="filter-section">
+            <label>Fond de carte</label>
+            <mat-form-field appearance="outline" [subscriptSizing]="'dynamic'">
+              <mat-select [(value)]="selectedBaseMap" (selectionChange)="onBaseMapChange()">
+                <mat-option value="osm">OpenStreetMap</mat-option>
+                <mat-option value="satellite">Satellite</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <!-- État Chips -->
+          <div class="filter-section">
+            <label>État des actifs</label>
+            <div class="etat-chips">
+              <mat-chip-listbox>
+                <mat-chip-option *ngFor="let chip of etatChips" 
+                                [selected]="chip.selected"
+                                [style.background-color]="chip.selected ? chip.color : 'transparent'"
+                                [style.color]="chip.selected ? 'white' : chip.color"
+                                [style.border]="'2px solid ' + chip.color"
+                                (click)="onChipToggle(chip.value)">
+                  {{chip.label}} ({{chip.count}})
+                </mat-chip-option>
+              </mat-chip-listbox>
+            </div>
+          </div>
+
+          <!-- Accordion for Sites and Zones -->
+          <mat-accordion>
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>business</mat-icon>
+                  Sites
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+              <div class="checkbox-list">
+                <mat-checkbox *ngFor="let filter of siteFilters"
+                              [(ngModel)]="filter.checked"
+                              (change)="onSiteFilterChange()">
+                  {{filter.label}} ({{filter.count}})
+                </mat-checkbox>
+              </div>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>place</mat-icon>
+                  Zones
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+              <div class="checkbox-list">
+                <mat-checkbox *ngFor="let filter of zoneFilters"
+                              [(ngModel)]="filter.checked"
+                              (change)="onZoneFilterChange()">
+                  {{filter.label}} ({{filter.count}})
+                </mat-checkbox>
+              </div>
+            </mat-expansion-panel>
+          </mat-accordion>
+
+         
+        </div>
+      </div>
+
+      <!-- Draggable Legend Panel -->
+      <div *ngIf="isLegendVisible" 
+           class="floating-panel legend-panel"
+           cdkDrag
+           cdkDragBoundary=".map-wrapper">
+        <div class="panel-header" cdkDragHandle>
+          <div class="panel-title">
+            <mat-icon>map</mat-icon>
+            <h4>Légende</h4>
+          </div>
+          <button mat-icon-button (click)="toggleLegend()" matTooltip="Fermer">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        
+        <div class="panel-content">
+          <!-- Selected Actif Info -->
+          <div *ngIf="selectedActif" class="selected-actif-info">
+            <strong>🎯 {{selectedActif.nom}}</strong>
+            <small>{{selectedActif.code}}</small>
+          </div>
+          
+          <!-- Legend Items -->
+          <div class="legend-items">
+            <div *ngFor="let chip of etatChips" 
+                 class="legend-item"
+                 [class.disabled]="!chip.selected"
+                 (click)="onLegendItemClick(chip.value)">
+              <div class="legend-symbol" [style.background-color]="chip.color"></div>
+              <span>{{chip.label}} ({{chip.count}})</span>
+            </div>
+          </div>
+          
+          <!-- Back Button -->
+          <button *ngIf="selectedActif" 
+                  mat-raised-button 
+                  color="primary" 
+                  class="back-btn"
+                  (click)="goBackToList()">
+            <mat-icon>arrow_back</mat-icon>
+            Retour à la liste
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup element for feature details -->
     <div #popup class="ol-popup">
       <a href="#" class="ol-popup-closer"></a>
       <div #popupContent></div>
     </div>
+    
+    <!-- Loading overlay -->
     <div *ngIf="isLoading" class="map-loading">
       <app-loading-spinner message="Chargement de la carte..."></app-loading-spinner>
     </div>
+    
+    <!-- Error overlay -->
     <div *ngIf="error" class="map-error">
       <mat-icon>error</mat-icon>
       <p>{{ error }}</p>
-      <button mat-raised-button color="primary" (click)="refreshData()">Réessayer</button>
-    </div>
-
-    <div *ngIf="isFilterPanelVisible && !selectedActif" class="floating-panel floating-filter-panel" cdkDrag cdkDragBoundary=".map-wrapper" cdkDragRootElement=".floating-filter-panel">
-      <div class="panel-header" cdkDragHandle>
-        <div class="panel-title">
-            <mat-icon>filter_list</mat-icon>
-            <h4>Filtres</h4>
-        </div>
-        <div class="panel-actions">
-            <button mat-icon-button (click)="isFilterPanelContentVisible = !isFilterPanelContentVisible" matTooltip="Réduire/Agrandir">
-                <mat-icon>{{ isFilterPanelContentVisible ? 'keyboard_arrow_down' : 'keyboard_arrow_up' }}</mat-icon>
-            </button>
-            <button mat-icon-button (click)="toggleFilterPanel()" matTooltip="Fermer">
-                <mat-icon>close</mat-icon>
-            </button>
-        </div>
-      </div>
-      <div class="panel-content" *ngIf="isFilterPanelContentVisible">
-        <div class="filter-section">
-            <label>Fond de carte:</label>
-            <mat-form-field appearance="fill" class="w-100">
-                <mat-select [value]="selectedBaseMap" (selectionChange)="onBaseMapChange($event)">
-                    <mat-option value="osm">OpenStreetMap</mat-option>
-                    <mat-option value="satellite">Satellite</mat-option>
-                </mat-select>
-            </mat-form-field>
-        </div>
-
-        <div class="filter-section">
-            <label>État des actifs:</label>
-            <mat-chip-listbox multiple="true" aria-label="État selection">
-                <mat-chip-option *ngFor="let chip of etatChips" [selected]="chip.selected" (click)="chip.selected = !chip.selected; applyFilters()" [style.background]="chip.selected ? chip.color : 'white'" [style.color]="chip.selected ? 'white' : chip.color">
-                    {{ chip.label }} ({{ chip.count }})
-                </mat-chip-option>
-            </mat-chip-listbox>
-        </div>
-
-        <mat-accordion>
-            <mat-expansion-panel>
-                <mat-expansion-panel-header>
-                    <mat-panel-title>Sites</mat-panel-title>
-                </mat-expansion-panel-header>
-                <div class="filter-checkbox-list">
-                    <mat-checkbox *ngFor="let filter of siteFilters" [(ngModel)]="filter.checked" (change)="applyFilters()">
-                        {{ filter.label }} ({{ filter.count }})
-                    </mat-checkbox>
-                </div>
-            </mat-expansion-panel>
-            <mat-expansion-panel>
-                <mat-expansion-panel-header>
-                    <mat-panel-title>Zones</mat-panel-title>
-                </mat-expansion-panel-header>
-                 <div class="filter-checkbox-list">
-                    <mat-checkbox *ngFor="let filter of zoneFilters" [(ngModel)]="filter.checked" (change)="applyFilters()">
-                        {{ filter.label }} ({{ filter.count }})
-                    </mat-checkbox>
-                </div>
-            </mat-expansion-panel>
-        </mat-accordion>
-        
-        <div class="filter-actions">
-            <button mat-stroked-button (click)="resetAllFilters()">Réinitialiser</button>
-            <button mat-flat-button color="primary" (click)="applyFilters()">Appliquer</button>
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="isLegendVisible" class="floating-panel floating-legend-panel" cdkDrag cdkDragBoundary=".map-wrapper" cdkDragRootElement=".floating-legend-panel">
-        <div class="panel-header" cdkDragHandle>
-            <div class="panel-title">
-                <mat-icon>legend_toggle</mat-icon>
-                <h4>Légende</h4>
-            </div>
-            <div class="panel-actions">
-                <button mat-icon-button (click)="toggleLegend()" matTooltip="Fermer">
-                    <mat-icon>close</mat-icon>
-                </button>
-            </div>
-        </div>
-        <div class="panel-content">
-            <div *ngIf="selectedActif" class="selected-actif-info">
-                <strong>{{ selectedActif.nom }}</strong>
-                <small>{{ selectedActif.code }}</small>
-            </div>
-            <div class="legend-items">
-                <div class="legend-item" *ngFor="let chip of etatChips">
-                    <div class="legend-symbol" [style.backgroundColor]="chip.color"></div>
-                    <span>{{ chip.label }}</span>
-                </div>
-            </div>
-        </div>
+      <button mat-raised-button color="primary" (click)="refreshData()">
+        Réessayer
+      </button>
     </div>
   </div>
 </div>
