@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,7 +13,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { CdkDrag } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { ActifsService } from '../../services/actifs.service';
-import { ActifGeoJSON, Actif } from '../../../../core/models/actif.interface'; 
+import { ActifGeoJSON, Actif } from '../../../../core/models/actif.interface';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 
 // OpenLayers imports
@@ -29,7 +29,6 @@ import GeoJSON from 'ol/format/GeoJSON';
 import { fromLonLat } from 'ol/proj';
 import { Style, Circle, Fill, Stroke, Text } from 'ol/style';
 import Overlay from 'ol/Overlay';
-import LayerSwitcher from 'ol-ext/control/LayerSwitcher';
 import FullScreen from 'ol/control/FullScreen';
 import Feature from 'ol/Feature';
 
@@ -52,19 +51,9 @@ interface EtatChip {
   selector: 'app-actifs-map',
   standalone: true,
   imports: [
-    CommonModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTooltipModule,
-    MatSnackBarModule,
-    MatSelectModule,
-    MatCheckboxModule,
-    MatFormFieldModule,
-    MatExpansionModule,
-    MatChipsModule,
-    CdkDrag,
-    FormsModule,
-    LoadingSpinnerComponent
+    CommonModule, MatButtonModule, MatIconModule, MatTooltipModule,
+    MatSnackBarModule, MatSelectModule, MatCheckboxModule, MatFormFieldModule,
+    MatExpansionModule, MatChipsModule, CdkDrag, FormsModule, LoadingSpinnerComponent
   ],
   templateUrl: './actifs-map.component.html',
   styleUrls: ['./actifs-map.component.scss']
@@ -72,6 +61,7 @@ interface EtatChip {
 export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('popup') popupElementRef!: ElementRef;
   @ViewChild('popupContent') popupContentElementRef!: ElementRef;
+  @ViewChild('mapWrapper') mapWrapperRef!: ElementRef;
 
   private map!: Map;
   private actifVectorSource = new VectorSource();
@@ -80,19 +70,14 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   private osmLayer!: TileLayer<OSM>;
   private satelliteLayer!: TileLayer<XYZ>;
   private allFeatures: any[] = [];
-  
+
   isLoading = true;
   error: string | null = null;
-  
-  // Selected actif
   selectedActifId: number | null = null;
   selectedActif: Actif | null = null;
-  
-  // UI State
   isLegendVisible = false;
   isFilterPanelVisible = true;
-  
-  // Filter data
+
   siteFilters: FilterOption[] = [];
   zoneFilters: FilterOption[] = [];
   etatChips: EtatChip[] = [
@@ -100,9 +85,11 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     { value: '3', label: 'Moyen', count: 0, selected: true, color: '#ff9800' },
     { value: '4-5', label: 'Mauvais', count: 0, selected: true, color: '#f44336' }
   ];
-  
   selectedBaseMap = 'osm';
-  
+
+  // This variable will hold the selector for the drag boundary
+  dragBoundarySelector: string = '.map-wrapper';
+
   private readonly DEFAULT_COORDS: [number, number] = [-5.50308, 35.88187];
   private readonly DEFAULT_ZOOM = 13;
 
@@ -110,17 +97,14 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     private actifsService: ActifsService,
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef // Inject ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      if (params['actifId']) {
-        this.selectedActifId = +params['actifId'];
-        this.loadSpecificActif(this.selectedActifId);
-      } else {
-        this.loadActifs();
-      }
+      this.selectedActifId = params['actifId'] ? +params['actifId'] : null;
+      this.loadData();
     });
   }
 
@@ -150,13 +134,11 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     const baseLayers = new LayerGroup({
-      layers: [this.osmLayer, this.satelliteLayer],
-      properties: { title: 'Fonds de carte' }
+      layers: [this.osmLayer, this.satelliteLayer]
     });
 
     this.actifLayer = new VectorLayer({
       source: this.actifVectorSource,
-      properties: { title: 'Actifs Portuaires' },
       style: (feature) => this.getFeatureStyle(feature)
     });
 
@@ -164,7 +146,7 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       element: this.popupElementRef.nativeElement,
       autoPan: { animation: { duration: 250 } }
     });
-    
+
     this.map = new Map({
       target: 'map',
       layers: [baseLayers, this.actifLayer],
@@ -175,103 +157,41 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       }),
       overlays: [this.popupOverlay]
     });
-    // to activate the fullscreen control
-    this.map.addControl(new FullScreen());
-  
+
+    // --- ROBUST FULLSCREEN LOGIC ---
+    const fullScreenControl = new FullScreen();
+
+    fullScreenControl.on('enterfullscreen', () => {
+      this.dragBoundarySelector = 'body'; // Remove boundary for fullscreen
+      this.cdr.detectChanges();
+    });
+
+    fullScreenControl.on('leavefullscreen', () => {
+      this.dragBoundarySelector = '.map-wrapper'; // Restore boundary
+      this.cdr.detectChanges();
+    });
+
+    this.map.addControl(fullScreenControl);
+    // --- END OF LOGIC ---
+
     this.map.on('singleclick', (event) => this.handleMapClick(event));
     this.setupPopupCloser();
   }
 
- 
-
   private setupPopupCloser(): void {
     const closer = this.popupElementRef.nativeElement.querySelector('.ol-popup-closer');
-    if (closer) {
-      closer.onclick = () => {
-        this.popupOverlay.setPosition(undefined);
-        return false;
-      };
-    }
+    closer.onclick = () => {
+      this.popupOverlay.setPosition(undefined);
+      return false;
+    };
   }
 
-  private getFeatureStyle(feature: any): Style {
-    const indice = feature.get('indiceEtat') || 1;
-    const isSelected = feature.get('isSelected') || false;
-    const geometryType = feature.getGeometry()?.getType();
-    
-    if (!this.isLegendVisible && !isSelected) {
-      return this.getUniformStyle(geometryType);
-    }
-
-    const color = this.getColorByIndice(indice);
-    
-    if (geometryType === 'LineString') {
-      return new Style({
-        stroke: new Stroke({ 
-          color: isSelected ? '#2196f3' : color, 
-          width: isSelected ? 6 : 4
-        }),
-        text: new Text({
-          text: isSelected ? `🎯 ${indice}` : indice.toString(),
-          fill: new Fill({ color: isSelected ? '#2196f3' : color }),
-          font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
-          stroke: new Stroke({ color: 'white', width: 2 })
-        })
-      });
-    } else if (geometryType === 'Polygon') {
-      return new Style({
-        fill: new Fill({ color: isSelected ? 'rgba(33, 150, 243, 0.3)' : `${color}40` }),
-        stroke: new Stroke({ color: isSelected ? '#2196f3' : color, width: isSelected ? 4 : 2 }),
-        text: new Text({
-          text: isSelected ? `🎯 ${indice}` : indice.toString(),
-          fill: new Fill({ color: isSelected ? '#2196f3' : color }),
-          font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
-          stroke: new Stroke({ color: 'white', width: 2 })
-        })
-      });
+  private loadData(): void {
+    if (this.selectedActifId) {
+      this.loadSpecificActif(this.selectedActifId);
     } else {
-      return new Style({
-        image: new Circle({
-          radius: isSelected ? 15 : 10,
-          fill: new Fill({ color: isSelected ? '#2196f3' : color }),
-          stroke: new Stroke({ color: 'white', width: isSelected ? 4 : 2 })
-        }),
-        text: new Text({
-          text: isSelected ? `🎯 ${indice}` : indice.toString(),
-          fill: new Fill({ color: 'white' }),
-          font: isSelected ? 'bold 14px sans-serif' : 'bold 12px sans-serif'
-        })
-      });
+      this.loadActifs();
     }
-  }
-
-  private getUniformStyle(geometryType?: string): Style {
-    const uniformColor = '#607d8b';
-    
-    if (geometryType === 'LineString') {
-      return new Style({
-        stroke: new Stroke({ color: uniformColor, width: 3 })
-      });
-    } else if (geometryType === 'Polygon') {
-      return new Style({
-        fill: new Fill({ color: `${uniformColor}40` }),
-        stroke: new Stroke({ color: uniformColor, width: 2 })
-      });
-    } else {
-      return new Style({
-        image: new Circle({
-          radius: 8,
-          fill: new Fill({ color: uniformColor }),
-          stroke: new Stroke({ color: 'white', width: 2 })
-        })
-      });
-    }
-  }
-
-  private getColorByIndice(indice: number): string {
-    if (indice <= 2) return '#4caf50';
-    if (indice === 3) return '#ff9800';
-    return '#f44336';
   }
 
   private loadActifs(): void {
@@ -281,53 +201,41 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.actifsService.getActifsGeoJSON().subscribe({
       next: (geoJson) => {
-        try {
-          const features = new GeoJSON().readFeatures(geoJson, {
-            featureProjection: 'EPSG:3857'
-          });
-          
-          this.allFeatures = features;
-          this.generateFilterOptions();
-          this.actifVectorSource.addFeatures(features);
-          
-          this.snackBar.open(`${features.length} actifs chargés`, 'Fermer', { duration: 3000 });
-        } catch (error) {
-          this.error = 'Erreur lors de l\'analyse des données';
-          this.snackBar.open('Erreur de données', 'Fermer', { duration: 5000 });
-        } finally {
-          this.isLoading = false;
-        }
+        const features = new GeoJSON().readFeatures(geoJson, { featureProjection: 'EPSG:3857' });
+        this.allFeatures = features;
+        this.generateFilterOptions();
+        this.applyFilters(); // Apply default filters on load
+        this.snackBar.open(`${features.length} actifs chargés`, 'Fermer', { duration: 3000 });
+        this.isLoading = false;
       },
       error: () => {
-        this.error = 'Erreur lors du chargement';
+        this.error = 'Erreur lors du chargement des actifs.';
         this.isLoading = false;
-        this.snackBar.open('Erreur de chargement', 'Fermer', { duration: 5000 });
       }
     });
   }
 
   private loadSpecificActif(actifId: number): void {
     this.isLoading = true;
+    this.error = null;
     this.actifsService.getActifById(actifId).subscribe({
       next: (actif) => {
         this.selectedActif = actif;
         this.displaySingleActif(actif);
+        this.isLoading = false;
       },
       error: () => {
-        this.error = 'Actif non trouvé';
+        this.error = `L'actif avec l'ID ${actifId} n'a pas été trouvé.`;
         this.isLoading = false;
-        this.snackBar.open('Actif non trouvé', 'Fermer', { duration: 5000 });
       }
     });
   }
 
   private displaySingleActif(actif: Actif): void {
     this.actifVectorSource.clear();
-
     if (actif.geometry?.coordinates) {
       const feature = this.createActifFeature(actif);
       this.actifVectorSource.addFeature(feature);
-      
       const geometry = feature.getGeometry();
       if (geometry) {
         this.map.getView().fit(geometry.getExtent(), {
@@ -337,22 +245,13 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
     }
-    this.isLoading = false;
   }
 
   private createActifFeature(actif: Actif): Feature {
     return new GeoJSON().readFeature({
       type: 'Feature',
       geometry: actif.geometry,
-      properties: {
-        id: actif.id,
-        nom: actif.nom,
-        code: actif.code,
-        site: actif.site,
-        zone: actif.zone,
-        indiceEtat: actif.indiceEtat,
-        isSelected: true
-      }
+      properties: { ...actif, isSelected: true }
     }, {
       dataProjection: 'EPSG:4326',
       featureProjection: 'EPSG:3857'
@@ -362,35 +261,74 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   private generateFilterOptions(): void {
     const sites: Record<string, number> = {};
     const zones: Record<string, number> = {};
-    const etats: Record<string, number> = {};
+    const etats: Record<string, number> = { '1-2': 0, '3': 0, '4-5': 0 };
 
     this.allFeatures.forEach(feature => {
       const props = feature.getProperties();
-      
       if (props.site) sites[props.site] = (sites[props.site] || 0) + 1;
       if (props.zone) zones[props.zone] = (zones[props.zone] || 0) + 1;
-      
+
       const indice = props.indiceEtat || 1;
       const etatKey = indice <= 2 ? '1-2' : indice === 3 ? '3' : '4-5';
-      etats[etatKey] = (etats[etatKey] || 0) + 1;
+      etats[etatKey]++;
     });
 
-    this.siteFilters = Object.entries(sites).map(([site, count]) => ({
-      value: site, label: site, count, checked: true
-    }));
+    this.siteFilters = Object.entries(sites).map(([site, count]) => ({ value: site, label: site, count, checked: true }));
+    this.zoneFilters = Object.entries(zones).map(([zone, count]) => ({ value: zone, label: zone, count, checked: true }));
+    this.etatChips.forEach(chip => chip.count = etats[chip.value] || 0);
+  }
 
-    this.zoneFilters = Object.entries(zones).map(([zone, count]) => ({
-      value: zone, label: zone, count, checked: true
-    }));
+  private applyFilters(): void {
+    const checkedSites = this.siteFilters.filter(f => f.checked).map(f => f.value);
+    const checkedZones = this.zoneFilters.filter(f => f.checked).map(f => f.value);
+    const selectedEtats = this.etatChips.filter(c => c.selected).map(c => c.value);
 
-    this.etatChips.forEach(chip => {
-      chip.count = etats[chip.value] || 0;
+    const filteredFeatures = this.allFeatures.filter(feature => {
+      const props = feature.getProperties();
+      if (!checkedSites.includes(props.site)) return false;
+      if (!checkedZones.includes(props.zone)) return false;
+      const indice = props.indiceEtat || 1;
+      const etatKey = indice <= 2 ? '1-2' : indice === 3 ? '3' : '4-5';
+      if (!selectedEtats.includes(etatKey)) return false;
+      return true;
     });
+
+    this.actifVectorSource.clear();
+    this.actifVectorSource.addFeatures(filteredFeatures);
+    this.snackBar.open(`${filteredFeatures.length} actifs affichés`, 'Fermer', { duration: 2000 });
+  }
+
+  private getFeatureStyle(feature: any): Style {
+    const indice = feature.get('indiceEtat') || 1;
+    const isSelected = feature.get('isSelected') || false;
+    const color = this.getColorByIndice(indice);
+    const radius = isSelected ? 12 : 8;
+    const strokeWidth = isSelected ? 3 : 2;
+
+    return new Style({
+      image: new Circle({
+        radius: radius,
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ color: 'white', width: strokeWidth })
+      }),
+      stroke: new Stroke({ color: color, width: strokeWidth + 2 }),
+      fill: new Fill({ color: `${color}40` }), // 25% opacity
+      text: new Text({
+        text: indice.toString(),
+        font: `bold ${isSelected ? '12px' : '10px'} sans-serif`,
+        fill: new Fill({ color: 'white' })
+      })
+    });
+  }
+
+  private getColorByIndice(indice: number): string {
+    if (indice <= 2) return '#4caf50'; // Green
+    if (indice === 3) return '#ff9800'; // Orange
+    return '#f44336'; // Red
   }
 
   private handleMapClick(event: any): void {
     this.popupOverlay.setPosition(undefined);
-    
     this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
       const props = feature.getProperties();
       this.popupContentElementRef.nativeElement.innerHTML = this.createPopupContent(props);
@@ -400,99 +338,41 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private createPopupContent(props: any): string {
-    const { nom, site, zone, indiceEtat, id, code } = props;
+    const { nom, code, site, zone, indiceEtat } = props;
     const statusClass = indiceEtat <= 2 ? 'status-good' : indiceEtat === 3 ? 'status-average' : 'status-poor';
     const statusText = indiceEtat <= 2 ? 'Bon état' : indiceEtat === 3 ? 'État moyen' : 'Mauvais état';
-    const isSelected = this.selectedActif?.id === id;
 
     return `
-      ${isSelected ? '<div class="selected-badge">📍 Actif sélectionné</div>' : ''}
       <h3 class="popup-title">${nom || 'Actif sans nom'}</h3>
       <div class="popup-details">
         <div class="detail-item"><strong>Code:</strong> ${code || 'N/A'}</div>
-        <div class="detail-item"><strong>Site:</strong> ${site || 'Non spécifié'}</div>
-        <div class="detail-item"><strong>Zone:</strong> ${zone || 'Non spécifiée'}</div>
+        <div class="detail-item"><strong>Site:</strong> ${site || 'N/A'}</div>
+        <div class="detail-item"><strong>Zone:</strong> ${zone || 'N/A'}</div>
         <div class="detail-item">
-          <strong>État:</strong> 
+          <strong>État:</strong>
           <span class="status-badge ${statusClass}">${statusText} (${indiceEtat || 'N/A'}/5)</span>
         </div>
       </div>
     `;
   }
 
-  // Public methods for template
-  toggleLegend(): void {
-    this.isLegendVisible = !this.isLegendVisible;
-    this.actifLayer.getSource()?.changed();
-    this.snackBar.open(
-      this.isLegendVisible ? 'Légende activée' : 'Légende désactivée', 
-      'Fermer', 
-      { duration: 2000 }
-    );
-  }
-
-  toggleFilterPanel(): void {
-    this.isFilterPanelVisible = !this.isFilterPanelVisible;
-  }
+  toggleLegend(): void { this.isLegendVisible = !this.isLegendVisible; }
+  toggleFilterPanel(): void { this.isFilterPanelVisible = !this.isFilterPanelVisible; }
+  onFilterChange(): void { this.applyFilters(); }
 
   onChipToggle(chipValue: string): void {
     const chip = this.etatChips.find(c => c.value === chipValue);
-    if (chip) {
-      chip.selected = !chip.selected;
-      this.applyFilters();
-    }
-  }
-
-  onLegendItemClick(chipValue: string): void {
-    this.onChipToggle(chipValue);
-  }
-
-  onSiteFilterChange(): void {
-    this.applyFilters();
-  }
-
-  onZoneFilterChange(): void {
+    if (chip) chip.selected = !chip.selected;
     this.applyFilters();
   }
 
   onBaseMapChange(): void {
-    if (this.selectedBaseMap === 'satellite') {
-      this.osmLayer.setVisible(false);
-      this.satelliteLayer.setVisible(true);
-    } else {
-      this.osmLayer.setVisible(true);
-      this.satelliteLayer.setVisible(false);
-    }
+    this.satelliteLayer.setVisible(this.selectedBaseMap === 'satellite');
+    this.osmLayer.setVisible(this.selectedBaseMap !== 'satellite');
   }
 
-
-
-  private applyFilters(): void {
-    const checkedSites = this.siteFilters.filter(f => f.checked).map(f => f.value);
-    const checkedZones = this.zoneFilters.filter(f => f.checked).map(f => f.value);
-    const selectedEtats = this.etatChips.filter(c => c.selected).map(c => c.value);
-
-    const filteredFeatures = this.allFeatures.filter(feature => {
-      const props = feature.getProperties();
-      
-      if (checkedSites.length && !checkedSites.includes(props.site)) return false;
-      if (checkedZones.length && !checkedZones.includes(props.zone)) return false;
-      
-      const indice = props.indiceEtat || 1;
-      const etatKey = indice <= 2 ? '1-2' : indice === 3 ? '3' : '4-5';
-      if (!selectedEtats.includes(etatKey)) return false;
-      
-      return true;
-    });
-
-    this.actifVectorSource.clear();
-    this.actifVectorSource.addFeatures(filteredFeatures);
-    this.snackBar.open(`${filteredFeatures.length} actifs affichés`, 'Fermer', { duration: 2000 });
-  }
-
-  goBackToList(): void {
-    this.router.navigate(['/actifs/list']);
-  }
+  goBackToList(): void { this.router.navigate(['/actifs/map']); }
+  refreshData(): void { this.loadData(); }
 
   centerOnTanger(): void {
     this.map.getView().animate({
@@ -502,18 +382,9 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  refreshData(): void {
-    if (this.selectedActifId) {
-      this.loadSpecificActif(this.selectedActifId);
-    } else {
-      this.loadActifs();
-    }
-  }
-
   zoomToActifs(): void {
     if (this.actifVectorSource.getFeatures().length > 0) {
-      const extent = this.actifVectorSource.getExtent();
-      this.map.getView().fit(extent, {
+      this.map.getView().fit(this.actifVectorSource.getExtent(), {
         padding: [50, 50, 50, 50],
         duration: 1000,
         maxZoom: 16

@@ -1,9 +1,14 @@
-// Main container and layout
+:host {
+  display: block;
+  height: calc(100vh - 64px); // Adjust based on your nav-bar height
+}
+
 .map-container {
   padding: 24px;
-  height: calc(100vh - 64px);
+  height: 100%;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .map-header {
@@ -14,15 +19,14 @@
   flex-wrap: wrap;
   gap: 12px;
   
-  h2 { 
-    margin: 0; 
-    color: #1976d2; 
-    font-weight: 400; 
-    flex: 1;
+  h2 {
+    margin: 0;
+    color: #1976d2;
+    font-weight: 400;
   }
   
-  .map-controls { 
-    display: flex; 
+  .map-controls {
+    display: flex;
     gap: 8px;
     flex-wrap: wrap;
   }
@@ -36,51 +40,39 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-// OpenLayers map styling
 .ol-map {
   height: 100%;
   width: 100%;
-  
-  &.loading { 
-    opacity: 0.7; 
-  }
+  background: #f0f4f8;
+  &.loading { opacity: 0.7; }
 }
 
-// Loading and error states
-.map-loading, .map-error {
+.map-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 24px;
-  border-radius: 12px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-  text-align: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  z-index: 1001;
+
+  &.map-error {
+    gap: 16px;
+    mat-icon { font-size: 48px; color: #f44336; }
+    p { font-size: 16px; margin: 0; }
+  }
 }
 
-// Animations
 .rotating {
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-// CDK Drag styling
-.cdk-drag {
-  transition: box-shadow 200ms cubic-bezier(0, 0, 0.2, 1);
-}
-
-.cdk-drag:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .cdk-drag-preview {
@@ -89,11 +81,6 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-.cdk-drag-animating {
-  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-}
-
-// Floating panels using CDK Drag
 .floating-panel {
   position: absolute;
   background: rgba(255, 255, 255, 0.95);
@@ -101,26 +88,16 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
   z-index: 1000;
-  min-width: 280px;
-  max-width: 400px;
+  width: 320px;
   
-  &.filter-panel {
-    top: 20px;
-    left: 20px;
-    width:280px;
-  }
-  
-  &.legend-panel {
-    bottom: 20px;
-    right: 20px;
-    width: 100px;
-  }
+  &.filter-panel { top: 20px; left: 20px; }
+  &.legend-panel { top: 20px; right: 20px; width: 240px; }
 }
 
 .panel-header {
-  background: linear-gradient(135deg, #1976d2, #1565c0);
+  background: #1976d2;
   color: white;
-  padding: 0.5px;
+  padding: 8px 16px;
   cursor: move;
   display: flex;
   justify-content: space-between;
@@ -131,412 +108,119 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    
-    h4 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 500;
-    }
+    h4 { margin: 0; font-size: 16px; font-weight: 500; }
   }
   
-  button {
-    color: white;
-  }
+  button { color: white; }
 }
 
-.legend-panel .panel-header {
-  background: linear-gradient(135deg, #4caf50, #45a049);
-}
+.legend-panel .panel-header { background: #673ab7; }
 
 .panel-content {
-  padding: 1px;
-  max-height: 400px;
+  padding: 16px;
+  max-height: calc(100vh - 250px);
   overflow-y: auto;
 }
 
-// Filter sections
-
 .filter-section {
-  margin-bottom: 10px;
-  
-  label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: #333;
-    font-size: 12px;
-  }
-  
-  mat-form-field {
-    width: 100%;
-
-    //  to hide the empty space below the form field
-    .mat-mdc-form-field-subscript-wrapper {
-      display: none;
-    }
-  }
+  margin-bottom: 16px;
+  label { display: block; font-weight: 500; margin-bottom: 8px; color: #555; font-size: 14px; }
+  .mat-mdc-form-field-subscript-wrapper { display: none; }
 }
 
-// État chips styling
 .etat-chips {
-  mat-chip-listbox {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    
-    mat-chip-option {
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      }
-    }
-  }
-}
-
-// Accordion and checkboxes
-mat-accordion {
-  .mat-expansion-panel {
-    margin-bottom: 8px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  
+  mat-chip-option {
+    border-width: 2px;
+    border-style: solid;
   }
 }
 
 .checkbox-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   max-height: 150px;
   overflow-y: auto;
-  
-  mat-checkbox {
-    font-size: 13px;
-    
-    ::ng-deep .mat-checkbox-label {
-      color: #555;
-    }
-  }
+  padding-right: 8px;
 }
 
-// Filter actions
-.filter-actions {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e0e0e0;
+.legend-items .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   
-  button {
-    width: 100%;
-  }
+  &:hover { background-color: rgba(0, 0, 0, 0.05); }
+  &.disabled { opacity: 0.5; }
+  .legend-symbol { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+  span { font-size: 13px; font-weight: 500; }
 }
 
-// Legend styling
 .selected-actif-info {
-  background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05));
   border-left: 4px solid #2196f3;
   padding: 12px;
   margin-bottom: 16px;
-  border-radius: 6px;
-  
-  strong {
-    color: #1976d2;
-    font-size: 14px;
-    display: block;
-    margin-bottom: 4px;
-  }
-  
-  small {
-    color: #666;
-    font-family: monospace;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-  }
+  background: rgba(33, 150, 243, 0.05);
+  strong { display: block; margin-bottom: 4px; }
+  small { font-family: monospace; }
 }
 
-.legend-items {
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    margin-bottom: 6px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-    }
-    
-    &.disabled {
-      opacity: 0.5;
-    }
-    
-    .legend-symbol {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-      flex-shrink: 0;
-    }
-    
-    span {
-      font-size: 13px;
-      color: #555;
-      font-weight: 500;
-    }
-  }
-}
-
-.back-btn {
-  width: 100%;
-  margin-top: 16px;
-}
-
-// OpenLayers popup styling
 .ol-popup {
   position: absolute;
   background: white;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  padding: 16px;
-  border-radius: 8px;
-  border: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #cccccc;
   bottom: 12px;
-  left: -50%;
+  left: -50px;
   min-width: 280px;
-  transform: translateX(calc(-50% + 8px));
-  
+
   &:after, &:before {
     top: 100%;
     border: solid transparent;
     content: " ";
+    height: 0;
+    width: 0;
     position: absolute;
     pointer-events: none;
   }
-  
-  &:after {
-    border-top-color: white;
-    border-width: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  
-  &:before {
-    border-top-color: rgba(0, 0, 0, 0.15);
-    border-width: 11px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
+  &:after { border-top-color: white; border-width: 10px; left: 48px; }
+  &:before { border-top-color: #cccccc; border-width: 11px; left: 47px; }
 }
 
 .ol-popup-closer {
   text-decoration: none;
   position: absolute;
-  top: 8px;
+  top: 2px;
   right: 8px;
-  color: #999;
-  font-size: 16px;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: rgba(244, 67, 54, 0.1);
-    color: #f44336;
-  }
-  
-  &:after { 
-    content: "✕"; 
-  }
+  &:after { content: "✖"; }
 }
 
-// Popup content styling
-:host ::ng-deep #popupContent {
-  .popup-title {
-    margin: 0 0 12px 0;
-    color: #1976d2;
-    font-size: 16px;
-    font-weight: 600;
-    padding-right: 20px;
-  }
-  
-  .popup-details {
-    .detail-item {
-      margin-bottom: 8px;
-      font-size: 14px;
-      
-      strong { 
-        color: #333; 
-        font-weight: 600;
-      }
-      
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-  }
-  
-  .status-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    display: inline-block;
-    
-    &.status-good { 
-      background-color: #e8f5e8; 
-      color: #2e7d32; 
-    }
-    &.status-average { 
-      background-color: #fff3e0; 
-      color: #ef6c00; 
-    }
-    &.status-poor { 
-      background-color: #ffebee; 
-      color: #c62828; 
-    }
-  }
-  
-  .selected-badge {
-    background: linear-gradient(135deg, #2196f3, #1976d2);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    display: inline-block;
-  }
-}
-
-// OpenLayers controls styling
 :host ::ng-deep {
-  .ol-layerswitcher {
-    top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    
-    > button {
-      background: linear-gradient(135deg, #1976d2, #1565c0);
-      color: white;
-      border: none;
-      border-radius: 8px 8px 0 0;
-      padding: 8px 12px;
-      font-size: 12px;
-      
-      &:before {
-        content: "🗺️ ";
-        margin-right: 4px;
-      }
-    }
-    
-    .panel {
-      padding: 8px;
-      
-      label {
-        font-size: 12px;
-        color: #555;
-      }
-    }
+  #popupContent {
+    .popup-title { margin: 0 0 10px 0; font-size: 16px; font-weight: bold; }
+    .popup-details { font-size: 14px; .detail-item { margin-bottom: 5px; } }
+    .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .status-good { background-color: #e8f5e8; color: #2e7d32; }
+    .status-average { background-color: #fff3e0; color: #ef6c00; }
+    .status-poor { background-color: #ffebee; color: #c62828; }
   }
-  
-  .ol-control.ol-fullscreen {
-    top: 20px;
-    left: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    
-    button {
-      background: none;
-      border: none;
-      color: #333;
-      font-size: 16px;
-      padding: 8px;
-      border-radius: 6px;
-      
-      &:hover {
-        background: rgba(25, 118, 210, 0.1);
-        color: #1976d2;
-      }
-    }
+
+  .ol-control.ol-fullscreen button {
+    background-color: rgba(25,118,210,0.85) !important;
+    &:hover { background-color: #1976d2 !important; }
   }
 }
 
-// Responsive design
-@media (max-width: 768px) {
-  .map-container {
-    padding: 16px;
-  }
-  
-  .map-header {
-    flex-direction: column;
-    align-items: stretch;
-    
-    h2 {
-      text-align: center;
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-    
-    .map-controls {
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-  }
-  
-  .floating-panel {
-    &.filter-panel {
-      width: calc(100vw - 40px);
-      left: 20px;
-      right: 20px;
-    }
-    
-    &.legend-panel {
-      width: calc(100vw - 40px);
-      left: 20px;
-      right: 20px;
-      bottom: 20px;
-    }
-  }
-  
-  .ol-popup {
-    min-width: 260px;
-    max-width: calc(100vw - 40px);
-  }
-}
-
-@media (max-width: 480px) {
-  .map-header .map-controls {
-    flex-direction: column;
-    gap: 8px;
-    
-    button {
-      width: 100%;
-    }
-  }
-  
-  .etat-chips mat-chip-listbox {
-    flex-direction: column;
-    align-items: stretch;
-    
-    mat-chip-option {
-      text-align: center;
-      width: 100%;
-    }
-  }
+@media (max-width: 1024px) {
+  .map-header { flex-direction: column; align-items: stretch; h2 { text-align: center; margin-bottom: 16px; } }
+  .floating-panel { width: calc(100vw - 40px); max-width: 400px; &.filter-panel, &.legend-panel { right: auto; left: 20px; } &.legend-panel { top: auto; bottom: 20px; } }
 }
