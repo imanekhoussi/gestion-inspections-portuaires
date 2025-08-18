@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router'; // ← AJOUTER
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -8,6 +8,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatChipsModule } from '@angular/material/chips';
 import { FormsModule } from '@angular/forms';
 import { ActifsService } from '../../services/actifs.service';
 import { ActifGeoJSON, Actif } from '../../../../core/models/actif.interface'; 
@@ -38,6 +40,22 @@ interface FilterOption {
   checked: boolean;
 }
 
+interface EtatChip {
+  value: string;
+  label: string;
+  count: number;
+  selected: boolean;
+  color: string;
+}
+
+interface DragState {
+  isDragging: boolean;
+  startX: number;
+  startY: number;
+  elementX: number;
+  elementY: number;
+}
+
 @Component({
   selector: 'app-actifs-map',
   standalone: true,
@@ -50,6 +68,8 @@ interface FilterOption {
     MatSelectModule,
     MatCheckboxModule,
     MatFormFieldModule,
+    MatExpansionModule,
+    MatChipsModule,
     FormsModule,
     LoadingSpinnerComponent
   ],
@@ -71,35 +91,42 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = true;
   error: string | null = null;
   
-  // 🔥 NOUVEAU: Pour gérer un actif spécifique
+  // Selected actif management
   selectedActifId: number | null = null;
   selectedActif: Actif | null = null;
+  
+  // UI State Management
+  isLegendVisible = false;
+  isFilterPanelVisible = true;
   
   // Filter options
   siteFilters: FilterOption[] = [];
   zoneFilters: FilterOption[] = [];
-  etatFilters: FilterOption[] = [
-    { value: '1-2', label: 'Bon état (1-2)', count: 0, checked: true },
-    { value: '3', label: 'État moyen (3)', count: 0, checked: true },
-    { value: '4-5', label: 'Mauvais état (4-5)', count: 0, checked: true }
+  etatChips: EtatChip[] = [
+    { value: '1-2', label: 'Bon état (1-2)', count: 0, selected: true, color: '#4caf50' },
+    { value: '3', label: 'État moyen (3)', count: 0, selected: true, color: '#ff9800' },
+    { value: '4-5', label: 'Mauvais état (4-5)', count: 0, selected: true, color: '#f44336' }
   ];
   
   // Base map selection
   selectedBaseMap = 'osm';
   
+  // Drag states for panels
+  private filterPanelDrag: DragState = { isDragging: false, startX: 0, startY: 0, elementX: 0, elementY: 0 };
+  private legendPanelDrag: DragState = { isDragging: false, startX: 0, startY: 0, elementX: 0, elementY: 0 };
+  
   // Coordinates are [longitude, latitude] for OpenLayers
-  private readonly DEFAULT_COORDS: [number, number] = [-5.50308 ,35.88187];
+  private readonly DEFAULT_COORDS: [number, number] = [-5.51501, 35.87860];
   private readonly DEFAULT_ZOOM = 13;
 
   constructor(
     private actifsService: ActifsService,
     private snackBar: MatSnackBar,
-    private route: ActivatedRoute, // ← AJOUTER
-    private router: Router // ← AJOUTER
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
-    // 🔥 NOUVEAU: Écouter les paramètres de l'URL
     this.route.queryParams.subscribe(params => {
       if (params['actifId']) {
         this.selectedActifId = +params['actifId'];
@@ -112,31 +139,29 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.initializeMap();
+    setTimeout(() => {
+      this.setupDraggablePanels();
+    }, 100);
   }
 
   ngOnDestroy(): void {
-    // Remove custom legend and filter panel
-    const legendElement = document.querySelector('.ol-legend-custom');
-    if (legendElement) {
-      legendElement.remove();
-    }
-    
-    const filterPanel = document.querySelector('.ol-filter-panel');
-    if (filterPanel) {
-      filterPanel.remove();
-    }
-    
+    this.removePanels();
     if (this.map) {
       this.map.setTarget(undefined);
     }
   }
 
-  // 🔥 NOUVELLE MÉTHODE: Charger un actif spécifique
+  private removePanels(): void {
+    const filterPanel = document.querySelector('.floating-filter-panel');
+    const legendPanel = document.querySelector('.floating-legend-panel');
+    if (filterPanel) filterPanel.remove();
+    if (legendPanel) legendPanel.remove();
+  }
+
   private loadSpecificActif(actifId: number): void {
     this.isLoading = true;
     this.error = null;
 
-    // Charger les détails de l'actif
     this.actifsService.getActifById(actifId).subscribe({
       next: (actif) => {
         this.selectedActif = actif;
@@ -151,159 +176,243 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // 🔥 NOUVELLE MÉTHODE: Afficher un seul actif
   private displaySingleActif(actif: Actif): void {
-  this.actifVectorSource.clear();
+    this.actifVectorSource.clear();
 
-  if (actif.geometry && actif.geometry.coordinates) {
-    // Créer une feature pour cet actif
-    const feature = this.createActifFeature(actif);
-    this.actifVectorSource.addFeature(feature);
+    if (actif.geometry && actif.geometry.coordinates) {
+      const feature = this.createActifFeature(actif);
+      this.actifVectorSource.addFeature(feature);
 
-    // Zoomer sur cet actif avec padding adapté au type
-    const geometry = feature.getGeometry();
-    if (geometry) {
-      const geometryType = actif.geometry.type;
-      let padding = [100, 100, 100, 100];
-      let maxZoom = 18;
+      const geometry = feature.getGeometry();
+      if (geometry) {
+        const geometryType = actif.geometry.type;
+        let padding = [100, 100, 100, 100];
+        let maxZoom = 18;
 
-      // 🔥 ADAPTER le zoom selon le type de géométrie
-      if (geometryType === 'Point') {
-        maxZoom = 18;
-        padding = [50, 50, 50, 50];
-      } else if (geometryType === 'LineString') {
-        maxZoom = 16;
-        padding = [100, 100, 100, 100];
-      } else if (geometryType === 'Polygon') {
-        maxZoom = 15;
-        padding = [150, 150, 150, 150];
+        if (geometryType === 'Point') {
+          maxZoom = 18;
+          padding = [50, 50, 50, 50];
+        } else if (geometryType === 'LineString') {
+          maxZoom = 16;
+          padding = [100, 100, 100, 100];
+        } else if (geometryType === 'Polygon') {
+          maxZoom = 15;
+          padding = [150, 150, 150, 150];
+        }
+
+        this.map.getView().fit(geometry.getExtent(), {
+          padding: padding,
+          maxZoom: maxZoom,
+          duration: 1500
+        });
       }
 
-      this.map.getView().fit(geometry.getExtent(), {
-        padding: padding,
-        maxZoom: maxZoom,
-        duration: 1500
+      this.snackBar.open(`Actif "${actif.nom}" localisé`, '', { 
+        duration: 3000,
+        panelClass: ['success-snackbar']
+      });
+    } else {
+      this.snackBar.open('Cet actif n\'a pas de coordonnées GPS', 'Fermer', { 
+        duration: 4000,
+        panelClass: ['warning-snackbar']
       });
     }
 
-    this.snackBar.open(`Actif "${actif.nom}" localisé`, '', { 
-      duration: 3000,
-      panelClass: ['success-snackbar']
-    });
-  } else {
-    this.snackBar.open('Cet actif n\'a pas de coordonnées GPS', 'Fermer', { 
-      duration: 4000,
-      panelClass: ['warning-snackbar']
-    });
+    this.isLoading = false;
   }
-
-  this.isLoading = false;
-}
-
   
-private createActifFeature(actif: Actif): Feature {
-  const geoJsonFormat = new GeoJSON();
-  
-  const featureOrFeatures = geoJsonFormat.readFeature({
-    type: 'Feature',
-    geometry: actif.geometry,
-    properties: {
-      id: actif.id,
-      nom: actif.nom,
-      code: actif.code,
-      site: actif.site,
-      zone: actif.zone,
-      indiceEtat: actif.indiceEtat,
-      isSelected: true,
-      geometryType: actif.geometry?.type// Marquer comme sélectionné
+  private createActifFeature(actif: Actif): Feature {
+    const geoJsonFormat = new GeoJSON();
+    
+    const featureOrFeatures = geoJsonFormat.readFeature({
+      type: 'Feature',
+      geometry: actif.geometry,
+      properties: {
+        id: actif.id,
+        nom: actif.nom,
+        code: actif.code,
+        site: actif.site,
+        zone: actif.zone,
+        indiceEtat: actif.indiceEtat,
+        isSelected: true,
+        geometryType: actif.geometry?.type
+      }
+    }, {
+      dataProjection: 'EPSG:4326',
+      featureProjection: 'EPSG:3857'
+    });
+
+    if (Array.isArray(featureOrFeatures)) {
+      return featureOrFeatures[0];
     }
-  }, {
-    dataProjection: 'EPSG:4326',
-    featureProjection: 'EPSG:3857'
-  });
-
-  // S'assurer qu'on retourne un seul Feature
-  if (Array.isArray(featureOrFeatures)) {
-    return featureOrFeatures[0];
+    return featureOrFeatures;
   }
-  return featureOrFeatures;
-}
 
   public goBackToList(): void {
-  this.router.navigate(['/actifs/list']);
-}
+    this.router.navigate(['/actifs/list']);
+  }
 
   private getStyleByIndice(indice: number, isSelected: boolean = false, geometryType?: string): Style {
-  let color: string;
-  let textColor = 'white';
-  
-  if (indice <= 2) {
-    color = '#4caf50'; // Green - Good state
-  } else if (indice === 3) {
-    color = '#ff9800'; // Orange - Average state  
-  } else {
-    color = '#f44336'; // Red - Poor state
+    // Uniform style when legend is hidden
+    if (!this.isLegendVisible && !isSelected) {
+      return this.getUniformStyle(geometryType);
+    }
+
+    let color: string;
+    
+    if (indice <= 2) {
+      color = '#4caf50'; // Green - Good state
+    } else if (indice === 3) {
+      color = '#ff9800'; // Orange - Average state  
+    } else {
+      color = '#f44336'; // Red - Poor state
+    }
+
+    if (geometryType === 'LineString') {
+      return new Style({
+        stroke: new Stroke({ 
+          color: isSelected ? '#2196f3' : color, 
+          width: isSelected ? 6 : 4,
+          lineDash: isSelected ? [15, 10] : undefined
+        }),
+        text: new Text({
+          text: isSelected ? `🎯 ${indice}` : indice.toString(),
+          fill: new Fill({ color: isSelected ? '#2196f3' : color }),
+          font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
+          stroke: new Stroke({ color: 'white', width: 2 }),
+          placement: 'line',
+          maxAngle: Math.PI / 4
+        })
+      });
+    } 
+    else if (geometryType === 'Polygon') {
+      return new Style({
+        fill: new Fill({ 
+          color: isSelected ? 'rgba(33, 150, 243, 0.3)' : `${color}40`
+        }),
+        stroke: new Stroke({ 
+          color: isSelected ? '#2196f3' : color, 
+          width: isSelected ? 4 : 2,
+          lineDash: isSelected ? [10, 5] : undefined
+        }),
+        text: new Text({
+          text: isSelected ? `🎯 ${indice}` : indice.toString(),
+          fill: new Fill({ color: isSelected ? '#2196f3' : color }),
+          font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
+          stroke: new Stroke({ color: 'white', width: 2 })
+        })
+      });
+    } 
+    else {
+      return new Style({
+        image: new Circle({
+          radius: isSelected ? 15 : 10,
+          fill: new Fill({ color: isSelected ? '#2196f3' : color }),
+          stroke: new Stroke({ 
+            color: 'white', 
+            width: isSelected ? 4 : 2 
+          })
+        }),
+        text: new Text({
+          text: isSelected ? `🎯 ${indice}` : indice.toString(),
+          fill: new Fill({ color: 'white' }),
+          font: isSelected ? 'bold 14px sans-serif' : 'bold 12px sans-serif'
+        })
+      });
+    }
   }
 
-  // 🔥 NOUVEAU: Style différent selon le type de géométrie
-  if (geometryType === 'LineString') {
-    return new Style({
-      stroke: new Stroke({ 
-        color: isSelected ? '#2196f3' : color, 
-        width: isSelected ? 6 : 4,
-        lineDash: isSelected ? [15, 10] : undefined
-      }),
-      text: new Text({
-        text: isSelected ? `🎯 ${indice}` : indice.toString(),
-        fill: new Fill({ color: isSelected ? '#2196f3' : color }),
-        font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
-        stroke: new Stroke({ color: 'white', width: 2 }),
-        placement: 'line',
-        maxAngle: Math.PI / 4
-      })
-    });
-  } 
-  
-  else if (geometryType === 'Polygon') {
-    return new Style({
-      fill: new Fill({ 
-        color: isSelected ? 'rgba(33, 150, 243, 0.3)' : `${color}40` // 40 = 25% opacity
-      }),
-      stroke: new Stroke({ 
-        color: isSelected ? '#2196f3' : color, 
-        width: isSelected ? 4 : 2,
-        lineDash: isSelected ? [10, 5] : undefined
-      }),
-      text: new Text({
-        text: isSelected ? `🎯 ${indice}` : indice.toString(),
-        fill: new Fill({ color: isSelected ? '#2196f3' : color }),
-        font: isSelected ? 'bold 16px sans-serif' : 'bold 12px sans-serif',
-        stroke: new Stroke({ color: 'white', width: 2 })
-      })
-    });
-  } 
-  
-  else { // Point par défaut
-    return new Style({
-      image: new Circle({
-        radius: isSelected ? 15 : 10,
-        fill: new Fill({ color: isSelected ? '#2196f3' : color }),
+  private getUniformStyle(geometryType?: string): Style {
+    const uniformColor = '#607d8b'; // Blue-grey uniform color
+
+    if (geometryType === 'LineString') {
+      return new Style({
         stroke: new Stroke({ 
-          color: 'white', 
-          width: isSelected ? 4 : 2 
+          color: uniformColor, 
+          width: 3
         })
-      }),
-      text: new Text({
-        text: isSelected ? `🎯 ${indice}` : indice.toString(),
-        fill: new Fill({ color: 'white' }),
-        font: isSelected ? 'bold 14px sans-serif' : 'bold 12px sans-serif'
-      })
+      });
+    } 
+    else if (geometryType === 'Polygon') {
+      return new Style({
+        fill: new Fill({ 
+          color: `${uniformColor}40`
+        }),
+        stroke: new Stroke({ 
+          color: uniformColor, 
+          width: 2
+        })
+      });
+    } 
+    else {
+      return new Style({
+        image: new Circle({
+          radius: 8,
+          fill: new Fill({ color: uniformColor }),
+          stroke: new Stroke({ 
+            color: 'white', 
+            width: 2 
+          })
+        })
+      });
+    }
+  }
+
+  // Public methods for template
+  public toggleLegend(): void {
+    this.isLegendVisible = !this.isLegendVisible;
+    const legendPanel = document.querySelector('.floating-legend-panel') as HTMLElement;
+    if (legendPanel) {
+      legendPanel.style.display = this.isLegendVisible ? 'block' : 'none';
+    }
+    
+    // Force re-style of features
+    this.actifLayer.getSource()?.changed();
+    
+    this.snackBar.open(
+      this.isLegendVisible ? 'Légende activée - Actifs colorés par état' : 'Légende désactivée - Style uniforme',
+      'Fermer',
+      { duration: 2000 }
+    );
+  }
+
+  public toggleFilterPanel(): void {
+    this.isFilterPanelVisible = !this.isFilterPanelVisible;
+    const filterPanel = document.querySelector('.floating-filter-panel') as HTMLElement;
+    if (filterPanel) {
+      filterPanel.style.display = this.isFilterPanelVisible ? 'block' : 'none';
+    }
+  }
+
+  public centerOnTanger(): void {
+    this.map.getView().animate({
+      center: fromLonLat(this.DEFAULT_COORDS),
+      zoom: this.DEFAULT_ZOOM,
+      duration: 1000
     });
   }
-}
+
+  public refreshData(): void {
+    if (this.selectedActifId) {
+      this.loadSpecificActif(this.selectedActifId);
+    } else {
+      this.loadActifs();
+    }
+  }
+
+  public zoomToActifs(): void {
+    if (this.actifVectorSource.getFeatures().length > 0) {
+      const extent = this.actifVectorSource.getExtent();
+      this.map.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        duration: 1000,
+        maxZoom: 16
+      });
+    }
+  }
+  // Add these methods to your ActifsMapComponent class (Part 2)
 
   private initializeMap(): void {
-    // Base layers
     this.osmLayer = new TileLayer({
       source: new OSM(),
       properties: { title: 'OpenStreetMap', baseLayer: true }
@@ -313,7 +422,6 @@ private createActifFeature(actif: Actif): Feature {
       source: new XYZ({
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attributions: 'Tiles © Esri',
-       // maxZoom: 19
       }),
       properties: { title: 'Satellite', baseLayer: true },
       visible: false
@@ -324,20 +432,19 @@ private createActifFeature(actif: Actif): Feature {
       properties: { title: 'Fonds de carte' }
     });
 
-   this.actifLayer = new VectorLayer({
-    source: this.actifVectorSource,
-    properties: { title: 'Actifs Portuaires' },
-    style: (feature) => {
-      const indice = feature.get('indiceEtat') || 1;
-      const isSelected = feature.get('isSelected') || false;
-      const geometry = feature.getGeometry();
-      const geometryType = geometry?.getType(); // 🔥 RÉCUPÉRER LE TYPE
-      
-      return this.getStyleByIndice(indice, isSelected, geometryType);
-    }
-  });
+    this.actifLayer = new VectorLayer({
+      source: this.actifVectorSource,
+      properties: { title: 'Actifs Portuaires' },
+      style: (feature) => {
+        const indice = feature.get('indiceEtat') || 1;
+        const isSelected = feature.get('isSelected') || false;
+        const geometry = feature.getGeometry();
+        const geometryType = geometry?.getType();
+        
+        return this.getStyleByIndice(indice, isSelected, geometryType);
+      }
+    });
 
-    // Create popup overlay
     this.popupOverlay = new Overlay({
       element: this.popupElementRef.nativeElement,
       autoPan: {
@@ -347,29 +454,23 @@ private createActifFeature(actif: Actif): Feature {
       }
     });
     
-    // Initialize the map
     this.map = new Map({
       target: 'map',
       layers: [baseLayers, this.actifLayer],
       view: new View({
         center: fromLonLat(this.DEFAULT_COORDS),
         zoom: this.DEFAULT_ZOOM,
-        projection:"EPSG:3857"
-       // maxZoom: 19,
-       // minZoom: 8
+        projection: "EPSG:3857"
       }),
       overlays: [this.popupOverlay]
     });
 
-    // Add controls after map is initialized
     this.addMapControls();
 
-    // Handle map clicks for popups
     this.map.on('singleclick', (event) => {
       this.handleMapClick(event);
     });
 
-    // Setup popup closer
     const closer = this.popupElementRef.nativeElement.querySelector('.ol-popup-closer');
     if (closer) {
       closer.onclick = () => {
@@ -380,9 +481,6 @@ private createActifFeature(actif: Actif): Feature {
     }
   }
 
-  
-
-  // 🔥 MODIFIER la méthode de création du popup pour l'actif sélectionné
   private createPopupContent(properties: any): string {
     const { nom, site, zone, indiceEtat, description, id, code } = properties;
     let statusClass: string, statusText: string;
@@ -414,162 +512,352 @@ private createActifFeature(actif: Actif): Feature {
         </div>
         ${description ? `<div class="detail-item"><strong>Description:</strong> ${description}</div>` : ''}
       </div>
-      
     `;
   }
 
   private addMapControls(): void {
-    // Add layer switcher
     const layerSwitcher = new LayerSwitcher();
     this.map.addControl(layerSwitcher);
 
-    // Add fullscreen control
     const fullScreen = new FullScreen();
     this.map.addControl(fullScreen);
 
-   
-    this.createCustomLegend();
-    this.createFilterPanel();
+    this.createFloatingPanels();
   }
 
-  private createCustomLegend(): void {
-    const legendElement = document.createElement('div');
-    legendElement.className = 'ol-legend-custom';
-    legendElement.innerHTML = `
-      <div class="legend-content">
-        <h4>État des Actifs</h4>
-        ${this.selectedActif ? `<div class="selected-actif-info">
-          <strong>🎯 ${this.selectedActif.nom}</strong><br>
-          <small>${this.selectedActif.code}</small>
-        </div>` : ''}
-        <div class="legend-items">
-          <div class="legend-item">
-            <div class="legend-symbol good-state"></div>
-            <span>Bon état (1-2)</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-symbol average-state"></div>
-            <span>État moyen (3)</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-symbol poor-state"></div>
-            <span>Mauvais état (4-5)</span>
-          </div>
-          ${this.selectedActif ? `<div class="legend-item">
-            <div class="legend-symbol selected-state"></div>
-            <span>Actif sélectionné</span>
-          </div>` : ''}
+  private createFloatingPanels(): void {
+    this.createFloatingFilterPanel();
+    this.createFloatingLegendPanel();
+  }
+
+  private createFloatingFilterPanel(): void {
+    if (this.selectedActif) return; // Don't show filters for single actif view
+
+    const filterPanel = document.createElement('div');
+    filterPanel.className = 'floating-filter-panel';
+    filterPanel.style.cssText = `
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 340px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 16px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      font-family: 'Roboto', sans-serif;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    `;
+
+    filterPanel.innerHTML = `
+      <div class="panel-header" style="
+        background: linear-gradient(135deg, #1976d2, #1565c0);
+        color: white;
+        padding: 20px;
+        cursor: move;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+      ">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>🔍</span>
+          <h4 style="margin: 0; font-size: 16px; font-weight: 500;">Filtres</h4>
         </div>
-        ${this.selectedActif ? `<button class="back-btn" onclick="window.location.href='/actifs/list'">
+        <div style="display: flex; gap: 8px;">
+          <button id="togglePanel" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">−</button>
+          <button id="closePanel" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">×</button>
+        </div>
+      </div>
+      <div class="panel-content" style="padding: 24px;">
+        ${this.generateFilterAccordionHTML()}
+      </div>
+    `;
+
+    document.getElementById('map')?.appendChild(filterPanel);
+    this.setupFilterPanelEvents(filterPanel);
+  }
+
+  private generateFilterAccordionHTML(): string {
+    return `
+      <!-- Base Map Selection -->
+      <div class="filter-section" style="margin-bottom: 24px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 12px; color: #333; font-size: 14px;">Fond de carte:</label>
+        <select class="base-map-select" style="
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid #e0e0e0;
+          border-radius: 10px;
+          font-size: 14px;
+          background: white;
+          cursor: pointer;
+          transition: border-color 0.2s;
+        ">
+          <option value="osm">OpenStreetMap</option>
+          <option value="satellite">Satellite</option>
+        </select>
+      </div>
+
+      <!-- État Filter as Chips -->
+      <div class="filter-section" style="margin-bottom: 24px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 12px; color: #333; font-size: 14px;">État des actifs:</label>
+        <div class="etat-chips" style="display: flex; flex-wrap: wrap; gap: 10px;">
+          ${this.generateEtatChipsHTML()}
+        </div>
+      </div>
+
+      <!-- Accordion for Sites and Zones -->
+      <div class="filter-accordion">
+        <div class="accordion-item" style="border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 16px; overflow: hidden;">
+          <div class="accordion-header" style="
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background-color 0.2s;
+          " data-target="sites">
+            <span>🏢 Sites</span>
+            <span class="accordion-icon" style="transition: transform 0.3s;">▼</span>
+          </div>
+          <div class="accordion-content" id="sites-content" style="
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 16px 20px;
+            background: white;
+            display: none;
+          ">
+            <div id="site-filters"></div>
+          </div>
+        </div>
+
+        <div class="accordion-item" style="border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 16px; overflow: hidden;">
+          <div class="accordion-header" style="
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background-color 0.2s;
+          " data-target="zones">
+            <span>📍 Zones</span>
+            <span class="accordion-icon" style="transition: transform 0.3s;">▼</span>
+          </div>
+          <div class="accordion-content" id="zones-content" style="
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 16px 20px;
+            background: white;
+            display: none;
+          ">
+            <div id="zone-filters"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="filter-actions" style="
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #e0e0e0;
+      ">
+        <button class="filter-btn reset-btn" style="
+          flex: 1;
+          padding: 12px 20px;
+          background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+          color: #666;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 14px;
+          transition: all 0.3s ease;
+        ">Réinitialiser</button>
+        <button class="filter-btn apply-btn" style="
+          flex: 1;
+          padding: 12px 20px;
+          background: linear-gradient(135deg, #1976d2, #1565c0);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 14px;
+          transition: all 0.3s ease;
+        ">Appliquer</button>
+      </div>
+    `;
+  }
+
+  private generateEtatChipsHTML(): string {
+    return this.etatChips.map(chip => `
+      <div class="etat-chip ${chip.selected ? 'selected' : ''}" 
+           data-value="${chip.value}"
+           style="
+             padding: 10px 16px;
+             border-radius: 25px;
+             cursor: pointer;
+             font-size: 13px;
+             font-weight: 500;
+             transition: all 0.3s ease;
+             border: 2px solid ${chip.color};
+             background: ${chip.selected ? chip.color : 'white'};
+             color: ${chip.selected ? 'white' : chip.color};
+           ">
+        ${chip.label} (${chip.count})
+      </div>
+    `).join('');
+  }
+
+  private createFloatingLegendPanel(): void {
+    const legendPanel = document.createElement('div');
+    legendPanel.className = 'floating-legend-panel';
+    legendPanel.style.cssText = `
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 16px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      font-family: 'Roboto', sans-serif;
+      overflow: hidden;
+      display: ${this.isLegendVisible ? 'block' : 'none'};
+      transition: all 0.3s ease;
+    `;
+
+    legendPanel.innerHTML = `
+      <div class="panel-header" style="
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        padding: 20px;
+        cursor: move;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+      ">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>🗺️</span>
+          <h4 style="margin: 0; font-size: 16px; font-weight: 500;">Légende</h4>
+        </div>
+        <button id="closeLegend" style="
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">×</button>
+      </div>
+      <div class="panel-content" style="padding: 24px;">
+        ${this.generateLegendContentHTML()}
+      </div>
+    `;
+
+    document.getElementById('map')?.appendChild(legendPanel);
+    this.setupLegendPanelEvents(legendPanel);
+  }
+
+  private generateLegendContentHTML(): string {
+    return `
+      ${this.selectedActif ? `
+        <div class="selected-actif-info" style="
+          background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05));
+          border-left: 4px solid #2196f3;
+          padding: 16px;
+          margin-bottom: 20px;
+          border-radius: 8px;
+        ">
+          <strong style="color: #1976d2; font-size: 16px; display: block; margin-bottom: 4px;">🎯 ${this.selectedActif.nom}</strong>
+          <small style="color: #666; font-family: monospace; background: rgba(255, 255, 255, 0.7); padding: 2px 6px; border-radius: 4px; font-size: 12px;">${this.selectedActif.code}</small>
+        </div>
+      ` : ''}
+      
+      <div class="legend-items">
+        ${this.etatChips.map(chip => `
+          <div class="legend-item clickable" 
+               data-etat="${chip.value}"
+               style="
+                 display: flex;
+                 align-items: center;
+                 gap: 12px;
+                 padding: 12px;
+                 margin-bottom: 8px;
+                 border-radius: 10px;
+                 cursor: pointer;
+                 transition: all 0.2s ease;
+                 opacity: ${chip.selected ? '1' : '0.5'};
+               ">
+            <div class="legend-symbol" style="
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background-color: ${chip.color};
+              border: 2px solid white;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+              flex-shrink: 0;
+            "></div>
+            <span style="font-size: 14px; color: #555; font-weight: 500;">${chip.label}</span>
+          </div>
+        `).join('')}
+      </div>
+      
+      ${this.selectedActif ? `
+        <button class="back-btn" onclick="window.location.href='/actifs/list'" style="
+          width: 100%;
+          padding: 14px 20px;
+          background: linear-gradient(135deg, #2196f3, #1976d2);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          margin-top: 20px;
+          font-weight: 600;
+          font-size: 14px;
+          transition: all 0.3s ease;
+        ">
           ← Retour à la liste
-        </button>` : ''}
-      </div>
+        </button>
+      ` : ''}
     `;
-
-    const mapElement = document.getElementById('map');
-    if (mapElement) {
-      mapElement.appendChild(legendElement);
-    }
-  }
-
-  private createFilterPanel(): void {
-    // Masquer le panneau de filtres si on affiche un actif spécifique
-    if (this.selectedActif) {
-      return;
-    }
-
-    const filterElement = document.createElement('div');
-    filterElement.className = 'ol-filter-panel';
-    filterElement.innerHTML = `
-      <div class="filter-header">
-        <h4>🔍 Filtres</h4>
-        <button class="collapse-btn">−</button>
-      </div>
-      <div class="filter-content">
-        <div class="filter-section">
-          <label>Fond de carte:</label>
-          <select class="base-map-select">
-            <option value="osm">OpenStreetMap</option>
-            <option value="satellite">Satellite</option>
-          </select>
-        </div>
-        
-        <div class="filter-section">
-          <label>Sites:</label>
-          <div class="filter-checkboxes" id="site-filters"></div>
-        </div>
-        
-        <div class="filter-section">
-          <label>Zones:</label>
-          <div class="filter-checkboxes" id="zone-filters"></div>
-        </div>
-        
-        <div class="filter-section">
-          <label>État:</label>
-          <div class="filter-checkboxes" id="etat-filters"></div>
-        </div>
-        
-        <div class="filter-actions">
-          <button class="filter-btn reset-btn">Réinitialiser</button>
-          <button class="filter-btn apply-btn">Appliquer</button>
-        </div>
-      </div>
-    `;
-
-    const mapElement = document.getElementById('map');
-    if (mapElement) {
-      mapElement.appendChild(filterElement);
-      this.setupFilterEvents();
-    }
-  }
-
-  private setupFilterEvents(): void {
-    // Base map switcher
-    const baseMapSelect = document.querySelector('.base-map-select') as HTMLSelectElement;
-    if (baseMapSelect) {
-      baseMapSelect.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        this.switchBaseMap(target.value);
-      });
-    }
-
-    // Collapse/expand filter panel
-    const collapseBtn = document.querySelector('.collapse-btn');
-    const filterContent = document.querySelector('.filter-content') as HTMLElement;
-    if (collapseBtn && filterContent) {
-      collapseBtn.addEventListener('click', () => {
-        const isCollapsed = filterContent.style.display === 'none';
-        filterContent.style.display = isCollapsed ? 'block' : 'none';
-        collapseBtn.textContent = isCollapsed ? '−' : '+';
-      });
-    }
-
-    // Reset filters
-    const resetBtn = document.querySelector('.reset-btn');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        this.resetAllFilters();
-      });
-    }
-
-    // Apply filters
-    const applyBtn = document.querySelector('.apply-btn');
-    if (applyBtn) {
-      applyBtn.addEventListener('click', () => {
-        this.applyFilters();
-      });
-    }
-  }
-
-  private switchBaseMap(mapType: string): void {
-    if (mapType === 'satellite') {
-      this.osmLayer.setVisible(false);
-      this.satelliteLayer.setVisible(true);
-    } else {
-      this.osmLayer.setVisible(true);
-      this.satelliteLayer.setVisible(false);
-    }
-    this.selectedBaseMap = mapType;
   }
 
   private handleMapClick(event: any): void {
@@ -582,6 +870,270 @@ private createActifFeature(actif: Actif): Feature {
       return true;
     });
   }
+  // Add these methods to your ActifsMapComponent class (Part 3)
+
+  private setupFilterPanelEvents(panel: HTMLElement): void {
+    // Panel toggle and close
+    const toggleBtn = panel.querySelector('#togglePanel');
+    const closeBtn = panel.querySelector('#closePanel');
+    const content = panel.querySelector('.panel-content') as HTMLElement;
+
+    toggleBtn?.addEventListener('click', () => {
+      const isVisible = content.style.display !== 'none';
+      content.style.display = isVisible ? 'none' : 'block';
+      (toggleBtn as HTMLElement).textContent = isVisible ? '+' : '−';
+    });
+
+    closeBtn?.addEventListener('click', () => {
+      this.isFilterPanelVisible = false;
+      panel.style.display = 'none';
+    });
+
+    // Base map switcher
+    const baseMapSelect = panel.querySelector('.base-map-select') as HTMLSelectElement;
+    baseMapSelect?.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      this.switchBaseMap(target.value);
+    });
+
+    // Accordion functionality
+    const accordionHeaders = panel.querySelectorAll('.accordion-header');
+    accordionHeaders.forEach(header => {
+      header.addEventListener('click', () => {
+        const target = header.getAttribute('data-target');
+        const content = panel.querySelector(`#${target}-content`) as HTMLElement;
+        const icon = header.querySelector('.accordion-icon') as HTMLElement;
+        
+        if (content) {
+          const isVisible = content.style.display === 'block';
+          content.style.display = isVisible ? 'none' : 'block';
+          icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+      });
+
+      // Hover effects
+      header.addEventListener('mouseenter', () => {
+        (header as HTMLElement).style.background = 'linear-gradient(135deg, #e8f5e8, #d4edda)';
+      });
+      
+      header.addEventListener('mouseleave', () => {
+        (header as HTMLElement).style.background = 'linear-gradient(135deg, #f8f9fa, #e9ecef)';
+      });
+    });
+
+    // État chips functionality
+    this.setupEtatChipsEvents(panel);
+
+    // Filter buttons
+    const resetBtn = panel.querySelector('.reset-btn');
+    const applyBtn = panel.querySelector('.apply-btn');
+
+    resetBtn?.addEventListener('click', () => {
+      this.resetAllFilters();
+      this.updateFilterPanelDisplay(panel);
+    });
+
+    applyBtn?.addEventListener('click', () => {
+      this.applyFilters();
+    });
+
+    // Button hover effects
+    this.setupButtonHoverEffects(resetBtn, applyBtn);
+  }
+
+  private setupEtatChipsEvents(panel: HTMLElement): void {
+    const etatChips = panel.querySelectorAll('.etat-chip');
+    etatChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const value = chip.getAttribute('data-value');
+        if (value) {
+          this.toggleEtatChip(value);
+          this.updateEtatChipsDisplay(panel);
+        }
+      });
+
+      // Hover effects for chips
+      chip.addEventListener('mouseenter', () => {
+        if (!chip.classList.contains('selected')) {
+          const color = this.getChipColor(chip.getAttribute('data-value') || '');
+          (chip as HTMLElement).style.background = `${color}20`;
+        }
+        (chip as HTMLElement).style.transform = 'translateY(-2px)';
+        (chip as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      });
+
+      chip.addEventListener('mouseleave', () => {
+        if (!chip.classList.contains('selected')) {
+          (chip as HTMLElement).style.background = 'white';
+        }
+        (chip as HTMLElement).style.transform = 'translateY(0)';
+        (chip as HTMLElement).style.boxShadow = 'none';
+      });
+    });
+  }
+
+  private setupButtonHoverEffects(resetBtn: Element | null, applyBtn: Element | null): void {
+    resetBtn?.addEventListener('mouseenter', () => {
+      (resetBtn as HTMLElement).style.background = 'linear-gradient(135deg, #e0e0e0, #bdbdbd)';
+      (resetBtn as HTMLElement).style.transform = 'translateY(-2px)';
+      (resetBtn as HTMLElement).style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)';
+    });
+    
+    resetBtn?.addEventListener('mouseleave', () => {
+      (resetBtn as HTMLElement).style.background = 'linear-gradient(135deg, #f5f5f5, #e0e0e0)';
+      (resetBtn as HTMLElement).style.transform = 'translateY(0)';
+      (resetBtn as HTMLElement).style.boxShadow = 'none';
+    });
+
+    applyBtn?.addEventListener('mouseenter', () => {
+      (applyBtn as HTMLElement).style.background = 'linear-gradient(135deg, #1565c0, #0d47a1)';
+      (applyBtn as HTMLElement).style.transform = 'translateY(-2px)';
+      (applyBtn as HTMLElement).style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)';
+    });
+    
+    applyBtn?.addEventListener('mouseleave', () => {
+      (applyBtn as HTMLElement).style.background = 'linear-gradient(135deg, #1976d2, #1565c0)';
+      (applyBtn as HTMLElement).style.transform = 'translateY(0)';
+      (applyBtn as HTMLElement).style.boxShadow = 'none';
+    });
+  }
+
+  private setupLegendPanelEvents(panel: HTMLElement): void {
+    const closeBtn = panel.querySelector('#closeLegend');
+    closeBtn?.addEventListener('click', () => {
+      this.toggleLegend();
+    });
+
+    // Interactive legend items
+    const legendItems = panel.querySelectorAll('.legend-item.clickable');
+    legendItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const etatValue = item.getAttribute('data-etat');
+        if (etatValue) {
+          this.toggleEtatChip(etatValue);
+          this.updateLegendDisplay(panel);
+          this.applyFilters();
+        }
+      });
+
+      // Hover effects for legend items
+      item.addEventListener('mouseenter', () => {
+        (item as HTMLElement).style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+        (item as HTMLElement).style.transform = 'translateX(4px)';
+        const symbol = item.querySelector('.legend-symbol') as HTMLElement;
+        if (symbol) symbol.style.transform = 'scale(1.1)';
+      });
+
+      item.addEventListener('mouseleave', () => {
+        (item as HTMLElement).style.backgroundColor = 'transparent';
+        (item as HTMLElement).style.transform = 'translateX(0)';
+        const symbol = item.querySelector('.legend-symbol') as HTMLElement;
+        if (symbol) symbol.style.transform = 'scale(1)';
+      });
+    });
+  }
+
+  private setupDraggablePanels(): void {
+    this.setupDraggable('.floating-filter-panel', this.filterPanelDrag);
+    this.setupDraggable('.floating-legend-panel', this.legendPanelDrag);
+  }
+
+  private setupDraggable(selector: string, dragState: DragState): void {
+    const panel = document.querySelector(selector) as HTMLElement;
+    if (!panel) return;
+
+    const header = panel.querySelector('.panel-header') as HTMLElement;
+    if (!header) return;
+
+    header.addEventListener('mousedown', (e: MouseEvent) => {
+      dragState.isDragging = true;
+      dragState.startX = e.clientX;
+      dragState.startY = e.clientY;
+      
+      const rect = panel.getBoundingClientRect();
+      dragState.elementX = rect.left;
+      dragState.elementY = rect.top;
+
+      header.style.cursor = 'grabbing';
+      panel.style.userSelect = 'none';
+      panel.style.transition = 'none';
+
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      if (!dragState.isDragging) return;
+
+      const deltaX = e.clientX - dragState.startX;
+      const deltaY = e.clientY - dragState.startY;
+
+      const newX = dragState.elementX + deltaX;
+      const newY = dragState.elementY + deltaY;
+
+      // Constrain to viewport
+      const maxX = window.innerWidth - panel.offsetWidth;
+      const maxY = window.innerHeight - panel.offsetHeight;
+
+      panel.style.left = `${Math.max(0, Math.min(newX, maxX))}px`;
+      panel.style.top = `${Math.max(0, Math.min(newY, maxY))}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (dragState.isDragging) {
+        dragState.isDragging = false;
+        header.style.cursor = 'move';
+        panel.style.userSelect = '';
+        panel.style.transition = 'all 0.3s ease';
+      }
+    });
+  }
+
+  private toggleEtatChip(value: string): void {
+    const chip = this.etatChips.find(c => c.value === value);
+    if (chip) {
+      chip.selected = !chip.selected;
+    }
+  }
+
+  private getChipColor(value: string): string {
+    const chip = this.etatChips.find(c => c.value === value);
+    return chip?.color || '#607d8b';
+  }
+
+  private updateEtatChipsDisplay(panel: HTMLElement): void {
+    const chipsContainer = panel.querySelector('.etat-chips');
+    if (chipsContainer) {
+      chipsContainer.innerHTML = this.generateEtatChipsHTML();
+      this.setupEtatChipsEvents(panel);
+    }
+  }
+
+  private updateLegendDisplay(panel: HTMLElement): void {
+    const legendItems = panel.querySelectorAll('.legend-item.clickable');
+    legendItems.forEach((item, index) => {
+      const chip = this.etatChips[index];
+      if (chip) {
+        (item as HTMLElement).style.opacity = chip.selected ? '1' : '0.5';
+      }
+    });
+  }
+
+  private updateFilterPanelDisplay(panel: HTMLElement): void {
+    this.updateEtatChipsDisplay(panel);
+    this.populateFilterCheckboxes();
+  }
+
+  private switchBaseMap(mapType: string): void {
+    if (mapType === 'satellite') {
+      this.osmLayer.setVisible(false);
+      this.satelliteLayer.setVisible(true);
+    } else {
+      this.osmLayer.setVisible(true);
+      this.satelliteLayer.setVisible(false);
+    }
+    this.selectedBaseMap = mapType;
+  }
+  // Add these methods to your ActifsMapComponent class (Part 4)
 
   private loadActifs(): void {
     this.isLoading = true;
@@ -600,13 +1152,6 @@ private createActifFeature(actif: Actif): Feature {
           this.actifVectorSource.addFeatures(features);
           
           if (features.length > 0) {
-            const extent = this.actifVectorSource.getExtent();
-            //this.map.getView().fit(extent, {
-              //padding: [50, 50, 50, 50],
-              //duration: 1000,
-              //maxZoom: 16
-           //:});
-            
             this.snackBar.open(`${features.length} actifs chargés avec succès`, 'Fermer', {
               duration: 3000,
               panelClass: ['success-snackbar']
@@ -648,17 +1193,14 @@ private createActifFeature(actif: Actif): Feature {
     this.allFeatures.forEach(feature => {
       const props = feature.getProperties();
       
-      // Count sites
       if (props.site) {
         sites[props.site] = (sites[props.site] || 0) + 1;
       }
       
-      // Count zones
       if (props.zone) {
         zones[props.zone] = (zones[props.zone] || 0) + 1;
       }
       
-      // Count états
       const indice = props.indiceEtat || 1;
       let etatKey = '';
       if (indice <= 2) etatKey = '1-2';
@@ -668,186 +1210,342 @@ private createActifFeature(actif: Actif): Feature {
       etats[etatKey] = (etats[etatKey] || 0) + 1;
     });
 
-    // Generate site filters using Object.keys
-    this.siteFilters = [];
-    const siteKeys = Object.keys(sites);
-    for (let i = 0; i < siteKeys.length; i++) {
-      const site = siteKeys[i];
-      this.siteFilters.push({
-        value: site,
-        label: site,
-        count: sites[site],
-        checked: true
-      });
-    }
+    this.siteFilters = Object.keys(sites).map(site => ({
+      value: site,
+      label: site,
+      count: sites[site],
+      checked: true
+    }));
 
-    // Generate zone filters using Object.keys
-    this.zoneFilters = [];
-    const zoneKeys = Object.keys(zones);
-    for (let i = 0; i < zoneKeys.length; i++) {
-      const zone = zoneKeys[i];
-      this.zoneFilters.push({
-        value: zone,
-        label: zone,
-        count: zones[zone],
-        checked: true
-      });
-    }
+    this.zoneFilters = Object.keys(zones).map(zone => ({
+      value: zone,
+      label: zone,
+      count: zones[zone],
+      checked: true
+    }));
 
-    // Update état filter counts
-    for (let i = 0; i < this.etatFilters.length; i++) {
-      const filter = this.etatFilters[i];
-      filter.count = etats[filter.value] || 0;
-    }
+    this.etatChips.forEach(chip => {
+      chip.count = etats[chip.value] || 0;
+    });
 
-    this.populateFilterCheckboxes();
+    setTimeout(() => {
+      this.populateFilterCheckboxes();
+    }, 100);
   }
 
   private populateFilterCheckboxes(): void {
-    // Populate site filters
     const siteContainer = document.getElementById('site-filters');
     if (siteContainer) {
-      let siteHtml = '';
-      for (let i = 0; i < this.siteFilters.length; i++) {
-        const filter = this.siteFilters[i];
-        siteHtml += `
-          <div class="filter-checkbox">
-            <input type="checkbox"  id="site-${filter.value}" ${filter.checked ? 'checked' : ''}>
-            <label for="site-${filter.value}">${filter.label} (${filter.count})</label>
-          </div>
-        `;
-      }
-      siteContainer.innerHTML = siteHtml;
+      siteContainer.innerHTML = this.siteFilters.map(filter => `
+        <div class="filter-checkbox" style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 0;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+        ">
+          <input type="checkbox" id="site-${filter.value}" ${filter.checked ? 'checked' : ''} style="
+            transform: scale(1.2);
+            cursor: pointer;
+            accent-color: #1976d2;
+          ">
+          <label for="site-${filter.value}" style="
+            font-size: 13px;
+            color: #555;
+            cursor: pointer;
+            flex: 1;
+            margin: 0;
+            transition: color 0.2s ease;
+          ">${filter.label} (${filter.count})</label>
+        </div>
+      `).join('');
     }
 
-    // Populate zone filters
     const zoneContainer = document.getElementById('zone-filters');
     if (zoneContainer) {
-      let zoneHtml = '';
-      for (let i = 0; i < this.zoneFilters.length; i++) {
-        const filter = this.zoneFilters[i];
-        zoneHtml += `
-          <div class="filter-checkbox">
-            <input type="checkbox" id="zone-${filter.value}" ${filter.checked ? 'checked' : ''}>
-            <label for="zone-${filter.value}">${filter.label} (${filter.count})</label>
-          </div>
-        `;
-      }
-      zoneContainer.innerHTML = zoneHtml;
+      zoneContainer.innerHTML = this.zoneFilters.map(filter => `
+        <div class="filter-checkbox" style="
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 0;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+        ">
+          <input type="checkbox" id="zone-${filter.value}" ${filter.checked ? 'checked' : ''} style="
+            transform: scale(1.2);
+            cursor: pointer;
+            accent-color: #1976d2;
+          ">
+          <label for="zone-${filter.value}" style="
+            font-size: 13px;
+            color: #555;
+            cursor: pointer;
+            flex: 1;
+            margin: 0;
+            transition: color 0.2s ease;
+          ">${filter.label} (${filter.count})</label>
+        </div>
+      `).join('');
     }
 
-    // Populate état filters
-    const etatContainer = document.getElementById('etat-filters');
-    if (etatContainer) {
-      let etatHtml = '';
-      for (let i = 0; i < this.etatFilters.length; i++) {
-        const filter = this.etatFilters[i];
-        etatHtml += `
-          <div class="filter-checkbox">
-            <input type="checkbox" id="etat-${filter.value}" ${filter.checked ? 'checked' : ''}>
-            <label for="etat-${filter.value}">${filter.label} (${filter.count})</label>
-          </div>
-        `;
-      }
-      etatContainer.innerHTML = etatHtml;
-    }
+    // Add hover effects to checkboxes
+    document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('mouseenter', () => {
+        (checkbox as HTMLElement).style.backgroundColor = 'rgba(25, 118, 210, 0.05)';
+        (checkbox as HTMLElement).style.paddingLeft = '8px';
+        (checkbox as HTMLElement).style.paddingRight = '8px';
+        const label = checkbox.querySelector('label') as HTMLElement;
+        if (label) label.style.color = '#1976d2';
+      });
+      
+      checkbox.addEventListener('mouseleave', () => {
+        (checkbox as HTMLElement).style.backgroundColor = 'transparent';
+        (checkbox as HTMLElement).style.paddingLeft = '0';
+        (checkbox as HTMLElement).style.paddingRight = '0';
+        const label = checkbox.querySelector('label') as HTMLElement;
+        if (label) label.style.color = '#555';
+      });
+    });
   }
 
   private resetAllFilters(): void {
-    for (let i = 0; i < this.siteFilters.length; i++) {
-      this.siteFilters[i].checked = true;
-    }
-    for (let i = 0; i < this.zoneFilters.length; i++) {
-      this.zoneFilters[i].checked = true;
-    }
-    for (let i = 0; i < this.etatFilters.length; i++) {
-      this.etatFilters[i].checked = true;
-    }
-    
-    this.populateFilterCheckboxes();
+    this.siteFilters.forEach(filter => filter.checked = true);
+    this.zoneFilters.forEach(filter => filter.checked = true);
+    this.etatChips.forEach(chip => chip.selected = true);
     this.applyFilters();
   }
 
   private applyFilters(): void {
-    // Get current checkbox states
-    const checkedSites = this.getCheckedFilters('site');
-    const checkedZones = this.getCheckedFilters('zone');
-    const checkedEtats = this.getCheckedFilters('etat');
+    const checkedSites = this.getCheckedSiteFilters();
+    const checkedZones = this.getCheckedZoneFilters();
+    const selectedEtats = this.etatChips.filter(chip => chip.selected).map(chip => chip.value);
 
-    // Filter features
     const filteredFeatures = this.allFeatures.filter(feature => {
       const props = feature.getProperties();
       
-      // Check site filter
       if (checkedSites.length > 0 && !checkedSites.includes(props.site)) {
         return false;
       }
       
-      // Check zone filter
       if (checkedZones.length > 0 && !checkedZones.includes(props.zone)) {
         return false;
       }
       
-      // Check état filter
       const indice = props.indiceEtat || 1;
       let etatKey = '';
       if (indice <= 2) etatKey = '1-2';
       else if (indice === 3) etatKey = '3';
       else etatKey = '4-5';
       
-      if (checkedEtats.length > 0 && !checkedEtats.includes(etatKey)) {
+      if (selectedEtats.length > 0 && !selectedEtats.includes(etatKey)) {
         return false;
       }
       
       return true;
     });
 
-    // Update map
     this.actifVectorSource.clear();
     this.actifVectorSource.addFeatures(filteredFeatures);
+
+    // Update the map layer style to reflect legend visibility
+    this.actifLayer.getSource()?.changed();
 
     this.snackBar.open(`${filteredFeatures.length} actifs affichés`, 'Fermer', {
       duration: 2000
     });
   }
 
-  private getCheckedFilters(type: string): string[] {
-    const checkboxes = document.querySelectorAll(`input[id^="${type}-"]:checked`);
-    const result: string[] = [];
-    
-    for (let i = 0; i < checkboxes.length; i++) {
-      const checkbox = checkboxes[i] as HTMLInputElement;
-      const value = checkbox.id.replace(`${type}-`, '');
-      result.push(value);
-    }
-    
-    return result;
-  }
-
-  public centerOnTanger(): void {
-    this.map.getView().animate({
-      center: fromLonLat(this.DEFAULT_COORDS),
-      zoom: this.DEFAULT_ZOOM,
-      duration: 1000
+  private getCheckedSiteFilters(): string[] {
+    const checkedInputs = document.querySelectorAll('input[id^="site-"]:checked');
+    return Array.from(checkedInputs).map(input => {
+      const id = (input as HTMLInputElement).id;
+      return id.replace('site-', '');
     });
   }
 
-  public refreshData(): void {
-    if (this.selectedActifId) {
-      this.loadSpecificActif(this.selectedActifId);
-    } else {
-      this.loadActifs();
-    }
+  private getCheckedZoneFilters(): string[] {
+    const checkedInputs = document.querySelectorAll('input[id^="zone-"]:checked');
+    return Array.from(checkedInputs).map(input => {
+      const id = (input as HTMLInputElement).id;
+      return id.replace('zone-', '');
+    });
   }
 
-  public zoomToActifs(): void {
-    if (this.actifVectorSource.getFeatures().length > 0) {
-      const extent = this.actifVectorSource.getExtent();
-      this.map.getView().fit(extent, {
-        padding: [50, 50, 50, 50],
-        duration: 1000,
-        maxZoom: 16
+  // Additional utility methods for better filter management
+  private updateCheckboxStates(): void {
+    // Update site checkboxes based on internal state
+    this.siteFilters.forEach(filter => {
+      const checkbox = document.getElementById(`site-${filter.value}`) as HTMLInputElement;
+      if (checkbox) {
+        checkbox.checked = filter.checked;
+      }
+    });
+
+    // Update zone checkboxes based on internal state
+    this.zoneFilters.forEach(filter => {
+      const checkbox = document.getElementById(`zone-${filter.value}`) as HTMLInputElement;
+      if (checkbox) {
+        checkbox.checked = filter.checked;
+      }
+    });
+  }
+
+  private syncFiltersWithUI(): void {
+    // Sync site filters with UI state
+    this.siteFilters.forEach(filter => {
+      const checkbox = document.getElementById(`site-${filter.value}`) as HTMLInputElement;
+      if (checkbox) {
+        filter.checked = checkbox.checked;
+      }
+    });
+
+    // Sync zone filters with UI state
+    this.zoneFilters.forEach(filter => {
+      const checkbox = document.getElementById(`zone-${filter.value}`) as HTMLInputElement;
+      if (checkbox) {
+        filter.checked = checkbox.checked;
+      }
+    });
+  }
+
+  // Advanced filtering methods
+  private filterByBounds(bounds?: any): void {
+    if (!bounds) return;
+
+    const filteredFeatures = this.allFeatures.filter(feature => {
+      const geometry = feature.getGeometry();
+      if (!geometry) return false;
+
+      const extent = geometry.getExtent();
+      // Check if feature intersects with bounds
+      return bounds.intersects(extent);
+    });
+
+    this.actifVectorSource.clear();
+    this.actifVectorSource.addFeatures(filteredFeatures);
+  }
+
+  private filterByDistance(centerPoint: any, radius: number): void {
+    if (!centerPoint || radius <= 0) return;
+
+    const filteredFeatures = this.allFeatures.filter(feature => {
+      const geometry = feature.getGeometry();
+      if (!geometry) return false;
+
+      // Calculate distance from center point
+      // This is a simplified distance calculation
+      const featureCoords = geometry.getFirstCoordinate();
+      const distance = Math.sqrt(
+        Math.pow(featureCoords[0] - centerPoint[0], 2) + 
+        Math.pow(featureCoords[1] - centerPoint[1], 2)
+      );
+
+      return distance <= radius;
+    });
+
+    this.actifVectorSource.clear();
+    this.actifVectorSource.addFeatures(filteredFeatures);
+  }
+
+  // Batch operations for performance
+  private batchUpdateFilters(updates: {
+    sites?: string[];
+    zones?: string[];
+    etats?: string[];
+  }): void {
+    if (updates.sites) {
+      this.siteFilters.forEach(filter => {
+        filter.checked = updates.sites!.includes(filter.value);
       });
     }
+
+    if (updates.zones) {
+      this.zoneFilters.forEach(filter => {
+        filter.checked = updates.zones!.includes(filter.value);
+      });
+    }
+
+    if (updates.etats) {
+      this.etatChips.forEach(chip => {
+        chip.selected = updates.etats!.includes(chip.value);
+      });
+    }
+
+    // Update UI and apply filters
+    this.updateCheckboxStates();
+    const filterPanel = document.querySelector('.floating-filter-panel') as HTMLElement;
+    if (filterPanel) {
+      this.updateFilterPanelDisplay(filterPanel);
+    }
+    this.applyFilters();
   }
+
+  // Export/Import filter states for user preferences
+  private exportFilterState(): any {
+    return {
+      sites: this.siteFilters.filter(f => f.checked).map(f => f.value),
+      zones: this.zoneFilters.filter(f => f.checked).map(f => f.value),
+      etats: this.etatChips.filter(c => c.selected).map(c => c.value),
+      baseMap: this.selectedBaseMap,
+      legendVisible: this.isLegendVisible
+    };
+  }
+
+  private importFilterState(state: any): void {
+    if (!state) return;
+
+    if (state.sites) {
+      this.siteFilters.forEach(filter => {
+        filter.checked = state.sites.includes(filter.value);
+      });
+    }
+
+    if (state.zones) {
+      this.zoneFilters.forEach(filter => {
+        filter.checked = state.zones.includes(filter.value);
+      });
+    }
+
+    if (state.etats) {
+      this.etatChips.forEach(chip => {
+        chip.selected = state.etats.includes(chip.value);
+      });
+    }
+
+    if (state.baseMap) {
+      this.switchBaseMap(state.baseMap);
+    }
+
+    if (typeof state.legendVisible === 'boolean' && state.legendVisible !== this.isLegendVisible) {
+      this.toggleLegend();
+    }
+
+    // Update UI
+    this.updateCheckboxStates();
+    const filterPanel = document.querySelector('.floating-filter-panel') as HTMLElement;
+    if (filterPanel) {
+      this.updateFilterPanelDisplay(filterPanel);
+    }
+    this.applyFilters();
+  }
+
+  // Performance optimization for large datasets
+  private debounceFilter = this.debounce(() => {
+    this.applyFilters();
+  }, 300);
+
+  private debounce(func: Function, wait: number): Function {
+    let timeout: any;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
 }
