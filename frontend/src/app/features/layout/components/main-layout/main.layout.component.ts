@@ -47,11 +47,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private baseNavigationItems: NavigationItem[] = [
     { label: 'Tableau de Bord', icon: 'dashboard', route: '/dashboard' },
     {
-      label: 'Actifs', icon: 'location_on', route: '/actifs',
-      children: [
-        { label: 'Cartographie', icon: 'map', route: '/actifs/map' },
-        { label: 'Liste', icon: 'list', route: '/actifs/list' }
-      ]
+      label: 'Actifs', icon: 'location_on', route: '/actifs/list',
+      
     },
     {
       label: 'Familles', icon: 'folder', route: '/familles',
