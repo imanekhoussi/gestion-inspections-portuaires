@@ -6,6 +6,62 @@
       Nouveau type
     </button>
   </div>
+
+  <div class="filter-controls">
+    <mat-form-field class="search-field" appearance="outline">
+      <mat-label>Rechercher...</mat-label>
+      <input matInput [formControl]="searchControl" placeholder="Nom, fréquence, groupe, etc.">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Famille</mat-label>
+      <mat-select [(ngModel)]="selectedFamille" (selectionChange)="applyFilters()">
+        <mat-option [value]="null">Toutes</mat-option>
+        <mat-option *ngFor="let famille of familles" [value]="famille.id">{{ famille.nom }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Groupe</mat-label>
+      <mat-select [(ngModel)]="selectedGroupe" (selectionChange)="applyFilters()">
+        <mat-option [value]="null">Tous</mat-option>
+        <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    
+    <mat-form-field appearance="outline">
+      <mat-label>Fréquence</mat-label>
+      <mat-select [(ngModel)]="selectedFrequence" (selectionChange)="applyFilters()">
+        <mat-option [value]="null">Toutes</mat-option>
+        <mat-option *ngFor="let freq of frequenceOptions" [value]="freq.value">{{ freq.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="active-filters" *ngIf="searchControl.value || selectedFamille || selectedGroupe || selectedFrequence">
+  
+  <mat-chip-set aria-label="Filtres actifs">
+
+    <mat-chip *ngIf="searchControl.value" (removed)="removeFilter('search')" [removable]="true">
+      Recherche: {{searchControl.value}}
+      <button matChipRemove><mat-icon>cancel</mat-icon></button>
+    </mat-chip>
+    <mat-chip *ngIf="selectedFamille" (removed)="removeFilter('famille')" [removable]="true">
+      Famille: {{getFamilleName(selectedFamille)}}
+      <button matChipRemove><mat-icon>cancel</mat-icon></button>
+    </mat-chip>
+    <mat-chip *ngIf="selectedGroupe" (removed)="removeFilter('groupe')" [removable]="true">
+      Groupe: {{getGroupeName(selectedGroupe)}}
+      <button matChipRemove><mat-icon>cancel</mat-icon></button>
+    </mat-chip>
+    <mat-chip *ngIf="selectedFrequence" (removed)="removeFilter('frequence')" [removable]="true">
+      Fréquence: {{getFrequenceLabel(selectedFrequence)}}
+      <button matChipRemove><mat-icon>cancel</mat-icon></button>
+    </mat-chip>
+
+  </mat-chip-set>
+</div>
   
   <div class="content">
     <div *ngIf="isLoading" class="loading-spinner">
@@ -54,7 +110,7 @@
       
       <ng-template #noData>
         <div class="no-data">
-          <p>Aucun type d'inspection configuré. Cliquez sur "Nouveau type" pour commencer.</p>
+          <p>Aucun type d'inspection ne correspond à vos critères de recherche.</p>
         </div>
       </ng-template>
     </div>

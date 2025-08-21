@@ -13,7 +13,40 @@
   }
 }
 
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 10px;
+
+  .search-field {
+    flex: 1 1 300px; // Allow search to grow
+  }
+
+  mat-form-field {
+    flex: 1 1 180px; // Allow dropdowns to grow but have a base size
+    // Remove bottom padding to make it align better
+    .mat-form-field-wrapper {
+      padding-bottom: 0;
+    }
+  }
+}
+
+.active-filters {
+  padding: 8px 0 20px 0;
+}
+
 .content {
+  .loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 15px;
+  }
+  
   .no-data {
     text-align: center;
     padding: 40px;
