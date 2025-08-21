@@ -137,70 +137,101 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
     this.actifForm = this.createForm();
   }
 
+  // ✅ FIXED: Proper form creation with initial disabled states
   private createForm(): FormGroup {
-  return this.fb.group({
-    nom: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
-    code: [{ value: '', disabled: false }, [Validators.required, Validators.pattern(/^[A-Z0-9-_]+$/), Validators.maxLength(50)]],
-    site: ['', Validators.required],
-    zone: ['', Validators.required],
-    ouvrage: ['', Validators.required],
-    idGroupe: [{ value: null, disabled: false }, [Validators.required]], // 🔧 Correction ici
-    geometryType: [null, Validators.required],
-    coordinates: [null, Validators.required],
-  });
-}
-
-private updateFormControlsState(): void {
-  if (this.isEditMode) {
-    // Désactiver le code en mode édition
-    this.actifForm.get('code')?.disable();
-  } else {
-    // Activer le code en mode création
-    this.actifForm.get('code')?.enable();
+    return this.fb.group({
+      nom: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      // Set initial disabled state in FormControl configuration
+      code: [{ value: '', disabled: false }, [Validators.required, Validators.pattern(/^[A-Z0-9-_]+$/), Validators.maxLength(50)]],
+      site: ['', Validators.required],
+      zone: ['', Validators.required],
+      ouvrage: ['', Validators.required],
+      // Set initial disabled state in FormControl configuration
+      idGroupe: [{ value: null, disabled: false }, [Validators.required]],
+      geometryType: [null, Validators.required],
+      coordinates: [null, Validators.required],
+    });
   }
-  
-  // Gérer l'état du select des groupes
-  if (this.isLoadingGroupes) {
-    this.actifForm.get('idGroupe')?.disable();
-  } else {
-    this.actifForm.get('idGroupe')?.enable();
-  }
-}
 
- ngOnInit(): void {
-  this.setupFormValidation();
-  
-  console.log('🔍 Données reçues dans le dialog:', this.data);
-  
-  this.isEditMode = this.data?.mode === 'edit' || !!this.data?.actif;
-  this.dialogTitle = this.isEditMode ? 'Modifier l\'actif' : 'Créer un nouvel actif';
-  
-  // 🔧 Mettre à jour l'état des contrôles
-  this.updateFormControlsState();
-  
-  console.log('🔍 Mode détecté:', this.isEditMode ? 'EDITION' : 'CREATION');
-  
-  this.loadGroupesFromDatabase(() => {
-    // 🔧 Réactiver le select des groupes une fois chargés
-    this.actifForm.get('idGroupe')?.enable();
+  // ✅ FIXED: Proper state management using FormControl methods
+  private updateFormControlsState(): void {
+    const codeControl = this.actifForm.get('code');
+    const groupeControl = this.actifForm.get('idGroupe');
     
-    if (this.isEditMode && this.data?.actif) {
-      console.log('⚡ Chargement des données pour édition:', this.data.actif);
-      this.loadActifForEdit(this.data.actif);
+    // Handle edit mode for code field
+    if (this.isEditMode) {
+      codeControl?.disable();
+    } else {
+      codeControl?.enable();
     }
-  });
-}
+    
+    // Handle loading state for groupe select
+    if (this.isLoadingGroupes) {
+      groupeControl?.disable();
+    } else {
+      groupeControl?.enable();
+    }
+  }
+
+  ngOnInit(): void {
+    console.log('🚀 === DEBUT ngOnInit ===');
+    
+    this.setupFormValidation();
+    
+    console.log('🔍 Données reçues dans le dialog:', this.data);
+    console.log('🔍 Type de données:', typeof this.data);
+    console.log('🔍 Data.actif:', this.data?.actif);
+    console.log('🔍 Data.mode:', this.data?.mode);
+    
+    this.isEditMode = this.data?.mode === 'edit' || !!this.data?.actif;
+    this.dialogTitle = this.isEditMode ? 'Modifier l\'actif' : 'Créer un nouvel actif';
+    
+    console.log('🔍 Mode détecté:', this.isEditMode ? 'EDITION' : 'CREATION');
+    console.log('📝 Titre dialog:', this.dialogTitle);
+    
+    // ✅ Set initial form state
+    this.updateFormControlsState();
+    console.log('🔧 États initiaux des contrôles définis');
+    
+    this.loadGroupesFromDatabase(() => {
+      console.log('✅ Groupes chargés, callback exécuté');
+      
+      // ✅ Update form states after data is loaded
+      this.updateFormControlsState();
+      console.log('🔧 États des contrôles mis à jour après chargement groupes');
+      
+      if (this.isEditMode && this.data?.actif) {
+        console.log('⚡ Chargement des données pour édition:', this.data.actif);
+        
+        // ✅ CORRECTION TYPESCRIPT: Double vérification
+        setTimeout(() => {
+          if (this.data?.actif) {
+            this.loadActifForEdit(this.data.actif);
+          }
+        }, 100);
+      } else {
+        console.log('📝 Mode création - pas de données à charger');
+      }
+    });
+    
+    console.log('✅ === FIN ngOnInit ===');
+  }
 
   ngAfterViewInit(): void {
     setTimeout(() => this.initializeMap(), 150);
   }
 
-  ngOnDestroy(): void {
-    this.cleanupInteractions();
-    if (this.map) {
-      this.map.setTarget(undefined);
-    }
+ngOnDestroy(): void {
+  this.cleanupInteractions();
+  if (this.map) {
+    this.map.setTarget(undefined);
   }
+  
+  // Nettoyer le timeout
+  if (this.geometrySaveTimeout) {
+    clearTimeout(this.geometrySaveTimeout);
+  }
+}  
 
   // MAP INITIALIZATION
   private initializeMap(): void {
@@ -263,21 +294,85 @@ private updateFormControlsState(): void {
   }
 
   // SIMPLIFIED EDITING TOOLS
-  private setupEditingTools(): void {
-    this.modifyInteraction = new Modify({
-      source: this.drawSource,
-      style: new Style({
-        image: new Circle({
-          radius: 8,
-          fill: new Fill({ color: '#ff6b35' }),
-          stroke: new Stroke({ color: '#ffffff', width: 2 })
-        })
-      })
-    });
 
-    this.map.addInteraction(this.modifyInteraction);
-    this.modifyInteraction.setActive(false);
+
+private geometrySaveTimeout: any;
+
+private scheduleGeometrySave(geometryObject: any): void {
+  // Annuler la sauvegarde précédente si elle existe
+  if (this.geometrySaveTimeout) {
+    clearTimeout(this.geometrySaveTimeout);
   }
+  
+  // Programmer une sauvegarde dans 2 secondes
+  this.geometrySaveTimeout = setTimeout(() => {
+    this.saveGeometryToServer(geometryObject);
+  }, 2000);
+}}
+
+
+private setupEditingTools(): void {
+  this.modifyInteraction = new Modify({
+    source: this.drawSource,
+    style: new Style({
+      image: new Circle({
+        radius: 8,
+        fill: new Fill({ color: '#ff6b35' }),
+        stroke: new Stroke({ color: '#ffffff', width: 2 })
+      })
+    })
+  });
+
+  this.map.addInteraction(this.modifyInteraction);
+  this.modifyInteraction.setActive(false);
+  
+  // Écouter les modifications en temps réel
+  this.modifyInteraction.on('modifyend', (event) => {
+    const feature = event.features.getArray()[0];
+    if (feature && this.isEditMode && this.data?.actif?.id) {
+      console.log('Modification géométrie détectée');
+      
+      const geometry = feature.getGeometry();
+      if (geometry) {
+        const geometryObject = new GeoJSON().writeGeometryObject(geometry, {
+          featureProjection: 'EPSG:3857',
+          dataProjection: 'EPSG:4326'
+        }) as any;
+        
+        // Mettre à jour le formulaire immédiatement
+        this.updateFormGeometry(geometryObject as GeoJsonGeometry);
+        this.calculateGeometryInfo(geometry);
+        
+        // Sauvegarde automatique différée
+        this.scheduleGeometrySave(geometryObject);
+      }
+    }
+  });
+}
+
+
+// 5. Nettoyer le timeout lors de la destruction
+
+
+// 6. Méthode pour forcer la sauvegarde immédiate (bouton manuel)
+forceSaveGeometry(): void {
+  const features = this.drawSource.getFeatures();
+  if (features.length > 0 && this.isEditMode && this.data?.actif?.id) {
+    const feature = features[0];
+    const geometry = feature.getGeometry();
+    
+    if (geometry) {
+      const geometryObject = new GeoJSON().writeGeometryObject(geometry, {
+        featureProjection: 'EPSG:3857',
+        dataProjection: 'EPSG:4326'
+      }) as any;
+      
+      this.saveGeometryToServer(geometryObject);
+    }
+  } else {
+    this.snackBar.open('Aucune géométrie à sauvegarder', '', { duration: 2000 });
+  }
+}
 
   // FORM VALIDATION
   private setupFormValidation(): void {
@@ -394,7 +489,7 @@ private updateFormControlsState(): void {
     
     const typeLabel = this.getGeometryTypeLabel(geometryType);
     this.snackBar.open(
-      `✔ ${typeLabel} enregistré avec succès.`,
+      `✓ ${typeLabel} enregistré avec succès.`,
       '',
       { 
         duration: 3000,
@@ -437,32 +532,79 @@ private updateFormControlsState(): void {
     this.snackBar.open('Fonction de trou disponible - redessinez votre polygone avec les zones à exclure', '', { duration: 4000 });
   }
 
-  validateGeometryEdits(): void {
-    const features = this.drawSource.getFeatures();
-    if (features.length > 0) {
-      const feature = features[0];
-      const geometry = feature.getGeometry();
+validateGeometryEdits(): void {
+  const features = this.drawSource.getFeatures();
+  if (features.length > 0) {
+    const feature = features[0];
+    const geometry = feature.getGeometry();
+    
+    if (geometry) {
+      const geometryObject = new GeoJSON().writeGeometryObject(geometry, {
+        featureProjection: 'EPSG:3857',
+        dataProjection: 'EPSG:4326'
+      }) as any;
       
-      if (geometry) {
-        const geometryObject = new GeoJSON().writeGeometryObject(geometry, {
-          featureProjection: 'EPSG:3857',
-          dataProjection: 'EPSG:4326'
-        }) as any;
+      if (geometryObject && geometryObject.type && geometryObject.coordinates) {
+        // Mettre à jour le formulaire
+        this.updateFormGeometry(geometryObject as GeoJsonGeometry);
+        this.calculateGeometryInfo(geometry);
         
-        if (geometryObject && geometryObject.type && geometryObject.coordinates) {
-          this.updateFormGeometry(geometryObject as GeoJsonGeometry);
-          this.calculateGeometryInfo(geometry);
-          this.disableAdvancedEdit();
-          
-          this.snackBar.open(
-            '✅ Modifications géométriques sauvegardées',
-            '',
-            { duration: 3000, panelClass: ['success-snackbar'] }
-          );
+        // Sauvegarder sur le serveur si en mode édition
+        if (this.isEditMode && this.data?.actif?.id) {
+          this.saveGeometryToServer(geometryObject);
         }
+        
+        this.disableAdvancedEdit();
+        
+        this.snackBar.open(
+          'Modifications géométriques sauvegardées',
+          '',
+          { duration: 3000, panelClass: ['success-snackbar'] }
+        );
       }
     }
   }
+}
+
+private saveGeometryToServer(geometryObject: any): void {
+  if (!this.data?.actif?.id) {
+    console.error('Pas d\'ID actif pour sauvegarder la géométrie');
+    return;
+  }
+
+  console.log('Sauvegarde géométrie sur serveur:', geometryObject);
+  
+  // Alternative utilisant updateActif au lieu de updateActifGeometry
+  const formValue = this.actifForm.getRawValue();
+  const updateData = {
+    ...formValue,
+    geometryType: geometryObject.type,
+    coordinates: geometryObject.coordinates,
+    idGroupe: Number(formValue.idGroupe)
+  };
+  
+  console.log('Données complètes à envoyer:', updateData);
+  
+  // Utiliser la méthode updateActif existante
+  this.actifsService.updateActif(this.data.actif.id, updateData).subscribe({
+    next: (response: any) => {
+      console.log('Actif (avec géométrie) mis à jour:', response);
+      this.snackBar.open(
+        'Position sauvegardée',
+        '',
+        { duration: 2000, panelClass: ['success-snackbar'] }
+      );
+    },
+    error: (error: any) => {
+      console.error('Erreur sauvegarde:', error);
+      this.snackBar.open(
+        'Erreur lors de la sauvegarde de la position',
+        'Réessayer',
+        { duration: 4000, panelClass: ['error-snackbar'] }
+      );
+    }
+  });
+}
 
   cancelAdvancedEdit(): void {
     if (confirm('Voulez-vous vraiment annuler l\'édition ? Les modifications non validées seront perdues.')) {
@@ -486,52 +628,53 @@ private updateFormControlsState(): void {
   }
 
   // GEOMETRY INFORMATION
- showGeometryInfo(): void {
-  if (!this.hasGeometry) {
-    this.snackBar.open('Aucune géométrie à analyser', 'Fermer', { duration: 3000 });
-    return;
-  }
+  showGeometryInfo(): void {
+    if (!this.hasGeometry) {
+      this.snackBar.open('Aucune géométrie à analyser', 'Fermer', { duration: 3000 });
+      return;
+    }
 
-  const features = this.drawSource.getFeatures();
-  if (features.length > 0) {
-    const geometry = features[0].getGeometry();
-    if (geometry) {
-      this.calculateGeometryInfo(geometry);
-      this.showGeometryInfoPanel = true;
+    const features = this.drawSource.getFeatures();
+    if (features.length > 0) {
+      const geometry = features[0].getGeometry();
+      if (geometry) {
+        this.calculateGeometryInfo(geometry);
+        this.showGeometryInfoPanel = true;
+      }
     }
   }
-}
+
   hideGeometryInfo(): void {
     this.showGeometryInfoPanel = false;
   }
 
   private calculateGeometryInfo(geometry: any): void {
-  this.geometryInfo = {};
-  const geomType = geometry.getType();
-  
-  if (geomType === 'Point') {
-    const coords = geometry.getCoordinates();
-    const lonLat = fromLonLat(coords);
-    this.geometryInfo.coordinates = `${lonLat[1].toFixed(6)}, ${lonLat[0].toFixed(6)}`;
-  } 
-  else if (geomType === 'LineString') {
-    const length = olSphere.getLength(geometry);
-    this.geometryInfo.length = `${(length / 1000).toFixed(2)} km`;
+    this.geometryInfo = {};
+    const geomType = geometry.getType();
     
-    const coords = geometry.getCoordinates();
-    this.geometryInfo.coordinates = `${coords.length} points`;
-  } 
-  else if (geomType === 'Polygon') {
-    const area = olSphere.getArea(geometry);
-    this.geometryInfo.area = `${(area / 10000).toFixed(2)} ha`;
-    
-    const perimeter = olSphere.getLength(geometry);
-    this.geometryInfo.perimeter = `${(perimeter / 1000).toFixed(2)} km`;
-    
-    const coords = geometry.getCoordinates()[0];
-    this.geometryInfo.coordinates = `${coords.length - 1} sommets`;
+    if (geomType === 'Point') {
+      const coords = geometry.getCoordinates();
+      const lonLat = fromLonLat(coords);
+      this.geometryInfo.coordinates = `${lonLat[1].toFixed(6)}, ${lonLat[0].toFixed(6)}`;
+    } 
+    else if (geomType === 'LineString') {
+      const length = olSphere.getLength(geometry);
+      this.geometryInfo.length = `${(length / 1000).toFixed(2)} km`;
+      
+      const coords = geometry.getCoordinates();
+      this.geometryInfo.coordinates = `${coords.length} points`;
+    } 
+    else if (geomType === 'Polygon') {
+      const area = olSphere.getArea(geometry);
+      this.geometryInfo.area = `${(area / 10000).toFixed(2)} ha`;
+      
+      const perimeter = olSphere.getLength(geometry);
+      this.geometryInfo.perimeter = `${(perimeter / 1000).toFixed(2)} km`;
+      
+      const coords = geometry.getCoordinates()[0];
+      this.geometryInfo.coordinates = `${coords.length - 1} sommets`;
+    }
   }
-}
 
   // GEOMETRY OPERATIONS
   changeGeometryType(newType: 'Point' | 'LineString' | 'Polygon'): void {
@@ -627,9 +770,10 @@ private updateFormControlsState(): void {
     }
   }
 
-  // DATA LOADING
+  // ✅ FIXED: Data loading with proper state management
   private loadGroupesFromDatabase(callback?: () => void): void {
     this.isLoadingGroupes = true;
+    this.updateFormControlsState(); // Disable while loading
     
     this.actifsService.getGroupes().subscribe({
       next: (groupes) => {
@@ -640,12 +784,14 @@ private updateFormControlsState(): void {
         }));
         
         this.isLoadingGroupes = false;
+        this.updateFormControlsState(); // Re-enable after loading
         this.snackBar.open(`✅ ${groupes.length} groupes chargés`, '', { duration: 2000 });
         if (callback) callback();
       },
       error: (error) => {
         console.error('❌ Erreur lors du chargement des groupes:', error);
         this.isLoadingGroupes = false;
+        this.updateFormControlsState(); // Re-enable after error
         
         this.groupeOptions = [
           { value: 1, label: 'Quais et Appontements', icon: 'anchor' },
@@ -678,29 +824,75 @@ private updateFormControlsState(): void {
   }
 
   private loadActifForEdit(actif: Actif): void {
-    this.actifForm.patchValue({
-      nom: actif.nom || '',
-      code: actif.code || '',
-      site: actif.site || '',
-      zone: actif.zone || '',
-      ouvrage: actif.ouvrage || '',
-      idGroupe: actif.idGroupe || actif.groupe?.id || null
-    });
+    console.log('🔍 === DEBUT loadActifForEdit ===');
+    console.log('📦 Actif à charger:', JSON.stringify(actif, null, 2));
+    
+    try {
+      // Vérifier la structure de l'actif
+      console.log('🔍 Propriétés actif disponibles:', Object.keys(actif));
+      console.log('🔍 actif.idGroupe:', actif.idGroupe);
+      console.log('🔍 actif.groupe:', actif.groupe);
+      console.log('🔍 actif.geometry:', actif.geometry);
+      
+      // Charger les données du formulaire
+      const formData = {
+        nom: actif.nom || '',
+        code: actif.code || '',
+        site: actif.site || '',
+        zone: actif.zone || '',
+        ouvrage: actif.ouvrage || '',
+        idGroupe: actif.idGroupe || actif.groupe?.id || null
+      };
+      
+      console.log('📋 Données à charger dans le form:', formData);
+      
+      this.actifForm.patchValue(formData);
+      
+      console.log('✅ Données formulaire chargées');
+      console.log('📋 Valeurs form après patch:', this.actifForm.value);
+      console.log('📋 Valeurs RAW après patch:', this.actifForm.getRawValue());
 
-    if (actif.geometry && actif.geometry.coordinates) {
-      this.actifForm.patchValue({
-        geometryType: actif.geometry.type,
-        coordinates: actif.geometry.coordinates
+      // Gérer la géométrie si elle existe
+      if (actif.geometry && actif.geometry.coordinates) {
+        console.log('🗺️ Géométrie trouvée:', actif.geometry);
+        console.log('🔍 Type géométrie:', actif.geometry.type);
+        console.log('📍 Coordonnées:', actif.geometry.coordinates);
+        
+        this.actifForm.patchValue({
+          geometryType: actif.geometry.type,
+          coordinates: actif.geometry.coordinates
+        });
+        
+        this.hasGeometry = true;
+        console.log('✅ Géométrie chargée dans le formulaire');
+        console.log('🗺️ hasGeometry:', this.hasGeometry);
+        
+        // Attendre que la carte soit prête puis afficher
+        this.waitForMapAndDisplayGeometry(actif.geometry);
+      } else {
+        console.log('⚠️ Aucune géométrie trouvée');
+        this.hasGeometry = false;
+      }
+      
+      // ✅ IMPORTANT: Mettre à jour les états des contrôles après le chargement
+      setTimeout(() => {
+        this.updateFormControlsState();
+        console.log('🔧 États des contrôles mis à jour');
+        console.log('🔒 Code disabled:', this.actifForm.get('code')?.disabled);
+        console.log('🔒 Groupe disabled:', this.actifForm.get('idGroupe')?.disabled);
+      }, 100);
+      
+      this.snackBar.open(`🔍 Données de "${actif.nom}" chargées pour modification`, '', { 
+        duration: 3000,
+        panelClass: ['info-snackbar']
       });
       
-      this.hasGeometry = true;
-      this.waitForMapAndDisplayGeometry(actif.geometry);
+      console.log('✅ === FIN loadActifForEdit ===');
+      
+    } catch (error) {
+      console.error('❌ Erreur dans loadActifForEdit:', error);
+      console.error('📋 Actif problématique:', actif);
     }
-    
-    this.snackBar.open(`📁 Données de "${actif.nom}" chargées pour modification`, '', { 
-      duration: 3000,
-      panelClass: ['info-snackbar']
-    });
   }
 
   private waitForMapAndDisplayGeometry(geometry: any): void {
@@ -799,29 +991,64 @@ private updateFormControlsState(): void {
   }
 
   private performSave(): void {
+    console.log('🚀 === DEBUT performSave ===');
     this.isSaving = true;
     
-    const formValue = this.actifForm.getRawValue();
-    const actifData: CreateActifDto = {
-      ...formValue,
-      idGroupe: Number(formValue.idGroupe)
-    };
+    try {
+      // Debug avant extraction des données
+      console.log('📋 État du formulaire avant save:');
+      console.log('📋 Valeurs:', this.actifForm.value);
+      console.log('📋 Valeurs brutes:', this.actifForm.getRawValue());
+      console.log('✅ Valide:', this.actifForm.valid);
+      console.log('❌ Invalide:', this.actifForm.invalid);
+      
+      const formValue = this.actifForm.getRawValue();
+      console.log('📋 Valeurs brutes extraites:', JSON.stringify(formValue, null, 2));
+      
+      // Construire les données à envoyer
+      const actifData: CreateActifDto = {
+        ...formValue,
+        idGroupe: Number(formValue.idGroupe)
+      };
+      
+      console.log('📦 Données finales à envoyer:', JSON.stringify(actifData, null, 2));
+      console.log('🎯 Mode:', this.isEditMode ? 'EDITION' : 'CREATION');
+      console.log('🆔 ID actif (si édition):', this.data?.actif?.id);
 
-    console.log('🚀 Données envoyées:', actifData);
-    console.log('🎯 Mode:', this.isEditMode ? 'EDITION' : 'CREATION');
-
-    if (this.isEditMode && this.data?.actif?.id) {
-      console.log('✏️ Mise à jour de l\'actif ID:', this.data.actif.id);
-      this.actifsService.updateActif(this.data.actif.id, actifData).subscribe({
-        next: (updatedActif) => this.handleSaveSuccess(updatedActif, 'modifié'),
-        error: (error) => this.handleSaveError(error)
-      });
-    } else {
-      console.log('➕ Création d\'un nouvel actif');
-      this.actifsService.createActif(actifData).subscribe({
-        next: (createdActif) => this.handleSaveSuccess(createdActif, 'créé'),
-        error: (error) => this.handleSaveError(error)
-      });
+      if (this.isEditMode && this.data?.actif?.id) {
+        console.log('✏️ === MISE À JOUR ACTIF ===');
+        console.log('🔢 ID actif à modifier:', this.data.actif.id);
+        console.log('📝 Données originales:', this.data.actif);
+        console.log('📝 Données modifiées:', actifData);
+        
+        this.actifsService.updateActif(this.data.actif.id, actifData).subscribe({
+          next: (updatedActif) => {
+            console.log('✅ Actif mis à jour avec succès:', updatedActif);
+            this.handleSaveSuccess(updatedActif, 'modifié');
+          },
+          error: (error) => {
+            console.error('❌ Erreur lors de la mise à jour:', error);
+            this.handleSaveError(error);
+          }
+        });
+      } else {
+        console.log('➕ === CRÉATION ACTIF ===');
+        
+        this.actifsService.createActif(actifData).subscribe({
+          next: (createdActif) => {
+            console.log('✅ Actif créé avec succès:', createdActif);
+            this.handleSaveSuccess(createdActif, 'créé');
+          },
+          error: (error) => {
+            console.error('❌ Erreur lors de la création:', error);
+            this.handleSaveError(error);
+          }
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur dans performSave:', error);
+      this.isSaving = false;
     }
   }
 
@@ -829,7 +1056,7 @@ private updateFormControlsState(): void {
     this.isSaving = false;
     
     this.snackBar.open(
-      `✔ Actif "${actif.nom}" ${action} avec succès!`,
+      `✓ Actif "${actif.nom}" ${action} avec succès!`,
       'Fermer',
       { 
         duration: 4000,
@@ -913,66 +1140,92 @@ private updateFormControlsState(): void {
   };
 
   getLatitude(): string {
-  if (this.actifForm.get('geometryType')?.value === 'Point' && this.actifForm.get('coordinates')?.value) {
-    const coords = this.actifForm.get('coordinates')?.value;
-    if (coords && coords.length >= 2) {
-      return coords[1].toFixed(6); // Latitude = index 1
+    if (this.actifForm.get('geometryType')?.value === 'Point' && this.actifForm.get('coordinates')?.value) {
+      const coords = this.actifForm.get('coordinates')?.value;
+      if (coords && coords.length >= 2) {
+        return coords[1].toFixed(6); // Latitude = index 1
+      }
+    }
+    return 'N/A';
+  }
+
+  getLongitude(): string {
+    if (this.actifForm.get('geometryType')?.value === 'Point' && this.actifForm.get('coordinates')?.value) {
+      const coords = this.actifForm.get('coordinates')?.value;
+      if (coords && coords.length >= 2) {
+        return coords[0].toFixed(6); // Longitude = index 0
+      }
+    }
+    return 'N/A';
+  }
+
+  // Méthode pour les tooltips adaptatifs
+  getInfoTooltip(): string {
+    const geometryType = this.actifForm.get('geometryType')?.value;
+    switch (geometryType) {
+      case 'Point': return 'Coordonnées';
+      case 'LineString': return 'Longueur';
+      case 'Polygon': return 'Surface et périmètre';
+      default: return 'Informations';
     }
   }
-  return 'N/A';
-}
 
-getLongitude(): string {
-  if (this.actifForm.get('geometryType')?.value === 'Point' && this.actifForm.get('coordinates')?.value) {
-    const coords = this.actifForm.get('coordinates')?.value;
-    if (coords && coords.length >= 2) {
-      return coords[0].toFixed(6); // Longitude = index 0
+  // Méthode pour les labels de menu adaptatifs
+  getInfoMenuLabel(): string {
+    const geometryType = this.actifForm.get('geometryType')?.value;
+    switch (geometryType) {
+      case 'Point': return 'Voir les coordonnées';
+      case 'LineString': return 'Voir la longueur';
+      case 'Polygon': return 'Voir surface/périmètre';
+      default: return 'Voir les informations';
     }
   }
-  return 'N/A';
-}
 
-// 🔥 NOUVELLE: Méthode pour les tooltips adaptatifs
-getInfoTooltip(): string {
-  const geometryType = this.actifForm.get('geometryType')?.value;
-  switch (geometryType) {
-    case 'Point': return 'Coordonnées';
-    case 'LineString': return 'Longueur';
-    case 'Polygon': return 'Surface et périmètre';
-    default: return 'Informations';
+  // Méthode pour les icônes adaptatifs
+  getInfoIcon(): string {
+    const geometryType = this.actifForm.get('geometryType')?.value;
+    switch (geometryType) {
+      case 'Point': return 'place';
+      case 'LineString': return 'timeline';
+      case 'Polygon': return 'crop_free';
+      default: return 'straighten';
+    }
   }
-}
 
-// 🔥 NOUVELLE: Méthode pour les labels de menu adaptatifs
-getInfoMenuLabel(): string {
-  const geometryType = this.actifForm.get('geometryType')?.value;
-  switch (geometryType) {
-    case 'Point': return 'Voir les coordonnées';
-    case 'LineString': return 'Voir la longueur';
-    case 'Polygon': return 'Voir surface/périmètre';
-    default: return 'Voir les informations';
+  // Méthode pour les titres adaptatifs
+  getInfoTitle(): string {
+    const geometryType = this.actifForm.get('geometryType')?.value;
+    switch (geometryType) {
+      case 'Point': return 'Coordonnées du point';
+      case 'LineString': return 'Informations de la ligne';
+      case 'Polygon': return 'Informations de la zone';
+      default: return 'Informations géométriques';
+    }
   }
-}
 
-// 🔥 NOUVELLE: Méthode pour les icônes adaptatifs
-getInfoIcon(): string {
-  const geometryType = this.actifForm.get('geometryType')?.value;
-  switch (geometryType) {
-    case 'Point': return 'place';
-    case 'LineString': return 'timeline';
-    case 'Polygon': return 'crop_free';
-    default: return 'straighten';
+  debugFormState(): void {
+    console.log('🔍 === ÉTAT DU FORMULAIRE ===');
+    console.log('📋 Valeurs:', this.actifForm.value);
+    console.log('📋 Valeurs brutes:', this.actifForm.getRawValue());
+    console.log('✅ Valide:', this.actifForm.valid);
+    console.log('❌ Invalide:', this.actifForm.invalid);
+    console.log('🔄 Dirty:', this.actifForm.dirty);
+    console.log('👆 Touched:', this.actifForm.touched);
+    console.log('🗺️ A géométrie:', this.hasGeometry);
+    console.log('🔧 Mode édition:', this.isEditMode);
+    
+    // Vérifier chaque champ
+    Object.keys(this.actifForm.controls).forEach(key => {
+      const control = this.actifForm.get(key);
+      console.log(`📝 ${key}:`, {
+        value: control?.value,
+        valid: control?.valid,
+        errors: control?.errors,
+        disabled: control?.disabled,
+        touched: control?.touched
+      });
+    });
+    
+    console.log('🎯 Groupes disponibles:', this.groupeOptions);
   }
-}
-
-// 🔥 NOUVELLE: Méthode pour les titres adaptatifs
-getInfoTitle(): string {
-  const geometryType = this.actifForm.get('geometryType')?.value;
-  switch (geometryType) {
-    case 'Point': return 'Coordonnées du point';
-    case 'LineString': return 'Informations de la ligne';
-    case 'Polygon': return 'Informations de la zone';
-    default: return 'Informations géométriques';
-  }
-}
 }
