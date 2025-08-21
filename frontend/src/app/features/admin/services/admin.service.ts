@@ -114,12 +114,13 @@ export class AdminService {
   }
 
   updateFamille(id: string, data: UpdateFamilleDto): Observable<Famille> {
-    return this.http.put<ApiResponse<Famille>>(`${this.apiUrl}/familles/${id}`, data)
-      .pipe(
-        map(response => response.data!),
-        tap(() => this.refreshFamilles())
-      );
-  }
+
+    return this.http.patch<ApiResponse<Famille>>(`${this.apiUrl}/familles/${id}`, data)
+    .pipe(
+      map(response => response.data!),
+      tap(() => this.refreshFamilles())
+    );
+}
 
   deleteFamille(id: string): Observable<void> {
     return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/familles/${id}`)
@@ -152,7 +153,7 @@ export class AdminService {
   }
 
   createGroupe(data: CreateGroupeDto): Observable<Groupe> {
-    return this.http.post<ApiResponse<Groupe>>(`${this.apiUrl}/groupe`, data)
+    return this.http.post<ApiResponse<Groupe>>(`${this.apiUrl}/groupes`, data)
       .pipe(
         map(response => response.data!),
         tap(() => this.refreshGroupes())
@@ -160,15 +161,15 @@ export class AdminService {
   }
 
   updateGroupe(id: string, data: UpdateGroupeDto): Observable<Groupe> {
-    return this.http.put<ApiResponse<Groupe>>(`${this.apiUrl}/groupe/${id}`, data)
-      .pipe(
-        map(response => response.data!),
-        tap(() => this.refreshGroupes())
-      );
-  }
+ return this.http.patch<ApiResponse<Groupe>>(`${this.apiUrl}/groupes/${id}`, data)
+    .pipe(
+      map(response => response.data!),
+      tap(() => this.refreshGroupes())
+    );
+}
 
   deleteGroupe(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/groupe/${id}`)
+    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/groupes/${id}`)
       .pipe(
         map(() => void 0),
         tap(() => this.refreshGroupes())
@@ -180,47 +181,47 @@ export class AdminService {
   }
 
   // ===== TYPES D'INSPECTION =====
-  getTypesInspection(filtres?: FiltresTypesInspection): Observable<TypeInspection[]> {
-    let params = new HttpParams();
-    if (filtres) {
-      Object.keys(filtres).forEach(key => {
-        const value = (filtres as any)[key];
-        if (value !== undefined && value !== null && value !== '') {
-          params = params.set(key, value.toString());
-        }
-      });
-    }
-
-    return this.http.get<TypeInspection[]>(`${this.apiUrl}/types-inspection`, { params })
-    .pipe(
-      tap(types => this.typesInspectionSubject.next(types))
-    );
+  getTypesInspection(): Observable<TypeInspection[]> {
+    return this.http.get<TypeInspection[]>(`${this.apiUrl}/types-inspection`)
+      .pipe(
+        tap(types => this.typesInspectionSubject.next(types))
+      );
   }
 
+
+  /**
+   * Sends data to the API to create a new inspection type.
+   */
   createTypeInspection(data: CreateTypeInspectionDto): Observable<TypeInspection> {
-    return this.http.post<ApiResponse<TypeInspection>>(`${this.apiUrl}/types-inspection`, data)
+    return this.http.post<TypeInspection>(`${this.apiUrl}/types-inspection`, data)
       .pipe(
-        map(response => response.data!),
         tap(() => this.refreshTypesInspection())
       );
   }
 
-  updateTypeInspection(id: string, data: UpdateTypeInspectionDto): Observable<TypeInspection> {
-    return this.http.put<ApiResponse<TypeInspection>>(`${this.apiUrl}/types-inspection/${id}`, data)
+  /**
+   * Sends data to the API to update an existing inspection type.
+   * We use PATCH here to match the backend controller.
+   */
+  updateTypeInspection(id: number, data: UpdateTypeInspectionDto): Observable<TypeInspection> {
+    return this.http.patch<TypeInspection>(`${this.apiUrl}/types-inspection/${id}`, data)
       .pipe(
-        map(response => response.data!),
         tap(() => this.refreshTypesInspection())
       );
   }
 
-  deleteTypeInspection(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/types-inspection/${id}`)
+  /**
+   * Sends a request to the API to delete an inspection type.
+   */
+  deleteTypeInspection(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/types-inspection/${id}`)
       .pipe(
-        map(() => void 0),
         tap(() => this.refreshTypesInspection())
       );
   }
-
+/**
+   * A private helper method to refresh the list of inspection types after a change.
+   */
   private refreshTypesInspection(): void {
     this.getTypesInspection().subscribe();
   }

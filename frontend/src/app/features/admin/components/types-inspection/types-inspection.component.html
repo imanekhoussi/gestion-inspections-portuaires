@@ -1,365 +1,62 @@
-<!-- src/app/features/admin/components/types-inspection/types-inspection.component.html -->
-<div class="admin-section">
-  <!-- Header -->
-  <div class="section-header">
-    <div class="header-content">
-      <h1>
-        <mat-icon>rule</mat-icon>
-        Types d'Inspection
-      </h1>
-      <p>Configuration des contrôles et définition des fréquences</p>
-    </div>
-    <div class="header-actions">
-      <button 
-        mat-stroked-button 
-        color="primary"
-        routerLink="/admin/groupes"
-        matTooltip="Gérer les groupes d'abord"
-      >
-        <mat-icon>group_work</mat-icon>
-        Groupes
-      </button>
-      <button 
-        mat-raised-button 
-        color="primary" 
-        (click)="openCreateForm()"
-        class="add-button"
-      >
-        <mat-icon>add_task</mat-icon>
-        Nouveau type
-      </button>
-    </div>
+<div class="types-inspection-container">
+  <div class="header">
+    <h2>Types d'inspection ({{ isLoading ? '...' : typesInspection.length }})</h2>
+    <button mat-raised-button color="primary" (click)="openDialog()">
+      <mat-icon>add</mat-icon>
+      Nouveau type
+    </button>
   </div>
+  
+  <div class="content">
+    <div *ngIf="isLoading" class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Chargement des données...</p>
+    </div>
 
-  <!-- Indicateur de chargement global -->
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>Chargement des types d'inspection...</p>
-  </div>
-
-  <div *ngIf="!isLoading">
-    <!-- Filtres avancés -->
-    <mat-card class="filters-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>filter_list</mat-icon>
-          Filtres de recherche
-        </mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="filters-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Filtrer par famille</mat-label>
-            <mat-select [(value)]="selectedFamilleFilter" (selectionChange)="applyFilters()">
-              <mat-option value="">Toutes les familles</mat-option>
-              <mat-option *ngFor="let famille of familles" [value]="famille.id">
-                {{ famille.nom }} ({{ famille.code }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matSuffix>folder</mat-icon>
-          </mat-form-field>
-          
-          <mat-form-field appearance="outline">
-            <mat-label>Filtrer par groupe</mat-label>
-            <mat-select [(value)]="selectedGroupeFilter" (selectionChange)="applyFilters()">
-              <mat-option value="">Tous les groupes</mat-option>
-              <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">
-                {{ groupe.nom }} ({{ groupe.code }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matSuffix>group_work</mat-icon>
-          </mat-form-field>
-          
-          <mat-form-field appearance="outline">
-            <mat-label>Filtrer par fréquence</mat-label>
-            <mat-select [(value)]="selectedFrequenceFilter" (selectionChange)="applyFilters()">
-              <mat-option value="">Toutes les fréquences</mat-option>
-              <mat-option *ngFor="let freq of frequenceOptions" [value]="freq.value">
-                <div class="frequence-option">
-                  <mat-icon [style.color]="freq.color">{{ freq.icon }}</mat-icon>
-                  {{ freq.label }}
-                </div>
-              </mat-option>
-            </mat-select>
-            <mat-icon matSuffix>schedule</mat-icon>
-          </mat-form-field>
-          
-          <button 
-            mat-stroked-button 
-            (click)="clearFilters()"
-            [disabled]="!selectedFamilleFilter && !selectedGroupeFilter && !selectedFrequenceFilter"
-            class="clear-filters-btn"
-          >
-            <mat-icon>clear_all</mat-icon>
-            Effacer
-          </button>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Formulaire de création/édition -->
-    <mat-card *ngIf="showForm" class="form-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>{{ isEditMode ? 'edit' : 'add_task' }}</mat-icon>
-          {{ isEditMode ? 'Modifier le type d\'inspection' : 'Nouveau type d\'inspection' }}
-        </mat-card-title>
-      </mat-card-header>
+    <div *ngIf="!isLoading">
+      <mat-table [dataSource]="typesInspection" *ngIf="typesInspection.length > 0; else noData">
+        
+        <ng-container matColumnDef="nom">
+          <th mat-header-cell *matHeaderCellDef> Nom du type </th>
+          <td mat-cell *matCellDef="let element"> {{element.nom}} </td>
+        </ng-container>
+  
+        <ng-container matColumnDef="frequence">
+          <th mat-header-cell *matHeaderCellDef> Fréquence </th>
+          <td mat-cell *matCellDef="let element"> {{ getFrequenceLabel(element.frequence) }} </td>
+        </ng-container>
+  
+        <ng-container matColumnDef="groupe">
+          <th mat-header-cell *matHeaderCellDef> Groupe </th>
+          <td mat-cell *matCellDef="let element"> {{ element.groupe?.nom || 'N/A' }} </td>
+        </ng-container>
+  
+        <ng-container matColumnDef="famille">
+          <th mat-header-cell *matHeaderCellDef> Famille </th>
+          <td mat-cell *matCellDef="let element"> {{ element.groupe?.famille?.nom || 'N/A' }} </td>
+        </ng-container>
+  
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef align="right"> Actions </th>
+          <td mat-cell *matCellDef="let element" align="right">
+            <button mat-icon-button color="primary" (click)="openDialog(element)" matTooltip="Modifier">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="confirmAndDeleteType(element)" matTooltip="Supprimer">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+  
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </mat-table>
       
-      <mat-card-content>
-        <form [formGroup]="typeForm" (ngSubmit)="onSubmit()" class="type-form">
-          
-          <!-- Nom du type -->
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Nom du type d'inspection</mat-label>
-              <input matInput formControlName="nom" placeholder="Ex: Contrôle sécurité annuel">
-              <mat-icon matSuffix>rule</mat-icon>
-              <mat-hint>Nom descriptif du type de contrôle</mat-hint>
-              <mat-error *ngIf="typeForm.get('nom')?.invalid && typeForm.get('nom')?.touched">
-                {{ getErrorMessage('nom') }}
-              </mat-error>
-            </mat-form-field>
-          </div>
-
-          <!-- Fréquence -->
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Fréquence d'inspection</mat-label>
-              <mat-select formControlName="frequence">
-                <mat-option *ngFor="let freq of frequenceOptions" [value]="freq.value">
-                  <div class="frequence-option-form">
-                    <mat-icon [style.color]="freq.color">{{ freq.icon }}</mat-icon>
-                    <div class="freq-info">
-                      <strong>{{ freq.label }}</strong>
-                      <small>{{ freq.description }}</small>
-                    </div>
-                  </div>
-                </mat-option>
-              </mat-select>
-              <mat-icon matSuffix>schedule</mat-icon>
-              <mat-hint>Définit la périodicité des inspections</mat-hint>
-              <mat-error *ngIf="typeForm.get('frequence')?.invalid && typeForm.get('frequence')?.touched">
-                {{ getErrorMessage('frequence') }}
-              </mat-error>
-            </mat-form-field>
-          </div>
-
-          <!-- Groupe associé -->
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Groupe d'équipements</mat-label>
-              <mat-select formControlName="idGroupe" [disabled]="groupesLoading">
-                <mat-optgroup *ngFor="let famille of familles" [label]="famille.nom">
-                  <mat-option 
-                    *ngFor="let groupe of getGroupesByFamille(famille.id)" 
-                    [value]="groupe.id"
-                  >
-                    <div class="groupe-option">
-                      <span class="groupe-nom">{{ groupe.nom }}</span>
-                      <span class="groupe-code">{{ groupe.code }}</span>
-                    </div>
-                  </mat-option>
-                </mat-optgroup>
-              </mat-select>
-              <mat-icon matSuffix>group_work</mat-icon>
-              <mat-hint>Sélectionnez le groupe d'équipements concerné</mat-hint>
-              <mat-error *ngIf="typeForm.get('idGroupe')?.invalid && typeForm.get('idGroupe')?.touched">
-                {{ getErrorMessage('idGroupe') }}
-              </mat-error>
-            </mat-form-field>
-          </div>
-
-          <div class="form-actions">
-            <button mat-button type="button" (click)="closeForm()">
-              <mat-icon>cancel</mat-icon>
-              Annuler
-            </button>
-            <button mat-raised-button color="primary" type="submit" [disabled]="typeForm.invalid">
-              <mat-icon>{{ isEditMode ? 'save' : 'add_task' }}</mat-icon>
-              {{ isEditMode ? 'Modifier' : 'Créer' }}
-            </button>
-          </div>
-        </form>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Table des types d'inspection -->
-    <mat-card class="table-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>list</mat-icon>
-          Types d'inspection configurés ({{ dataSource.data.length }})
-        </mat-card-title>
-        <div class="header-actions">
-          <mat-form-field appearance="outline" class="search-field">
-            <mat-label>Rechercher</mat-label>
-            <input matInput (keyup)="applyFilter($event)" placeholder="Nom, fréquence...">
-            <mat-icon matSuffix>search</mat-icon>
-          </mat-form-field>
+      <ng-template #noData>
+        <div class="no-data">
+          <p>Aucun type d'inspection configuré. Cliquez sur "Nouveau type" pour commencer.</p>
         </div>
-      </mat-card-header>
-
-      <mat-card-content>
-        <div class="table-container">
-          <table mat-table [dataSource]="dataSource" matSort class="types-table">
-            
-            <!-- Colonne Nom -->
-            <ng-container matColumnDef="nom">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom du type</th>
-              <td mat-cell *matCellDef="let type">
-                <div class="type-info">
-                  <mat-icon class="type-icon">rule</mat-icon>
-                  <div class="type-details">
-                    <strong>{{ type.nom }}</strong>
-                    <small>ID: {{ type.id }}</small>
-                  </div>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Fréquence -->
-            <ng-container matColumnDef="frequence">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Fréquence</th>
-              <td mat-cell *matCellDef="let type">
-                <div class="frequence-cell">
-                  <mat-icon 
-                    class="frequence-icon" 
-                    [style.color]="getFrequenceOption(type.frequence).color"
-                  >
-                    {{ getFrequenceOption(type.frequence).icon }}
-                  </mat-icon>
-                  <mat-chip 
-                    class="frequence-chip"
-                    [style.background-color]="getFrequenceOption(type.frequence).color"
-                    [style.color]="'white'"
-                  >
-                    {{ type.frequence }}
-                  </mat-chip>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Groupe -->
-            <ng-container matColumnDef="groupe">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Groupe</th>
-              <td mat-cell *matCellDef="let type">
-                <div class="groupe-cell">
-                  <mat-icon class="groupe-icon">group_work</mat-icon>
-                  <div class="groupe-info">
-                    <strong>{{ getGroupeNom(type.idGroupe) }}</strong>
-                    <mat-chip class="groupe-chip">{{ getGroupeCode(type.idGroupe) }}</mat-chip>
-                  </div>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Famille -->
-            <ng-container matColumnDef="famille">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Famille</th>
-              <td mat-cell *matCellDef="let type">
-                <div class="famille-cell">
-                  <mat-icon class="famille-icon">folder</mat-icon>
-                  <div class="famille-info">
-                    <strong>{{ getFamilleNomByGroupe(type.idGroupe) }}</strong>
-                    <mat-chip class="famille-chip">{{ getFamilleCodeByGroupe(type.idGroupe) }}</mat-chip>
-                  </div>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Date de création -->
-            <ng-container matColumnDef="createdAt">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Créé le</th>
-              <td mat-cell *matCellDef="let type">
-                <div class="date-cell">
-                  <mat-icon class="date-icon">schedule</mat-icon>
-                  {{ type.createdAt | date:'dd/MM/yyyy' }}
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Actions -->
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let type">
-                <div class="action-buttons">
-                  <button 
-                    mat-icon-button 
-                    color="primary"
-                    (click)="openEditForm(type)"
-                    matTooltip="Modifier le type"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  
-                  <button 
-                    mat-icon-button 
-                    color="accent"
-                    matTooltip="Créer une inspection de ce type"
-                    (click)="navigateToInspections(type.id)"
-                  >
-                    <mat-icon>add_task</mat-icon>
-                  </button>
-                  
-                  <button 
-                    mat-icon-button 
-                    color="warn"
-                    (click)="deleteType(type)"
-                    matTooltip="Supprimer le type"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-          </table>
-        </div>
-
-        <!-- État vide -->
-        <div *ngIf="dataSource.data.length === 0" class="empty-state">
-          <mat-icon class="empty-icon">rule_folder</mat-icon>
-          <h3>Aucun type d'inspection trouvé</h3>
-          <p>Commencez par créer votre premier type d'inspection</p>
-          <button mat-raised-button color="primary" (click)="openCreateForm()">
-            <mat-icon>add_task</mat-icon>
-            Créer un type
-          </button>
-        </div>
-
-        <!-- Pagination -->
-        <mat-paginator 
-          [pageSizeOptions]="[10, 25, 50]" 
-          showFirstLastButtons
-          [pageSize]="10"
-        ></mat-paginator>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Statistiques par fréquence -->
-    <div class="stats-grid">
-      <mat-card class="stat-card" *ngFor="let freq of frequenceOptions">
-        <mat-card-content>
-          <div class="stat-header">
-            <mat-icon 
-              class="stat-icon" 
-              [style.color]="freq.color"
-            >
-              {{ freq.icon }}
-            </mat-icon>
-            <div class="stat-info">
-              <h3>{{ getTypesByFrequence(freq.value) }}</h3>
-              <p>{{ freq.label }}</p>
-            </div>
-          </div>
-          <div class="stat-description">
-            {{ freq.description }}
-          </div>
-        </mat-card-content>
-      </mat-card>
+      </ng-template>
     </div>
-
-    
+  </div>
+</div>

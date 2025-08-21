@@ -1,5 +1,4 @@
 <div class="admin-section">
-  <!-- Header -->
   <div class="section-header">
     <div class="header-content">
       <h1>
@@ -9,35 +8,24 @@
       <p>Organisation des équipements par groupe au sein des familles</p>
     </div>
     <div class="header-actions">
-      <button 
-        mat-stroked-button 
-        color="primary"
-        routerLink="/admin/familles"
-        matTooltip="Gérer les familles d'abord"
-      >
+      <button mat-stroked-button color="primary" routerLink="/admin/familles" matTooltip="Gérer les familles d'abord">
         <mat-icon>folder</mat-icon>
         Familles
       </button>
-      <button 
-        mat-raised-button 
-        color="primary" 
-        (click)="openCreateForm()"
-        class="add-button"
-      >
+      <button mat-raised-button color="primary" (click)="openGroupeDialog()" class="add-button">
         <mat-icon>add</mat-icon>
         Ajouter un groupe
       </button>
     </div>
   </div>
 
-  <!-- Filtres -->
   <mat-card class="filters-card">
     <mat-card-content>
       <div class="filters-row">
         <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Filtrer par famille</mat-label>
-          <mat-select [(value)]="selectedFamilleFilter" (selectionChange)="applyFamilleFilter()">
-            <mat-option value="">Toutes les familles</mat-option>
+          <mat-select [(ngModel)]="selectedFamilleFilter" (selectionChange)="applyFamilleFilter()">
+            <mat-option [value]="">Toutes les familles</mat-option>
             <mat-option *ngFor="let famille of familles" [value]="famille.id">
               {{ famille.nom }} ({{ famille.code }})
             </mat-option>
@@ -45,11 +33,7 @@
           <mat-icon matSuffix>filter_list</mat-icon>
         </mat-form-field>
         
-        <button 
-          mat-stroked-button 
-          (click)="clearFilters()"
-          [disabled]="!selectedFamilleFilter"
-        >
+        <button mat-stroked-button (click)="clearFilters()" [disabled]="!selectedFamilleFilter">
           <mat-icon>clear</mat-icon>
           Effacer filtres
         </button>
@@ -57,91 +41,6 @@
     </mat-card-content>
   </mat-card>
 
-  <!-- Formulaire de création/édition -->
-  <mat-card *ngIf="showForm" class="form-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon>{{ isEditMode ? 'edit' : 'add' }}</mat-icon>
-        {{ isEditMode ? 'Modifier le groupe' : 'Nouveau groupe' }}
-      </mat-card-title>
-    </mat-card-header>
-    
-    <mat-card-content>
-      <form [formGroup]="groupeForm" (ngSubmit)="onSubmit()" class="groupe-form">
-        
-        <!-- Sélection de la famille -->
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Famille parente</mat-label>
-            <mat-select formControlName="idFamille" [disabled]="famillesLoading">
-              <mat-option *ngFor="let famille of familles" [value]="famille.id">
-                <div class="famille-option">
-                  <span class="famille-nom">{{ famille.nom }}</span>
-                  <span class="famille-code">{{ famille.code }}</span>
-                </div>
-              </mat-option>
-            </mat-select>
-            <mat-icon matSuffix>folder</mat-icon>
-            <mat-hint>Sélectionnez la famille à laquelle appartient ce groupe</mat-hint>
-            <mat-error *ngIf="groupeForm.get('idFamille')?.invalid && groupeForm.get('idFamille')?.touched">
-              {{ getErrorMessage('idFamille') }}
-            </mat-error>
-          </mat-form-field>
-        </div>
-
-        <!-- Nom et code du groupe -->
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nom du groupe</mat-label>
-            <input matInput formControlName="nom" placeholder="Ex: Grues mobiles"
-                   (blur)="generateCode()">
-            <mat-icon matSuffix>group_work</mat-icon>
-            <mat-hint>Nom descriptif du groupe d'équipements</mat-hint>
-            <mat-error *ngIf="groupeForm.get('nom')?.invalid && groupeForm.get('nom')?.touched">
-              {{ getErrorMessage('nom') }}
-            </mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="code-field">
-            <mat-label>Code unique</mat-label>
-            <input matInput formControlName="code" placeholder="GRUES_MOB" 
-                   style="text-transform: uppercase;">
-            <mat-icon matSuffix>tag</mat-icon>
-            <mat-hint>Code court pour identifier le groupe (A-Z, 0-9, _, -)</mat-hint>
-            <mat-error *ngIf="groupeForm.get('code')?.invalid && groupeForm.get('code')?.touched">
-              {{ getErrorMessage('code') }}
-            </mat-error>
-          </mat-form-field>
-          
-          <button 
-            mat-stroked-button 
-            type="button" 
-            (click)="generateCode()"
-            class="generate-code-btn"
-            matTooltip="Générer le code automatiquement depuis le nom"
-          >
-            <mat-icon>auto_fix_high</mat-icon>
-            Auto-générer
-          </button>
-        </div>
-
-        <div class="form-actions">
-          <button mat-button type="button" (click)="closeForm()">
-            <mat-icon>cancel</mat-icon>
-            Annuler
-          </button>
-          <button mat-raised-button color="primary" type="submit" [disabled]="groupeForm.invalid">
-            <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
-            {{ isEditMode ? 'Modifier' : 'Créer' }}
-          </button>
-        </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Table des groupes -->
   <mat-card class="table-card">
     <mat-card-header>
       <mat-card-title>
@@ -163,8 +62,6 @@
     <mat-card-content>
       <div class="table-container">
         <table mat-table [dataSource]="dataSource" matSort class="groupes-table">
-          
-          <!-- Colonne Nom -->
           <ng-container matColumnDef="nom">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom du groupe</th>
             <td mat-cell *matCellDef="let groupe">
@@ -177,134 +74,67 @@
               </div>
             </td>
           </ng-container>
-
-          <!-- Colonne Code -->
           <ng-container matColumnDef="code">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Code</th>
-            <td mat-cell *matCellDef="let groupe">
-              <div class="code-cell">
-                <mat-icon class="code-icon">tag</mat-icon>
-                <span class="code-badge">{{ groupe.code }}</span>
-              </div>
-            </td>
+            <td mat-cell *matCellDef="let groupe"><div class="code-cell"><mat-icon class="code-icon">tag</mat-icon><span class="code-badge">{{ groupe.code }}</span></div></td>
           </ng-container>
-
-          <!-- Colonne Famille -->
           <ng-container matColumnDef="famille">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Famille parente</th>
             <td mat-cell *matCellDef="let groupe">
-              <div class="famille-cell">
-                <mat-icon class="famille-icon">folder</mat-icon>
-                <div class="famille-info">
-                  <strong>{{ getFamilleNom(groupe.idFamille) }}</strong>
-                  <mat-chip class="famille-chip">{{ getFamilleCode(groupe.idFamille) }}</mat-chip>
+                <div class="famille-cell">
+                    <mat-icon class="famille-icon">folder</mat-icon>
+                    <div class="famille-info">
+                        <strong>{{ getFamilleNom(groupe.idFamille) }}</strong>
+                        <mat-chip class="famille-chip">{{ getFamilleCode(groupe.idFamille) }}</mat-chip>
+                    </div>
                 </div>
-              </div>
             </td>
           </ng-container>
-
-          <!-- Colonne Nombre d'actifs -->
           <ng-container matColumnDef="nbActifs">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Actifs</th>
             <td mat-cell *matCellDef="let groupe">
-              <div class="count-cell">
-                <mat-icon 
-                  class="count-icon" 
-                  [matBadge]="groupe.nbActifs || 0" 
-                  [matBadgeHidden]="!groupe.nbActifs"
-                  matBadgeColor="accent"
-                  matBadgeSize="small"
-                >
-                  precision_manufacturing
-                </mat-icon>
-                <span>{{ groupe.nbActifs || 0 }} actif(s)</span>
-              </div>
+                <div class="count-cell">
+                    <mat-icon class="count-icon" [matBadge]="groupe.nbActifs || 0" [matBadgeHidden]="!groupe.nbActifs" matBadgeColor="accent" matBadgeSize="small">precision_manufacturing</mat-icon>
+                    <span>{{ groupe.nbActifs || 0 }} actif(s)</span>
+                </div>
             </td>
           </ng-container>
-
-          <!-- Colonne Date de création -->
           <ng-container matColumnDef="createdAt">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Créé le</th>
-            <td mat-cell *matCellDef="let groupe">
-              <div class="date-cell">
-                <mat-icon class="date-icon">schedule</mat-icon>
-                {{ groupe.createdAt | date:'dd/MM/yyyy' }}
-              </div>
-            </td>
+            <td mat-cell *matCellDef="let groupe"><div class="date-cell"><mat-icon class="date-icon">schedule</mat-icon>{{ groupe.createdAt | date:'dd/MM/yyyy' }}</div></td>
           </ng-container>
-
-          <!-- Colonne Actions -->
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let groupe">
               <div class="action-buttons">
-                <button 
-                  mat-icon-button 
-                  color="primary"
-                  (click)="openEditForm(groupe)"
-                  matTooltip="Modifier le groupe"
-                >
-                  <mat-icon>edit</mat-icon>
-                </button>
-                
-                <button 
-                  mat-icon-button 
-                  color="accent"
-                  matTooltip="Voir les types d'inspection"
-                >
-                  <mat-icon>rule</mat-icon>
-                </button>
-                
-                <button 
-                  mat-icon-button 
-                  color="warn"
-                  (click)="deleteGroupe(groupe)"
-                  matTooltip="Supprimer le groupe"
-                  [disabled]="groupe.nbActifs && groupe.nbActifs > 0"
-                >
-                  <mat-icon>delete</mat-icon>
-                </button>
+                <button mat-icon-button color="primary" (click)="openGroupeDialog(groupe)" matTooltip="Modifier le groupe"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button color="accent" matTooltip="Voir les types d'inspection"><mat-icon>rule</mat-icon></button>
+                <button mat-icon-button color="warn" (click)="deleteGroupe(groupe)" matTooltip="Supprimer le groupe" [disabled]="groupe.nbActifs && groupe.nbActifs > 0"><mat-icon>delete</mat-icon></button>
               </div>
             </td>
           </ng-container>
-
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
       </div>
 
-      <!-- État vide -->
       <div *ngIf="dataSource.data.length === 0 && !isLoading" class="empty-state">
         <mat-icon class="empty-icon">group_off</mat-icon>
         <h3>Aucun groupe trouvé</h3>
-        <p *ngIf="selectedFamilleFilter; else noGroupsGlobal">
-          Aucun groupe dans la famille sélectionnée
-        </p>
+        <p *ngIf="selectedFamilleFilter; else noGroupsGlobal">Aucun groupe dans la famille sélectionnée</p>
         <ng-template #noGroupsGlobal>
           <p>Commencez par créer votre premier groupe d'équipements</p>
-          <button mat-raised-button color="primary" (click)="openCreateForm()">
-            <mat-icon>add</mat-icon>
-            Créer un groupe
-          </button>
+          <button mat-raised-button color="primary" (click)="openGroupeDialog()"><mat-icon>add</mat-icon>Créer un groupe</button>
         </ng-template>
       </div>
 
-      <!-- Pagination -->
-      <mat-paginator 
-        [pageSizeOptions]="[10, 25, 50]" 
-        showFirstLastButtons
-        [pageSize]="10"
-      ></mat-paginator>
+      <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons [pageSize]="10"></mat-paginator>
     </mat-card-content>
   </mat-card>
 
-  <!-- Résumé par famille -->
-  <mat-card class="summary-card" *ngIf="familles.length > 0">
+  <mat-card class="summary-card" *ngIf="familles.length > 0 && allGroupes.length > 0">
     <mat-card-header>
-      <mat-card-title>
-        <mat-icon>pie_chart</mat-icon>
-        Répartition des groupes par famille
-      </mat-card-title>
+      <mat-card-title><mat-icon>pie_chart</mat-icon>Répartition des groupes par famille</mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <div class="famille-summary">
@@ -315,9 +145,7 @@
             <mat-chip class="count-chip">{{ getGroupesByFamille(famille.id) }}</mat-chip>
           </div>
           <div class="famille-summary-progress">
-            <div class="progress-bar" 
-                 [style.width.%]="(getGroupesByFamille(famille.id) / dataSource.data.length) * 100">
-            </div>
+            <div class="progress-bar" [style.width.%]="(getGroupesByFamille(famille.id) / allGroupes.length) * 100"></div>
           </div>
         </div>
       </div>

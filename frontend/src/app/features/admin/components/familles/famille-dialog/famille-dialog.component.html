@@ -1,0 +1,30 @@
+<h1 mat-dialog-title>
+  <mat-icon>{{ data.isEditMode ? 'edit' : 'create_new_folder' }}</mat-icon>
+  {{ data.isEditMode ? 'Modifier la famille' : 'Nouvelle famille' }}
+</h1>
+
+<div mat-dialog-content>
+  <form [formGroup]="familleForm" id="famille-form" class="dialog-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Nom de la famille</mat-label>
+      <input matInput formControlName="nom" placeholder="Ex: Équipements de levage" (blur)="generateCode()">
+    </mat-form-field>
+
+    <div class="code-row">
+      <mat-form-field appearance="outline" class="code-field">
+        <mat-label>Code unique</mat-label>
+        <input matInput formControlName="code" placeholder="LEVAGE" style="text-transform: uppercase;">
+      </mat-form-field>
+      <button mat-icon-button type="button" (click)="generateCode()" matTooltip="Générer le code depuis le nom">
+        <mat-icon>auto_fix_high</mat-icon>
+      </button>
+    </div>
+  </form>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button mat-raised-button color="primary" type="submit" form="famille-form" [disabled]="familleForm.invalid" (click)="onSave()">
+    {{ data.isEditMode ? 'Enregistrer' : 'Créer' }}
+  </button>
+</div>

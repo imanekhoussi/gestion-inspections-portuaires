@@ -1,11 +1,9 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,33 +13,22 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatChipsModule } from '@angular/material/chips';
+import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { AdminService } from '../../services/admin.service';
 import { NotificationAdminService } from '../../services/notification-admin.service';
-import { Groupe, Famille, CreateGroupeDto } from '../../../../core/models/admin.interfaces';
+import { Groupe, Famille } from '../../../../core/models/admin.interfaces';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { GroupeDialogComponent } from './groupe-dialog/groupe-dialog.component';
 
 @Component({
   selector: 'app-groupes',
   standalone: true,
   imports: [
-    CommonModule,
-    DatePipe,
-    ReactiveFormsModule,
-    MatTableModule,
-    MatPaginatorModule,
-    MatSortModule,
-    MatDialogModule,
-    MatSnackBarModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatTooltipModule,
-    MatBadgeModule,
-    MatChipsModule
+    CommonModule, DatePipe, MatTableModule, MatPaginatorModule, MatSortModule,
+    MatDialogModule, MatCardModule, MatButtonModule, MatIconModule, MatFormFieldModule,
+    MatInputModule, MatSelectModule, MatTooltipModule, MatBadgeModule, MatChipsModule, FormsModule
   ],
   templateUrl: './groupes.component.html',
   styleUrls: ['./groupes.component.scss']
@@ -49,18 +36,10 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
 export class GroupesComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['nom', 'code', 'famille', 'nbActifs', 'createdAt', 'actions'];
   dataSource = new MatTableDataSource<Groupe>();
+  allGroupes: Groupe[] = [];
   isLoading = true;
-  
-  groupeForm!: FormGroup;
-  isEditMode = false;
-  selectedGroupe: Groupe | null = null;
-  showForm = false;
 
-  // Données pour les dropdowns
   familles: Famille[] = [];
-  famillesLoading = false;
-
-  // Filtres
   selectedFamilleFilter: string = '';
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -69,15 +48,11 @@ export class GroupesComponent implements OnInit, AfterViewInit {
   constructor(
     private adminService: AdminService,
     private notificationService: NotificationAdminService,
-    private dialog: MatDialog,
-    private fb: FormBuilder
-  ) {
-    this.initForm();
-  }
+    private dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
-    this.loadFamilles();
-    this.loadGroupes();
+    this.loadInitialData();
   }
 
   ngAfterViewInit(): void {
@@ -85,39 +60,21 @@ export class GroupesComponent implements OnInit, AfterViewInit {
     this.dataSource.sort = this.sort;
   }
 
-  private initForm(): void {
-    this.groupeForm = this.fb.group({
-      nom: ['', [Validators.required, Validators.minLength(2)]],
-      code: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(10), Validators.pattern(/^[A-Z0-9_-]+$/)]],
-      idFamille: ['', Validators.required]
-    });
-  }
-
-  loadFamilles(): void {
-    this.famillesLoading = true;
-    this.adminService.getFamilles().subscribe({
-      next: (familles) => {
-        this.familles = familles;
-        this.famillesLoading = false;
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des familles:', error);
-        this.notificationService.showError('Erreur lors du chargement des familles');
-        this.famillesLoading = false;
-      }
-    });
-  }
-
-  loadGroupes(): void {
+  loadInitialData(): void {
     this.isLoading = true;
-    this.adminService.getGroupes().subscribe({
-      next: (groupes) => {
+    forkJoin({
+      groupes: this.adminService.getGroupes(),
+      familles: this.adminService.getFamilles()
+    }).subscribe({
+      next: ({ groupes, familles }) => {
+        this.allGroupes = groupes;
         this.dataSource.data = groupes;
+        this.familles = familles;
         this.isLoading = false;
       },
-      error: (error) => {
-        console.error('Erreur lors du chargement des groupes:', error);
-        this.notificationService.showError('Erreur lors du chargement des groupes');
+      error: (err) => {
+        console.error('Erreur lors du chargement des données initiales:', err);
+        this.notificationService.showError('Erreur de chargement des données');
         this.isLoading = false;
       }
     });
@@ -126,99 +83,70 @@ export class GroupesComponent implements OnInit, AfterViewInit {
   applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource.filter = filterValue.trim().toLowerCase();
-
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
     }
   }
 
   applyFamilleFilter(): void {
+    let filteredData = this.allGroupes;
     if (this.selectedFamilleFilter) {
-      this.dataSource.data = this.dataSource.data.filter(groupe => 
-        groupe.idFamille === this.selectedFamilleFilter
-      );
-    } else {
-      this.loadGroupes(); // Recharger toutes les données
+      filteredData = this.allGroupes.filter(g => g.idFamille === this.selectedFamilleFilter);
     }
+    this.dataSource.data = filteredData;
   }
 
   clearFilters(): void {
     this.selectedFamilleFilter = '';
-    this.loadGroupes();
-  }
-
-  openCreateForm(): void {
-    if (this.familles.length === 0) {
-      this.notificationService.showWarning('Vous devez d\'abord créer au moins une famille');
-      return;
+    this.dataSource.data = this.allGroupes;
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
     }
-
-    this.isEditMode = false;
-    this.selectedGroupe = null;
-    this.showForm = true;
-    this.groupeForm.reset();
   }
 
-  openEditForm(groupe: Groupe): void {
-    this.isEditMode = true;
-    this.selectedGroupe = groupe;
-    this.showForm = true;
-    this.groupeForm.patchValue({
-      nom: groupe.nom,
-      code: groupe.code,
-      idFamille: groupe.idFamille
+  openGroupeDialog(groupe?: Groupe): void {
+    const isEditMode = !!groupe;
+    const dialogRef = this.dialog.open(GroupeDialogComponent, {
+      width: '500px',
+      data: {
+        isEditMode,
+        groupe: groupe ? {...groupe} : undefined,
+        familles: this.familles
+      },
+      disableClose: true
     });
-  }
 
-  closeForm(): void {
-    this.showForm = false;
-    this.isEditMode = false;
-    this.selectedGroupe = null;
-    this.groupeForm.reset();
-  }
-
-  onSubmit(): void {
-    if (this.groupeForm.valid) {
-      const formData: CreateGroupeDto = this.groupeForm.value;
-      
-      if (this.isEditMode && this.selectedGroupe) {
-        this.adminService.updateGroupe(this.selectedGroupe.id, formData).subscribe({
-          next: () => {
-            this.notificationService.showSuccess('Groupe modifié avec succès');
-            this.loadGroupes();
-            this.closeForm();
-          },
-          error: (error) => {
-            console.error('Erreur lors de la modification:', error);
-            this.notificationService.showError('Erreur lors de la modification du groupe');
-          }
-        });
-      } else {
-        this.adminService.createGroupe(formData).subscribe({
-          next: () => {
-            this.notificationService.showSuccess('Groupe créé avec succès');
-            this.loadGroupes();
-            this.closeForm();
-          },
-          error: (error) => {
-            console.error('Erreur lors de la création:', error);
-            this.notificationService.showError('Erreur lors de la création du groupe');
-          }
-        });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        if (isEditMode && groupe) {
+          this.adminService.updateGroupe(groupe.id, result).subscribe({
+            next: () => {
+              this.notificationService.showSuccess('Groupe modifié avec succès');
+              this.loadInitialData();
+            },
+            error: err => this.notificationService.showError('Erreur lors de la modification')
+          });
+        } else {
+          this.adminService.createGroupe(result).subscribe({
+            next: () => {
+              this.notificationService.showSuccess('Groupe créé avec succès');
+              this.loadInitialData();
+            },
+            error: err => this.notificationService.showError('Erreur lors de la création')
+          });
+        }
       }
-    }
+    });
   }
 
   deleteGroupe(groupe: Groupe): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
+      width: '450px',
       data: {
         title: 'Supprimer le groupe',
-        message: `Êtes-vous sûr de vouloir supprimer le groupe "${groupe.nom}" ?
-        
-⚠️ Cette action supprimera également tous les types d'inspection associés.`,
+        message: `Êtes-vous sûr de vouloir supprimer le groupe <strong>${groupe.nom}</strong> ?<br><br>⚠️ Cette action supprimera également tous les types d'inspection associés.`,
         confirmText: 'Supprimer',
-        cancelText: 'Annuler'
+        type: 'danger'
       }
     });
 
@@ -227,73 +155,23 @@ export class GroupesComponent implements OnInit, AfterViewInit {
         this.adminService.deleteGroupe(groupe.id).subscribe({
           next: () => {
             this.notificationService.showSuccess('Groupe supprimé avec succès');
-            this.loadGroupes();
+            this.loadInitialData();
           },
-          error: (error) => {
-            console.error('Erreur lors de la suppression:', error);
-            this.notificationService.showError('Erreur lors de la suppression du groupe');
-          }
+          error: (err) => this.notificationService.showError('Erreur de suppression')
         });
       }
     });
   }
 
-  generateCode(): void {
-    const nom = this.groupeForm.get('nom')?.value;
-    if (nom) {
-      const code = nom
-        .toUpperCase()
-        .replace(/[ÀÂÄÃÁÇ]/g, 'A')
-        .replace(/[ÈÊËÉ]/g, 'E')
-        .replace(/[ÎÏÍÌ]/g, 'I')
-        .replace(/[ÔÖÓÒÕ]/g, 'O')
-        .replace(/[ÛÜÚÙ]/g, 'U')
-        .replace(/[^A-Z0-9]/g, '_')
-        .substring(0, 8);
-      
-      this.groupeForm.patchValue({ code });
-    }
-  }
-
   getFamilleNom(idFamille: string): string {
-    const famille = this.familles.find(f => f.id === idFamille);
-    return famille ? famille.nom : 'Famille inconnue';
+    return this.familles.find(f => f.id === idFamille)?.nom || 'Inconnue';
   }
 
   getFamilleCode(idFamille: string): string {
-    const famille = this.familles.find(f => f.id === idFamille);
-    return famille ? famille.code : 'N/A';
+    return this.familles.find(f => f.id === idFamille)?.code || 'N/A';
   }
 
   getGroupesByFamille(idFamille: string): number {
-    return this.dataSource.data.filter(g => g.idFamille === idFamille).length;
-  }
-
-  getErrorMessage(field: string): string {
-    const control = this.groupeForm.get(field);
-    if (control?.hasError('required')) {
-      return `${this.getFieldLabel(field)} est requis`;
-    }
-    if (control?.hasError('minlength')) {
-      const minLength = control.errors?.['minlength']?.requiredLength;
-      return `Minimum ${minLength} caractères requis`;
-    }
-    if (control?.hasError('maxlength')) {
-      const maxLength = control.errors?.['maxlength']?.requiredLength;
-      return `Maximum ${maxLength} caractères autorisés`;
-    }
-    if (control?.hasError('pattern')) {
-      return 'Code invalide (A-Z, 0-9, _, - uniquement)';
-    }
-    return '';
-  }
-
-  private getFieldLabel(field: string): string {
-    const labels: { [key: string]: string } = {
-      nom: 'Nom',
-      code: 'Code',
-      idFamille: 'Famille'
-    };
-    return labels[field] || field;
+    return this.allGroupes.filter(g => g.idFamille === idFamille).length;
   }
 }

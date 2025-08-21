@@ -1,0 +1,40 @@
+<h1 mat-dialog-title>
+  <mat-icon>{{ isEditMode ? 'edit' : 'add_task' }}</mat-icon>
+  {{ isEditMode ? "Modifier le type d'inspection" : "Nouveau type d'inspection" }}
+</h1>
+
+<div mat-dialog-content>
+  <form [formGroup]="typeForm" id="type-form" class="dialog-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Nom du type</mat-label>
+      <input matInput formControlName="nom" placeholder="Ex: Contrôle visuel mensuel">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Fréquence</mat-label>
+      <mat-select formControlName="frequence">
+        <mat-option *ngFor="let freq of data.frequenceOptions" [value]="freq.value">
+          {{ freq.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Groupe associé</mat-label>
+      <mat-select formControlName="idGroupe">
+        <mat-optgroup *ngFor="let famille of data.familles" [label]="famille.nom">
+          <mat-option *ngFor="let groupe of getGroupesByFamille(Number(famille.id))" [value]="Number(groupe.id)">
+            {{ groupe.nom }}
+          </mat-option>
+        </mat-optgroup>
+      </mat-select>
+    </mat-form-field>
+  </form>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button mat-raised-button color="primary" type="submit" form="type-form" [disabled]="typeForm.invalid" (click)="onSave()">
+    {{ isEditMode ? 'Enregistrer' : 'Créer' }}
+  </button>
+</div>

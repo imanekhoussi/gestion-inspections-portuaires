@@ -1,0 +1,39 @@
+<h1 mat-dialog-title>
+  <mat-icon>{{ data.isEditMode ? 'edit' : 'add' }}</mat-icon>
+  {{ data.isEditMode ? 'Modifier le groupe' : 'Nouveau groupe' }}
+</h1>
+
+<div mat-dialog-content>
+  <form [formGroup]="groupeForm" id="groupe-form" class="dialog-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Famille parente</mat-label>
+      <mat-select formControlName="idFamille">
+        <mat-option *ngFor="let famille of data.familles" [value]="famille.id">
+          {{ famille.nom }} ({{ famille.code }})
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Nom du groupe</mat-label>
+      <input matInput formControlName="nom" placeholder="Ex: Grues mobiles" (blur)="generateCode()">
+    </mat-form-field>
+
+    <div class="code-row">
+        <mat-form-field appearance="outline" class="code-field">
+          <mat-label>Code unique</mat-label>
+          <input matInput formControlName="code" placeholder="GRUES_MOB" style="text-transform: uppercase;">
+        </mat-form-field>
+        <button mat-icon-button type="button" (click)="generateCode()" matTooltip="Générer le code depuis le nom">
+          <mat-icon>auto_fix_high</mat-icon>
+        </button>
+    </div>
+  </form>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button mat-raised-button color="primary" type="submit" form="groupe-form" [disabled]="groupeForm.invalid" (click)="onSave()">
+    {{ data.isEditMode ? 'Enregistrer' : 'Créer' }}
+  </button>
+</div>
