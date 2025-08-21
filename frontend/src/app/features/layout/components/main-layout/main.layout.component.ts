@@ -55,8 +55,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       children: [{ label: 'Liste des Familles', icon: 'folder_open', route: '/familles/list' }]
     },
     { label: 'Inspections', icon: 'assignment', route: '/inspections' },
-    // ✅ FIX: The route for 'Planning' now correctly points to the calendar.
-    { label: 'Planning', icon: 'event', route: '/planning/calendar' }
   ];
 
   constructor(

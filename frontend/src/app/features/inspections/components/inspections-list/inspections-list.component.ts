@@ -11,6 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
+// ADDED: Import RouterLink for navigation
+import { RouterLink } from '@angular/router';
 
 import { InspectionsService } from '../../services/inspections.service';
 import { Inspection, InspectionStatut, InspectionPriorite } from '../../../../core/models/inspection.interface';
@@ -44,7 +46,8 @@ interface InspectionDisplay extends Omit<Inspection, 'statut'> {
     MatTooltipModule,
     MatSnackBarModule,
     MatDialogModule,
-    LoadingSpinnerComponent
+    LoadingSpinnerComponent,
+    RouterLink // ADDED: Add RouterLink to the component imports
   ],
   templateUrl: './inspections-list.component.html',
   styleUrls: ['./inspections-list.component.scss']
