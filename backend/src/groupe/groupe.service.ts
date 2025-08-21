@@ -1,5 +1,4 @@
-// src/groupe/groupe.service.ts - CRÉER CE FICHIER
-
+// src/groupe/groupe.service.ts 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -20,7 +19,6 @@ export class GroupeService {
     const groupe = this.groupeRepository.create(createGroupeDto);
     const savedGroupe = await this.groupeRepository.save(groupe);
 
-    // Log de création
     await this.logService.enregistrerLog(
       TypeAction.CREATION,
       TypeEntite.GROUPE,
@@ -34,17 +32,27 @@ export class GroupeService {
     return savedGroupe;
   }
 
+  /**
+   * Fetches all groups and adds the count of associated assets to each.
+   */
   async findAll(): Promise<Groupe[]> {
-    return await this.groupeRepository.find({
-      relations: ['famille', 'actifs', 'typesInspection']
-    });
+    return this.groupeRepository
+      .createQueryBuilder('groupe')
+      .leftJoinAndSelect('groupe.famille', 'famille')
+      .loadRelationCountAndMap('groupe.nbActifs', 'groupe.actifs')
+      .getMany();
   }
 
+  /**
+   * Fetches a single group by ID and adds the count of its assets.
+   */
   async findOne(id: number): Promise<Groupe> {
-    const groupe = await this.groupeRepository.findOne({
-      where: { id },
-      relations: ['famille', 'actifs', 'typesInspection']
-    });
+    const groupe = await this.groupeRepository
+      .createQueryBuilder('groupe')
+      .where('groupe.id = :id', { id })
+      .leftJoinAndSelect('groupe.famille', 'famille')
+      .loadRelationCountAndMap('groupe.nbActifs', 'groupe.actifs')
+      .getOne();
     
     if (!groupe) {
       throw new NotFoundException(`Groupe avec l'ID ${id} non trouvé`);
@@ -54,40 +62,43 @@ export class GroupeService {
   }
 
   async update(id: number, updateGroupeDto: UpdateGroupeDto, updatedBy: number): Promise<Groupe> {
-    const groupe = await this.findOne(id);
-    const ancienEtat = { nom: groupe.nom, code: groupe.code, idFamille: groupe.idFamille };
+    const groupeAvant = await this.findOne(id);
+    const ancienEtat = { nom: groupeAvant.nom, code: groupeAvant.code, idFamille: groupeAvant.idFamille };
     
-    Object.assign(groupe, updateGroupeDto);
-    const updatedGroupe = await this.groupeRepository.save(groupe);
+    // We use 'update' instead of 'save' to avoid replacing relations
+    await this.groupeRepository.update(id, updateGroupeDto);
+    const groupeApres = await this.findOne(id);
 
-    // Log de modification
     await this.logService.enregistrerLog(
       TypeAction.MODIFICATION,
       TypeEntite.GROUPE,
       id,
       updatedBy,
       ancienEtat,
-      { nom: updatedGroupe.nom, code: updatedGroupe.code, idFamille: updatedGroupe.idFamille },
-      `Modification du groupe ${updatedGroupe.nom}`
+      { nom: groupeApres.nom, code: groupeApres.code, idFamille: groupeApres.idFamille },
+      `Modification du groupe ${groupeApres.nom}`
     );
 
-    return updatedGroupe;
+    return groupeApres;
   }
 
   async remove(id: number, deletedBy: number): Promise<void> {
     const groupe = await this.findOne(id);
     
-    // Log de suppression
     await this.logService.enregistrerLog(
       TypeAction.SUPPRESSION,
       TypeEntite.GROUPE,
       id,
       deletedBy,
-      { nom: groupe.nom, code: groupe.code, nbActifs: groupe.actifs?.length || 0 },
+      { nom: groupe.nom, code: groupe.code, nbActifs: groupe.nbActifs },
       null,
       `Suppression du groupe ${groupe.nom}`
     );
 
-    await this.groupeRepository.remove(groupe);
+    // Using delete is safer here if there are cascading constraints
+    const result = await this.groupeRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Groupe avec l'ID ${id} non trouvé`);
+    }
   }
 }

@@ -27,4 +27,5 @@ export class Groupe {
 
   @OneToMany(() => TypeInspection, typeInspection => typeInspection.groupe)
   typesInspection: TypeInspection[];
+   nbActifs: number;
 }

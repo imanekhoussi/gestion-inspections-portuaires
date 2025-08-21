@@ -1,6 +1,6 @@
-// src/groupe/groupe.controller.ts - REMPLACER COMPLÈTEMENT
+// src/groupe/groupe.controller.ts 
 
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { GroupeService } from './groupe.service';
 import { CreateGroupeDto, UpdateGroupeDto } from './dto/groupe.dto';
@@ -35,23 +35,23 @@ export class GroupeController {
   @Get(':id')
   @ApiOperation({ summary: 'Récupérer un groupe par ID' })
   @ApiResponse({ status: 200, description: 'Le groupe trouvé.', type: Groupe })
-  findOne(@Param('id') id: string) {
-    return this.groupeService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.groupeService.findOne(id);
   }
 
   @Patch(':id')
   @Roles(RoleUtilisateur.ADMIN)
   @ApiOperation({ summary: 'Mettre à jour un groupe (Admin seulement)' })
   @ApiResponse({ status: 200, description: 'Le groupe a été mis à jour.', type: Groupe })
-  update(@Param('id') id: string, @Body() updateGroupeDto: UpdateGroupeDto, @Req() req: any) {
-    return this.groupeService.update(+id, updateGroupeDto, req.user.id);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateGroupeDto: UpdateGroupeDto, @Req() req: any) {
+    return this.groupeService.update(id, updateGroupeDto, req.user.id);
   }
 
   @Delete(':id')
   @Roles(RoleUtilisateur.ADMIN)
   @ApiOperation({ summary: 'Supprimer un groupe (Admin seulement)' })
   @ApiResponse({ status: 200, description: 'Le groupe a été supprimé.' })
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.groupeService.remove(+id, req.user.id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.groupeService.remove(id, req.user.id);
   }
 }
