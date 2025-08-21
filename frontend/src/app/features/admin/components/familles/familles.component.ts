@@ -30,7 +30,7 @@ import { FamilleDialogComponent } from './famille-dialog/famille-dialog.componen
   styleUrls: ['./familles.component.scss']
 })
 export class FamillesComponent implements OnInit, AfterViewInit {
-  displayedColumns: string[] = ['nom', 'code', 'nbGroupes', 'createdAt', 'actions'];
+  displayedColumns: string[] = ['nom', 'code', 'nbGroupes', 'actions'];
   dataSource = new MatTableDataSource<Famille>();
   isLoading = true;
 

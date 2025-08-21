@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -26,7 +26,7 @@ import { GroupeDialogComponent } from './groupe-dialog/groupe-dialog.component';
   selector: 'app-groupes',
   standalone: true,
   imports: [
-    CommonModule, DatePipe, MatTableModule, MatPaginatorModule, MatSortModule,
+    CommonModule,  MatTableModule, MatPaginatorModule, MatSortModule,
     MatDialogModule, MatCardModule, MatButtonModule, MatIconModule, MatFormFieldModule,
     MatInputModule, MatSelectModule, MatTooltipModule, MatBadgeModule, MatChipsModule, FormsModule
   ],
@@ -34,7 +34,7 @@ import { GroupeDialogComponent } from './groupe-dialog/groupe-dialog.component';
   styleUrls: ['./groupes.component.scss']
 })
 export class GroupesComponent implements OnInit, AfterViewInit {
-  displayedColumns: string[] = ['nom', 'code', 'famille', 'nbActifs', 'createdAt', 'actions'];
+  displayedColumns: string[] = ['nom', 'code', 'famille', 'nbActifs', 'actions'];
   dataSource = new MatTableDataSource<Groupe>();
   allGroupes: Groupe[] = [];
   isLoading = true;

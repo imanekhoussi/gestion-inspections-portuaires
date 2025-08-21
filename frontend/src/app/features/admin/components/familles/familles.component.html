@@ -2,7 +2,6 @@
   <div class="section-header">
     <div class="header-content">
       <h1><mat-icon>folder</mat-icon>Gestion des Familles</h1>
-      <p>Organisation des équipements par famille fonctionnelle</p>
     </div>
     <button mat-raised-button color="primary" (click)="openFamilleDialog()" class="add-button">
       <mat-icon>create_new_folder</mat-icon>
@@ -59,16 +58,6 @@
                   group_work
                 </mat-icon>
                 <span>{{ famille.nbGroupes || 0 }} groupe(s)</span>
-              </div>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="createdAt">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Créée le</th>
-            <td mat-cell *matCellDef="let famille">
-              <div class="date-cell">
-                <mat-icon class="date-icon">schedule</mat-icon>
-                {{ famille.createdAt | date:'dd/MM/yyyy' }}
               </div>
             </td>
           </ng-container>
