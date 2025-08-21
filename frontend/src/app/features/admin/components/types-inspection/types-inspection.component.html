@@ -1,118 +1,172 @@
-<div class="types-inspection-container">
-  <div class="header">
-    <h2>Types d'inspection ({{ isLoading ? '...' : typesInspection.length }})</h2>
-    <button mat-raised-button color="primary" (click)="openDialog()">
+<div class="admin-section">
+  <div class="section-header">
+    <div class="header-content">
+      <h1>
+        <mat-icon>rule</mat-icon>
+        Gestion des Types d'Inspection
+      </h1>
+    </div>
+    <button mat-raised-button color="primary" (click)="openDialog()" class="add-button">
       <mat-icon>add</mat-icon>
-      Nouveau type
+      Ajouter un type
     </button>
   </div>
 
-  <div class="filter-controls">
-    <mat-form-field class="search-field" appearance="outline">
-      <mat-label>Rechercher...</mat-label>
-      <input matInput [formControl]="searchControl" placeholder="Nom, fréquence, groupe, etc.">
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filter-controls">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Filtrer par Famille</mat-label>
+          <mat-select [(ngModel)]="selectedFamille" (selectionChange)="applyFilters()">
+            <mat-option [value]="null">Toutes les familles</mat-option>
+            <mat-option *ngFor="let famille of familles" [value]="famille.id">{{ famille.nom }}</mat-option>
+          </mat-select>
+        </mat-form-field>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Famille</mat-label>
-      <mat-select [(ngModel)]="selectedFamille" (selectionChange)="applyFilters()">
-        <mat-option [value]="null">Toutes</mat-option>
-        <mat-option *ngFor="let famille of familles" [value]="famille.id">{{ famille.nom }}</mat-option>
-      </mat-select>
-    </mat-form-field>
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Filtrer par Groupe</mat-label>
+          <mat-select [(ngModel)]="selectedGroupe" (selectionChange)="applyFilters()">
+            <mat-option [value]="null">Tous les groupes</mat-option>
+            <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
+          </mat-select>
+        </mat-form-field>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Groupe</mat-label>
-      <mat-select [(ngModel)]="selectedGroupe" (selectionChange)="applyFilters()">
-        <mat-option [value]="null">Tous</mat-option>
-        <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
-      </mat-select>
-    </mat-form-field>
-    
-    <mat-form-field appearance="outline">
-      <mat-label>Fréquence</mat-label>
-      <mat-select [(ngModel)]="selectedFrequence" (selectionChange)="applyFilters()">
-        <mat-option [value]="null">Toutes</mat-option>
-        <mat-option *ngFor="let freq of frequenceOptions" [value]="freq.value">{{ freq.label }}</mat-option>
-      </mat-select>
-    </mat-form-field>
-  </div>
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Filtrer par Fréquence</mat-label>
+          <mat-select [(ngModel)]="selectedFrequence" (selectionChange)="applyFilters()">
+            <mat-option [value]="null">Toutes les fréquences</mat-option>
+            <mat-option *ngfor="let freq of frequenceOptions" [value]="freq.value">{{ freq.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
 
-  <div class="active-filters" *ngIf="searchControl.value || selectedFamille || selectedGroupe || selectedFrequence">
-  
-  <mat-chip-set aria-label="Filtres actifs">
+      <div class="active-filters" *ngIf="searchControl.value || selectedFamille || selectedGroupe || selectedFrequence">
+        <mat-chip-set aria-label="Filtres actifs">
+          <mat-chip *ngIf="searchControl.value" (removed)="removeFilter('search')" [removable]="true">
+            Recherche: {{searchControl.value}}
+            <button matChipRemove><mat-icon>cancel</mat-icon></button>
+          </mat-chip>
+          <mat-chip *ngIf="selectedFamille" (removed)="removeFilter('famille')" [removable]="true">
+            Famille: {{getFamilleName(selectedFamille)}}
+            <button matChipRemove><mat-icon>cancel</mat-icon></button>
+          </mat-chip>
+          <mat-chip *ngIf="selectedGroupe" (removed)="removeFilter('groupe')" [removable]="true">
+            Groupe: {{getGroupeName(selectedGroupe)}}
+            <button matChipRemove><mat-icon>cancel</mat-icon></button>
+          </mat-chip>
+          <mat-chip *ngIf="selectedFrequence" (removed)="removeFilter('frequence')" [removable]="true">
+            Fréquence: {{getFrequenceLabel(selectedFrequence)}}
+            <button matChipRemove><mat-icon>cancel</mat-icon></button>
+          </mat-chip>
+        </mat-chip-set>
+      </div>
+    </mat-card-content>
+  </mat-card>
 
-    <mat-chip *ngIf="searchControl.value" (removed)="removeFilter('search')" [removable]="true">
-      Recherche: {{searchControl.value}}
-      <button matChipRemove><mat-icon>cancel</mat-icon></button>
-    </mat-chip>
-    <mat-chip *ngIf="selectedFamille" (removed)="removeFilter('famille')" [removable]="true">
-      Famille: {{getFamilleName(selectedFamille)}}
-      <button matChipRemove><mat-icon>cancel</mat-icon></button>
-    </mat-chip>
-    <mat-chip *ngIf="selectedGroupe" (removed)="removeFilter('groupe')" [removable]="true">
-      Groupe: {{getGroupeName(selectedGroupe)}}
-      <button matChipRemove><mat-icon>cancel</mat-icon></button>
-    </mat-chip>
-    <mat-chip *ngIf="selectedFrequence" (removed)="removeFilter('frequence')" [removable]="true">
-      Fréquence: {{getFrequenceLabel(selectedFrequence)}}
-      <button matChipRemove><mat-icon>cancel</mat-icon></button>
-    </mat-chip>
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>list</mat-icon>
+        Liste des types ({{ isLoading ? '...' : dataSource.data.length }})
+      </mat-card-title>
+      <div class="header-actions">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Rechercher un type...</mat-label>
+          <input matInput [formControl]="searchControl" placeholder="Nom, fréquence...">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </div>
+    </mat-card-header>
 
-  </mat-chip-set>
-</div>
-  
-  <div class="content">
-    <div *ngIf="isLoading" class="loading-spinner">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p>Chargement des données...</p>
-    </div>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-spinner">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Chargement des types d'inspection...</p>
+      </div>
 
-    <div *ngIf="!isLoading">
-      <mat-table [dataSource]="typesInspection" *ngIf="typesInspection.length > 0; else noData">
+      <div *ngIf="!isLoading" class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort class="types-inspection-table" *ngIf="dataSource.data.length > 0; else noData">
+
+          <ng-container matColumnDef="nom">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom du type</th>
+            <td mat-cell *matCellDef="let element">
+              <div class="cell-info">
+                
+                <div class="cell-details">
+                  <strong>{{element.nom}}</strong>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="frequence">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Fréquence</th>
+            <td mat-cell *matCellDef="let element">
+              <div class="cell-info">
+                <mat-icon class="cell-icon frequence-icon">update</mat-icon>
+                <div class="cell-details">
+                  <span>{{ getFrequenceLabel(element.frequence) }}</span>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="groupe">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Groupe</th>
+            <td mat-cell *matCellDef="let element">
+              <div class="cell-info" *ngIf="element.groupe; else noValue">
+                <mat-icon class="cell-icon groupe-icon">group_work</mat-icon>
+                <div class="cell-details">
+                  <strong>{{ element.groupe.nom }}</strong>
+                  <mat-chip class="code-chip groupe-chip">{{ element.groupe.code || 'N/A' }}</mat-chip>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="famille">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Famille</th>
+            <td mat-cell *matCellDef="let element">
+              <div class="cell-info" *ngIf="element.groupe?.famille; else noValue">
+                <mat-icon class="cell-icon famille-icon">folder</mat-icon>
+                <div class="cell-details">
+                  <strong>{{ element.groupe.famille.nom }}</strong>
+                  <mat-chip class="code-chip famille-chip">{{ element.groupe.famille.code || 'N/A' }}</mat-chip>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let element">
+              <div class="action-buttons">
+                <button mat-icon-button color="primary" (click)="openDialog(element)" matTooltip="Modifier">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="confirmAndDeleteType(element)" matTooltip="Supprimer">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
         
-        <ng-container matColumnDef="nom">
-          <th mat-header-cell *matHeaderCellDef> Nom du type </th>
-          <td mat-cell *matCellDef="let element"> {{element.nom}} </td>
-        </ng-container>
-  
-        <ng-container matColumnDef="frequence">
-          <th mat-header-cell *matHeaderCellDef> Fréquence </th>
-          <td mat-cell *matCellDef="let element"> {{ getFrequenceLabel(element.frequence) }} </td>
-        </ng-container>
-  
-        <ng-container matColumnDef="groupe">
-          <th mat-header-cell *matHeaderCellDef> Groupe </th>
-          <td mat-cell *matCellDef="let element"> {{ element.groupe?.nom || 'N/A' }} </td>
-        </ng-container>
-  
-        <ng-container matColumnDef="famille">
-          <th mat-header-cell *matHeaderCellDef> Famille </th>
-          <td mat-cell *matCellDef="let element"> {{ element.groupe?.famille?.nom || 'N/A' }} </td>
-        </ng-container>
-  
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef align="right"> Actions </th>
-          <td mat-cell *matCellDef="let element" align="right">
-            <button mat-icon-button color="primary" (click)="openDialog(element)" matTooltip="Modifier">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" (click)="confirmAndDeleteType(element)" matTooltip="Supprimer">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-  
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </mat-table>
-      
-      <ng-template #noData>
-        <div class="no-data">
-          <p>Aucun type d'inspection ne correspond à vos critères de recherche.</p>
-        </div>
-      </ng-template>
-    </div>
-  </div>
+        <ng-template #noData>
+          <div class="empty-state">
+            <mat-icon class="empty-icon">search_off</mat-icon>
+            <h3>Aucun type d'inspection trouvé</h3>
+            <p>Aucun type ne correspond à vos critères de recherche. Essayez d'ajuster vos filtres ou d'en créer un nouveau.</p>
+          </div>
+        </ng-template>
+        <ng-template #noValue>
+            <span style="color: #95a5a6;">N/A</span>
+        </ng-template>
+      </div>
+      <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons [pageSize]="10" *ngIf="!isLoading && dataSource.data.length > 0"></mat-paginator>
+    </mat-card-content>
+  </mat-card>
 </div>

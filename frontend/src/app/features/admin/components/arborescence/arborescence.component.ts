@@ -21,9 +21,21 @@ import { MatInputModule } from '@angular/material/input';
 
 import { AdminService } from '../../services/admin.service';
 import { NotificationAdminService } from '../../services/notification-admin.service';
-import { 
-  ArborescenceNode, ArborescenceResponse, FiltresArborescence, EtatActif
+
+// --- SHARED INTERFACES IMPORTED (SiteStats removed) ---
+import {
+  ArborescenceNode,
+  ArborescenceResponse,
+  FiltresArborescence
 } from '../../../../core/models/admin.interfaces';
+
+// --- COMPONENT-SPECIFIC INTERFACES DEFINED LOCALLY ---
+interface SiteStats {
+  site: string;
+  totalActifs: number;
+  familles: number;
+  groupes: number;
+}
 
 interface TreeNode extends ArborescenceNode {
   level: number;
@@ -31,14 +43,6 @@ interface TreeNode extends ArborescenceNode {
   isExpanded?: boolean;
   parent?: TreeNode;
   children: TreeNode[];
-}
-
-interface SiteStats {
-  site: string;
-  totalActifs: number;
-  actifsParEtat: Record<EtatActif, number>;
-  familles: number;
-  groupes: number;
 }
 
 @Component({
@@ -73,27 +77,19 @@ export class ArborescenceComponent implements OnInit {
   // État du composant
   isLoading = true;
   arborescenceData: ArborescenceResponse | null = null;
-  
+
   // Filtres
   filterForm!: FormGroup;
   availableSites: string[] = [];
-  
+
   // Statistiques
   globalStats = {
     totalFamilles: 0,
     totalGroupes: 0,
     totalActifs: 0
   };
-  
+
   siteStats: SiteStats[] = [];
-  
-  // Configuration des états
-  etatActifOptions = [
-    { value: 'Actif', label: 'Actif', color: '#4caf50', icon: 'check_circle' },
-    { value: 'Maintenance', label: 'Maintenance', color: '#ff9800', icon: 'build' },
-    { value: 'Arrêt', label: 'Arrêt', color: '#f44336', icon: 'pause_circle' },
-    { value: 'Hors service', label: 'Hors service', color: '#757575', icon: 'cancel' }
-  ];
 
   // Options d'affichage
   showMetadata = true;
@@ -115,7 +111,6 @@ export class ArborescenceComponent implements OnInit {
   private initFilterForm(): void {
     this.filterForm = this.fb.group({
       site: [''],
-      etatActif: [''],
       expandAll: [false]
     });
 
@@ -134,6 +129,12 @@ export class ArborescenceComponent implements OnInit {
 
     this.adminService.getArborescence(filtres).subscribe({
       next: (data) => {
+        if (!data || !data.familles) {
+          console.error('Données d\'arborescence invalides ou vides reçues du backend');
+          this.notificationService.showError('Les données reçues sont invalides');
+          this.isLoading = false;
+          return;
+        }
         this.arborescenceData = data;
         this.processArborescenceData(data);
         this.calculateStats(data);
@@ -150,13 +151,13 @@ export class ArborescenceComponent implements OnInit {
   private processArborescenceData(data: ArborescenceResponse): void {
     // Extraire tous les sites disponibles
     this.availableSites = this.extractSites(data.familles);
-    
+
     // Convertir en format TreeNode
     const treeData = this.convertToTreeNodes(data.familles, 0);
-    
+
     // Mettre à jour la source de données
     this.dataSource.data = treeData;
-    
+
     // Appliquer l'expansion automatique si activée
     if (this.autoExpand) {
       this.expandAll();
@@ -172,7 +173,7 @@ export class ArborescenceComponent implements OnInit {
 
   private extractSites(familles: ArborescenceNode[]): string[] {
     const sites = new Set<string>();
-    
+
     const extractFromNode = (node: ArborescenceNode) => {
       if (node.type === 'actif' && node.metadata?.site) {
         sites.add(node.metadata.site);
@@ -211,17 +212,11 @@ export class ArborescenceComponent implements OnInit {
     const processNode = (node: ArborescenceNode) => {
       if (node.type === 'actif' && node.metadata?.site) {
         const site = node.metadata.site;
-        
+
         if (!siteStatsMap.has(site)) {
           siteStatsMap.set(site, {
             site,
             totalActifs: 0,
-            actifsParEtat: {
-              'Actif': 0,
-              'Maintenance': 0,
-              'Arrêt': 0,
-              'Hors service': 0
-            },
             familles: 0,
             groupes: 0
           });
@@ -229,10 +224,6 @@ export class ArborescenceComponent implements OnInit {
 
         const stats = siteStatsMap.get(site)!;
         stats.totalActifs++;
-        
-        if (node.metadata.etat) {
-          stats.actifsParEtat[node.metadata.etat]++;
-        }
       }
 
       if (node.enfants) {
@@ -289,11 +280,6 @@ export class ArborescenceComponent implements OnInit {
       filteredData = this.filterBySite(filteredData, filtres.site);
     }
 
-    // Filtrage par état d'actif
-    if (filtres.etatActif) {
-      filteredData = this.filterByEtatActif(filteredData, filtres.etatActif);
-    }
-
     // Convertir et mettre à jour
     const treeData = this.convertToTreeNodes(filteredData, 0);
     this.dataSource.data = treeData;
@@ -316,31 +302,14 @@ export class ArborescenceComponent implements OnInit {
     });
   }
 
-  private filterByEtatActif(nodes: ArborescenceNode[], etat: EtatActif): ArborescenceNode[] {
-    return nodes.map(node => ({
-      ...node,
-      enfants: node.enfants ? this.filterByEtatActif(node.enfants, etat) : undefined
-    })).filter(node => {
-      if (node.type === 'actif') {
-        return node.metadata?.etat === etat;
-      }
-      return node.enfants && node.enfants.length > 0;
-    });
-  }
-
   clearFilters(): void {
     this.filterForm.reset({
       site: '',
-      etatActif: '',
       expandAll: false
     });
   }
 
   // ===== UTILITAIRES =====
-
-  getActifsParEtat(stats: any, etat: any): number {
-  return stats.actifsParEtat[etat] || 0;
-}
 
   getNodeIcon(node: TreeNode): string {
     switch (node.type) {
@@ -362,11 +331,7 @@ export class ArborescenceComponent implements OnInit {
       case 'groupe':
         return '#388e3c';
       case 'actif':
-        if (node.metadata?.etat) {
-          const etatOption = this.etatActifOptions.find(e => e.value === node.metadata?.etat);
-          return etatOption?.color || '#666';
-        }
-        return '#666';
+        return '#ff9800';
       default:
         return '#666';
     }
@@ -382,20 +347,15 @@ export class ArborescenceComponent implements OnInit {
         const nbActifsGroupe = node.metadata?.nbActifs || 0;
         return `${nbActifsGroupe} actif(s)`;
       case 'actif':
-        return node.metadata?.site || 'Site inconnu';
+        const parts = [];
+        if (node.metadata?.site) parts.push(`Site: ${node.metadata.site}`);
+        // --- FIX: Use type assertion '(as any)' to access properties ---
+        if ((node.metadata as any)?.zone) parts.push(`Zone: ${(node.metadata as any).zone}`);
+        if ((node.metadata as any)?.ouvrage) parts.push(`Ouvrage: ${(node.metadata as any).ouvrage}`);
+        return parts.join(' | ') || 'Aucune information';
       default:
         return '';
     }
-  }
-
-  getEtatActifIcon(etat: EtatActif): string {
-    const option = this.etatActifOptions.find(e => e.value === etat);
-    return option?.icon || 'help_outline';
-  }
-
-  getEtatActifColor(etat: EtatActif): string {
-    const option = this.etatActifOptions.find(e => e.value === etat);
-    return option?.color || '#666';
   }
 
   // ===== ACTIONS =====
@@ -449,29 +409,29 @@ export class ArborescenceComponent implements OnInit {
 
     const searchLower = searchTerm.toLowerCase();
     const filteredData = this.searchNodes(this.arborescenceData?.familles || [], searchLower);
-    
+
     const treeData = this.convertToTreeNodes(filteredData, 0);
     this.dataSource.data = treeData;
-    
+
     // Expand tous les nœuds pour montrer les résultats
     setTimeout(() => this.expandAll(), 100);
   }
 
   private searchNodes(nodes: ArborescenceNode[], searchTerm: string): ArborescenceNode[] {
     return nodes.map(node => {
-      const matchesSearch = 
+      const matchesSearch =
         node.nom.toLowerCase().includes(searchTerm) ||
         node.code.toLowerCase().includes(searchTerm);
 
       const filteredChildren = node.enfants ? this.searchNodes(node.enfants, searchTerm) : [];
-      
+
       if (matchesSearch || filteredChildren.length > 0) {
         return {
           ...node,
           enfants: filteredChildren
         };
       }
-      
+
       return null;
     }).filter(node => node !== null) as ArborescenceNode[];
   }

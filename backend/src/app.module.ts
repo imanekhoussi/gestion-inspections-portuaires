@@ -11,6 +11,7 @@ import { InspectionModule } from './inspection/inspection.module';
 import { LivrableModule } from './livrable/livrable.module';
 import { UtilisateurModule } from './utilisateur/utilisateur.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ArborescenceModule } from './arborescence/arborescence.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     FamilleModule,
     GroupeModule,
+    ArborescenceModule,
     ActifModule,
     TypeInspectionModule,
     InspectionModule,

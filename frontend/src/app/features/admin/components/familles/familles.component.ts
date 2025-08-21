@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule} from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -22,7 +22,7 @@ import { FamilleDialogComponent } from './famille-dialog/famille-dialog.componen
   selector: 'app-familles',
   standalone: true,
   imports: [
-    CommonModule, DatePipe, MatTableModule, MatPaginatorModule, MatSortModule,
+    CommonModule,  MatTableModule, MatPaginatorModule, MatSortModule,
     MatDialogModule, MatCardModule, MatButtonModule, MatIconModule, MatFormFieldModule,
     MatInputModule, MatTooltipModule, MatBadgeModule
   ],

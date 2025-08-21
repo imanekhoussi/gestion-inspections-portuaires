@@ -1,59 +1,170 @@
-.types-inspection-container {
-  padding: 20px;
-}
+// Base styles from other components
+.admin-section {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-
-  h2 {
-    margin: 0;
-  }
-}
-
-.filter-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 10px;
-
-  .search-field {
-    flex: 1 1 300px; // Allow search to grow
-  }
-
-  mat-form-field {
-    flex: 1 1 180px; // Allow dropdowns to grow but have a base size
-    // Remove bottom padding to make it align better
-    .mat-form-field-wrapper {
-      padding-bottom: 0;
+    .header-content h1 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.8rem;
+      color: #34495e;
+    }
+    
+    .add-button mat-icon {
+      margin-right: 8px;
     }
   }
 }
 
-.active-filters {
-  padding: 8px 0 20px 0;
-}
+.filters-card {
+  margin-bottom: 24px;
 
-.content {
-  .loading-spinner {
+  .filter-controls {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    gap: 15px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .filter-field {
+    flex: 1 1 200px; // Flexible fields
   }
   
-  .no-data {
-    text-align: center;
-    padding: 40px;
-    color: #666;
+  .active-filters {
+    padding-top: 16px;
   }
 }
 
-mat-table {
+.table-card {
+  .mat-mdc-card-header {
+    padding: 16px 24px;
+    
+    .mat-mdc-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-actions {
+      flex-grow: 1;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .search-field {
+      width: 300px;
+    }
+  }
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+  color: #7f8c8d;
+}
+
+// Table specific styles
+.table-container {
+  overflow-x: auto;
+}
+
+.types-inspection-table {
   width: 100%;
+
+  th {
+    background-color: #16a085; // Teal color for this section
+    color: white;
+    font-weight: 600;
+  }
+
+  tr:hover {
+    background-color: #f9f9f9;
+  }
+
+  .cell-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .cell-icon {
+      font-size: 2rem;
+      height: 2rem;
+      width: 2rem;
+    }
+
+    .type-icon { color: #16a085; }
+    .frequence-icon { color: #e67e22; }
+    .groupe-icon { color: #9b59b6; }
+    .famille-icon { color: #2ecc71; }
+    
+    .cell-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      strong {
+        font-size: 0.95rem;
+        color: #2c3e50;
+      }
+
+      .code-chip {
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        height: 20px;
+        padding: 0 10px;
+        font-weight: bold;
+        color: white;
+      }
+      
+      .groupe-chip { background-color: #9b59b6; }
+      .famille-chip { background-color: #2ecc71; }
+    }
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 4px;
+  }
+}
+
+// Empty state from other components
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  
+  .empty-icon {
+    font-size: 4rem;
+    height: 4rem;
+    width: 4rem;
+    color: #bdc3c7;
+    margin-bottom: 16px;
+  }
+  
+  h3 {
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  p {
+    color: #7f8c8d;
+    max-width: 450px;
+    margin: 0 auto 24px auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-card .mat-mdc-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    .search-field {
+      width: 100%;
+    }
+  }
 }

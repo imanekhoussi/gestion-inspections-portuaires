@@ -113,20 +113,6 @@
               </mat-select>
               <mat-icon matSuffix>location_on</mat-icon>
             </mat-form-field>
-            
-            <mat-form-field appearance="outline">
-              <mat-label>État des actifs</mat-label>
-              <mat-select formControlName="etatActif">
-                <mat-option value="">Tous les états</mat-option>
-                <mat-option *ngFor="let etat of etatActifOptions" [value]="etat.value">
-                  <div class="etat-option">
-                    <mat-icon [style.color]="etat.color">{{ etat.icon }}</mat-icon>
-                    {{ etat.label }}
-                  </div>
-                </mat-option>
-              </mat-select>
-              <mat-icon matSuffix>flag</mat-icon>
-            </mat-form-field>
           </div>
 
           <!-- Ligne 2: Options d'affichage -->
@@ -280,17 +266,6 @@
                       {{ getNodeDescription(node) }}
                     </div>
                   </div>
-                  
-                  <!-- État pour les actifs -->
-                  <mat-chip 
-                    *ngIf="node.type === 'actif' && node.metadata?.etat"
-                    class="etat-chip"
-                    [style.background-color]="getEtatActifColor(node.metadata.etat)"
-                    [style.color]="'white'"
-                  >
-                    <mat-icon>{{ getEtatActifIcon(node.metadata.etat) }}</mat-icon>
-                    {{ node.metadata.etat }}
-                  </mat-chip>
                 </div>
               </mat-tree-node>
             </mat-tree>
@@ -335,28 +310,13 @@
               </mat-expansion-panel-header>
               
               <div class="site-details">
-                <!-- Répartition par état -->
-                <div class="etats-distribution">
-                  <h4>Répartition par état</h4>
-                  <div class="etat-bars">
-                    <div 
-                      *ngFor="let etatOption of etatActifOptions" 
-                      class="etat-bar"
-                      [class.empty]="getActifsParEtat(stats, etatOption.value) === 0"
-                    >
-                      <div class="etat-label">
-                        <mat-icon [style.color]="etatOption.color">{{ etatOption.icon }}</mat-icon>
-                        <span>{{ etatOption.label }}</span>
-                      </div>
-                      <div class="etat-progress">
-                        <div 
-                          class="etat-bar-fill"
-                          [style.width.%]="(getActifsParEtat(stats, etatOption.value) / stats.totalActifs) * 100"
-                          [style.background-color]="etatOption.color"
-                        ></div>
-                      </div>
-                      <span class="etat-count">{{ getActifsParEtat(stats, etatOption.value) }}
-</span>
+                <!-- Informations du site -->
+                <div class="site-info">
+                  <h4>Informations du site</h4>
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <mat-icon>precision_manufacturing</mat-icon>
+                      <span>{{ stats.totalActifs }} actifs</span>
                     </div>
                   </div>
                 </div>
@@ -412,22 +372,8 @@
                 <span>Groupe d'équipements</span>
               </div>
               <div class="legend-item">
-                <mat-icon style="color: #666;">precision_manufacturing</mat-icon>
+                <mat-icon style="color: #ff9800;">precision_manufacturing</mat-icon>
                 <span>Actif individuel</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- États des actifs -->
-          <div class="legend-section">
-            <h4>États des actifs</h4>
-            <div class="legend-items">
-              <div 
-                *ngFor="let etat of etatActifOptions" 
-                class="legend-item"
-              >
-                <mat-icon [style.color]="etat.color">{{ etat.icon }}</mat-icon>
-                <span>{{ etat.label }}</span>
               </div>
             </div>
           </div>
