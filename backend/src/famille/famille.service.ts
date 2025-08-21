@@ -1,4 +1,4 @@
-// src/famille/famille.service.ts - REMPLACER COMPLÈTEMENT
+// src/famille/famille.service.ts 
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,18 +16,27 @@ export class FamilleService {
     private logService: LogHistoriqueService,
   ) {}
 
+  /**
+   * Fetches all families and adds the count of associated groups to each.
+   */
   async findAll(): Promise<Famille[]> {
-    return this.familleRepository.find({
-      relations: ['groupes', 'groupes.actifs'],
-    });
+    // Use QueryBuilder to efficiently count related groups
+    return this.familleRepository
+      .createQueryBuilder('famille')
+      .loadRelationCountAndMap('famille.nbGroupes', 'famille.groupes')
+      .getMany();
   }
 
+  /**
+   * Fetches a single family by ID and adds the count of its groups.
+   */
   async findOne(id: number): Promise<Famille> {
-    const famille = await this.familleRepository.findOne({
-      where: { id },
-      relations: ['groupes', 'groupes.actifs'],
-    });
-    
+    const famille = await this.familleRepository
+      .createQueryBuilder('famille')
+      .where('famille.id = :id', { id })
+      .loadRelationCountAndMap('famille.nbGroupes', 'famille.groupes')
+      .getOne();
+
     if (!famille) {
       throw new NotFoundException(`Famille avec l'ID ${id} non trouvée`);
     }
@@ -39,7 +48,6 @@ export class FamilleService {
     const famille = this.familleRepository.create(createFamilleDto);
     const savedFamille = await this.familleRepository.save(famille);
 
-    // Log de création
     await this.logService.enregistrerLog(
       TypeAction.CREATION,
       TypeEntite.FAMILLE,
@@ -54,36 +62,34 @@ export class FamilleService {
   }
 
   async update(id: number, updateFamilleDto: UpdateFamilleDto, updatedBy: number): Promise<Famille> {
-    const famille = await this.findOne(id);
-    const ancienEtat = { nom: famille.nom, code: famille.code };
+    const familleAvant = await this.findOne(id);
+    const ancienEtat = { nom: familleAvant.nom, code: familleAvant.code };
     
     await this.familleRepository.update(id, updateFamilleDto);
-    const updatedFamille = await this.findOne(id);
+    const familleApres = await this.findOne(id);
 
-    // Log de modification
     await this.logService.enregistrerLog(
       TypeAction.MODIFICATION,
       TypeEntite.FAMILLE,
       id,
       updatedBy,
       ancienEtat,
-      { nom: updatedFamille.nom, code: updatedFamille.code },
-      `Modification de la famille ${updatedFamille.nom}`
+      { nom: familleApres.nom, code: familleApres.code },
+      `Modification de la famille ${familleApres.nom}`
     );
 
-    return updatedFamille;
+    return familleApres;
   }
 
   async remove(id: number, deletedBy: number): Promise<void> {
     const famille = await this.findOne(id);
     
-    // Log de suppression
     await this.logService.enregistrerLog(
       TypeAction.SUPPRESSION,
       TypeEntite.FAMILLE,
       id,
       deletedBy,
-      { nom: famille.nom, code: famille.code, nbGroupes: famille.groupes.length },
+      { nom: famille.nom, code: famille.code, nbGroupes: famille.nbGroupes },
       null,
       `Suppression de la famille ${famille.nom}`
     );

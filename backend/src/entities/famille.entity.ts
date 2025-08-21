@@ -16,4 +16,5 @@ export class Famille {
 
   @OneToMany(() => Groupe, groupe => groupe.famille)
   groupes: Groupe[];
+  nbGroupes: number;
 }

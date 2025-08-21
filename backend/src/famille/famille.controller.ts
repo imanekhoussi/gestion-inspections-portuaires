@@ -1,6 +1,6 @@
-// src/famille/famille.controller.ts - REMPLACER COMPLÈTEMENT
+// src/famille/famille.controller.ts 
 
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { FamilleService } from './famille.service';
 import { CreateFamilleDto, UpdateFamilleDto } from './dto/famille.dto';
@@ -24,8 +24,8 @@ export class FamilleController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Récupérer une famille par ID' })
-  findOne(@Param('id') id: string) {
-    return this.familleService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.familleService.findOne(id);
   }
 
   @Post()
@@ -38,14 +38,14 @@ export class FamilleController {
   @Patch(':id')
   @Roles(RoleUtilisateur.ADMIN)
   @ApiOperation({ summary: 'Mettre à jour une famille (Admin seulement)' })
-  update(@Param('id') id: string, @Body() updateFamilleDto: UpdateFamilleDto, @Req() req: any) {
-    return this.familleService.update(+id, updateFamilleDto, req.user.id);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateFamilleDto: UpdateFamilleDto, @Req() req: any) {
+    return this.familleService.update(id, updateFamilleDto, req.user.id);
   }
 
   @Delete(':id')
   @Roles(RoleUtilisateur.ADMIN)
   @ApiOperation({ summary: 'Supprimer une famille (Admin seulement)' })
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.familleService.remove(+id, req.user.id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.familleService.remove(id, req.user.id);
   }
 }
