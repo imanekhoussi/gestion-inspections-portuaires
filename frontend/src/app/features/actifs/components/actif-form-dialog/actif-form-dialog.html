@@ -1,4 +1,4 @@
-<!-- Modern Asset Creation Dialog - VERSION FINALE -->
+<!-- Modern Asset Creation Dialog - FIXED VERSION -->
 <div class="dialog-header">
   <div class="header-content">
     <div class="header-icon">
@@ -39,13 +39,13 @@
           </mat-form-field>
         </div>
 
+        <!-- ✅ FIXED: Removed [disabled] and [readonly] attributes -->
         <div class="form-row single">
           <mat-form-field appearance="outline">
             <mat-label>Code unique</mat-label>
             <input matInput 
                    formControlName="code" 
                    placeholder="Ex: GM-TC1-A1-001"
-                   [readonly]="isEditMode"
                    style="text-transform: uppercase;">
             <mat-icon matSuffix>qr_code</mat-icon>
             <mat-hint *ngIf="isEditMode">Le code ne peut pas être modifié</mat-hint>
@@ -96,10 +96,11 @@
           </mat-form-field>
         </div>
 
+        <!-- ✅ FIXED: Removed [disabled] attribute -->
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Groupe d'appartenance</mat-label>
-            <mat-select formControlName="idGroupe" [disabled]="isLoadingGroupes">
+            <mat-select formControlName="idGroupe">
               <mat-option *ngFor="let groupe of groupeOptions" [value]="groupe.value">
                 <mat-icon>{{ groupe.icon }}</mat-icon>
                 {{ groupe.label }}
@@ -173,7 +174,7 @@
               <mat-icon>center_focus_strong</mat-icon>
             </button>
             
-            <!-- 🔥 CORRECTION: Bouton info pour TOUS les types -->
+            <!-- ✅ CORRECTION: Bouton info pour TOUS les types -->
             <button mat-fab 
                     size="mini"
                     class="quick-action-button measure"
@@ -239,7 +240,7 @@
               </button>
             </div>
             
-            <!-- 🔥 CORRECTION: Info pour TOUS les types -->
+            <!-- ✅ CORRECTION: Info pour TOUS les types -->
             <div class="menu-section">
               <div class="menu-section-title">Information</div>
               <button mat-menu-item (click)="showGeometryInfo()">
@@ -278,7 +279,7 @@
       </div>
     </div>
 
-    <!-- 🔥 CORRECTION: Panel d'info pour TOUS les types avec contenu adaptatif -->
+    <!-- ✅ CORRECTION: Panel d'info pour TOUS les types avec contenu adaptatif -->
     <div class="geometry-info-panel" *ngIf="showGeometryInfoPanel">
       <div class="panel-header">
         <div>
@@ -290,7 +291,7 @@
         </button>
       </div>
       <div class="panel-content">
-        <!-- 🔥 POUR LES POINTS: Latitude/Longitude séparées -->
+        <!-- ✅ POUR LES POINTS: Latitude/Longitude séparées -->
         <ng-container *ngIf="actifForm.get('geometryType')?.value === 'Point'">
           <div class="info-item">
             <strong>Latitude :</strong>
@@ -306,7 +307,7 @@
           </div>
         </ng-container>
         
-        <!-- 🔥 POUR LES LIGNES: Longueur et points -->
+        <!-- ✅ POUR LES LIGNES: Longueur et points -->
         <ng-container *ngIf="actifForm.get('geometryType')?.value === 'LineString'">
           <div class="info-item" *ngIf="geometryInfo.length">
             <strong>Longueur :</strong>
@@ -318,7 +319,7 @@
           </div>
         </ng-container>
         
-        <!-- 🔥 POUR LES ZONES: Surface, périmètre et sommets -->
+        <!-- ✅ POUR LES ZONES: Surface, périmètre et sommets -->
         <ng-container *ngIf="actifForm.get('geometryType')?.value === 'Polygon'">
           <div class="info-item" *ngIf="geometryInfo.area">
             <strong>Surface :</strong>

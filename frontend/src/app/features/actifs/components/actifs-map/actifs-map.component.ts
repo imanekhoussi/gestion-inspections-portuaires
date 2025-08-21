@@ -231,21 +231,154 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private displaySingleActif(actif: Actif): void {
+// Replace your displaySingleActif method with this corrected version:
+
+private displaySingleActif(actif: Actif): void {
+  console.log('🗺️ === DEBUT displaySingleActif ===');
+  console.log('📦 Actif reçu:', actif);
+  console.log('🔍 Type actif:', typeof actif);
+  console.log('🗺️ Actif.geometry:', actif.geometry);
+  console.log('🔍 Type geometry:', typeof actif.geometry);
+  
+  try {
+    // Nettoyer la source vectorielle
     this.actifVectorSource.clear();
-    if (actif.geometry?.coordinates) {
-      const feature = this.createActifFeature(actif);
-      this.actifVectorSource.addFeature(feature);
-      const geometry = feature.getGeometry();
-      if (geometry) {
-        this.map.getView().fit(geometry.getExtent(), {
-          padding: [100, 100, 100, 100],
-          maxZoom: 18,
-          duration: 1500
-        });
+    console.log('🧹 Source vectorielle nettoyée');
+    
+    // Vérifier si l'actif a une géométrie
+    if (!actif.geometry?.coordinates) {
+      console.warn('⚠️ Actif sans géométrie valide');
+      console.log('📋 Actif complet:', JSON.stringify(actif, null, 2));
+      return;
+    }
+
+    console.log('✅ Géométrie valide détectée');
+    console.log('🔍 Coordonnées:', actif.geometry.coordinates);
+    console.log('🔧 Type géométrie:', actif.geometry.type);
+
+    // Essayer de créer la feature avec debugging
+    console.log('🔄 Tentative de création de feature...');
+    
+    // Méthode directe sans passer par createActifFeature
+    const geoJsonFormat = new GeoJSON();
+    
+    const geoJsonFeature = {
+      type: 'Feature',
+      geometry: actif.geometry,
+      properties: { 
+        id: actif.id,
+        nom: actif.nom,
+        code: actif.code,
+        site: actif.site,
+        zone: actif.zone,
+        indiceEtat: actif.indiceEtat,
+        isSelected: true
       }
+    };
+    
+    console.log('🔍 GeoJSON Feature créée:', geoJsonFeature);
+    
+    // Fix: Handle the return type properly - readFeature can return Feature or Feature[]
+    const featureResult = geoJsonFormat.readFeature(geoJsonFeature, {
+      dataProjection: 'EPSG:4326',
+      featureProjection: 'EPSG:3857'
+    });
+    
+    // Ensure we have a single Feature
+    const feature = Array.isArray(featureResult) ? featureResult[0] : featureResult;
+    
+    if (!feature) {
+      console.error('❌ Aucune feature créée');
+      return;
+    }
+    
+    console.log('✅ Feature OpenLayers créée:', feature);
+    console.log('🔍 Feature geometry:', feature.getGeometry());
+    console.log('🔍 Feature geometry type:', feature.getGeometry()?.getType());
+    
+    // Vérifier que la géométrie est valide avant d'ajouter
+    const geometry = feature.getGeometry();
+    if (!geometry) {
+      console.error('❌ Pas de géométrie dans la feature');
+      return;
+    }
+    
+    console.log('🔄 Ajout de la feature à la source...');
+    this.actifVectorSource.addFeature(feature);
+    console.log('✅ Feature ajoutée avec succès');
+    
+    // Centrer sur la géométrie
+    console.log('🔄 Centrage sur la géométrie...');
+    const extent = geometry.getExtent();
+    console.log('🔍 Extent:', extent);
+    
+    this.map.getView().fit(extent, {
+      padding: [100, 100, 100, 100],
+      maxZoom: 18,
+      duration: 1500
+    });
+    
+    console.log('✅ === FIN displaySingleActif SUCCÈS ===');
+    
+  } catch (error: any) { // Fix: Explicitly type error as 'any'
+    console.error('❌ === ERREUR displaySingleActif ===');
+    console.error('📋 Erreur:', error);
+    console.error('📋 Stack:', error?.stack); // Fix: Use optional chaining
+    console.error('📋 Actif problématique:', JSON.stringify(actif, null, 2));
+    
+    // Tentative de fallback simple
+    console.log('🔄 Tentative de fallback...');
+    try {
+      this.fallbackDisplayActif(actif);
+    } catch (fallbackError: any) { // Fix: Explicitly type fallbackError as 'any'
+      console.error('❌ Fallback aussi échoué:', fallbackError);
     }
   }
+}
+
+// Méthode de fallback très simple (also needs fixes)
+private fallbackDisplayActif(actif: Actif): void {
+  if (!actif.geometry) return;
+  
+  console.log('🔄 Fallback: création manuelle de feature');
+  
+  // Créer une feature très simple
+  const feature = new Feature();
+  
+  // Essayer de créer la géométrie manuellement
+  const geoJsonFormat = new GeoJSON();
+  const geometryResult = geoJsonFormat.readGeometry(actif.geometry, {
+    dataProjection: 'EPSG:4326',
+    featureProjection: 'EPSG:3857'
+  });
+  
+  // Handle potential array return (though readGeometry typically returns single geometry)
+  const geometry = Array.isArray(geometryResult) ? geometryResult[0] : geometryResult;
+  
+  if (!geometry) {
+    console.error('❌ Impossible de créer la géométrie');
+    return;
+  }
+  
+  feature.setGeometry(geometry);
+  feature.setProperties({
+    id: actif.id,
+    nom: actif.nom,
+    isSelected: true
+  });
+  
+  this.actifVectorSource.addFeature(feature);
+  
+  // Centrer
+  const extent = geometry.getExtent();
+  this.map.getView().fit(extent, {
+    padding: [100, 100, 100, 100],
+    maxZoom: 18,
+    duration: 1500
+  });
+  
+  console.log('✅ Fallback réussi');
+}
 
   private createActifFeature(actif: Actif): Feature {
     return new GeoJSON().readFeature({
