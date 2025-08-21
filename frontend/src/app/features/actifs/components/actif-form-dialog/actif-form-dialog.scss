@@ -885,5 +885,80 @@ mat-dialog-actions {
   }
 }
   
+::ng-deep .mat-mdc-form-field {
+  /* Disabled input styling */
+  &:has(.mat-mdc-input-element:disabled) {
+    .mat-mdc-text-field-wrapper {
+      background: #f1f5f9 !important;
+      border: 1px solid #d1d5db !important;
+      opacity: 0.8;
+    }
+    
+    .mat-mdc-input-element {
+      color: #6b7280 !important;
+      cursor: not-allowed !important;
+    }
+    
+    .mat-mdc-form-field-hint-wrapper,
+    .mat-mdc-form-field-hint {
+      color: #6b7280 !important;
+      font-size: 0.75rem !important;
+    }
+    
+    .mat-mdc-form-field-subscript-wrapper {
+      .mat-mdc-form-field-hint {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        
+        &::before {
+          content: '🔒';
+          font-size: 0.7rem;
+        }
+      }
+    }
+  }
+  
+  /* Disabled select styling */
+  &:has(.mat-mdc-select.mat-mdc-select-disabled) {
+    .mat-mdc-text-field-wrapper {
+      background: #f1f5f9 !important;
+      border: 1px solid #d1d5db !important;
+      opacity: 0.8;
+    }
+    
+    .mat-mdc-select-value {
+      color: #6b7280 !important;
+    }
+    
+    .mat-mdc-select-arrow {
+      color: #9ca3af !important;
+    }
+  }
+}
+
+/* === CORRECTION DU READONLY FIELD === */
+::ng-deep .mat-mdc-form-field {
+  /* Style pour les champs en lecture seule (si vous en utilisez) */
+  input[readonly] {
+    background-color: #f8fafc !important;
+    color: #6b7280 !important;
+    cursor: not-allowed !important;
+    opacity: 0.8 !important;
+  }
+  
+  &:has(input[readonly]) {
+    .mat-mdc-text-field-wrapper {
+      background: #f1f5f9 !important;
+      border: 1px solid #d1d5db !important;
+    }
+    
+    .mat-mdc-form-field-hint-wrapper,
+    .mat-mdc-form-field-hint {
+      color: #6b7280 !important;
+      font-size: 0.75rem !important;
+    }
+  }
+}
 
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
+import { catchError, retry, tap} from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { 
   Actif,
@@ -70,7 +70,22 @@ export class ActifsService {
       );
   }
 
-  
+ updateActifGeometry(actifId: number, geometryData: any): Observable<any> {
+    console.log('Service: Mise à jour géométrie actif', actifId, geometryData);
+    
+    // Corrigé: API_URL au lieu de apiUrl
+    const url = `${this.API_URL}/actifs/${actifId}/geometry`;
+    
+    return this.http.patch(url, geometryData).pipe(
+      tap((response: any) => { // Typage explicite
+        console.log('Service: Géométrie mise à jour', response);
+      }),
+      catchError((error: any) => { // Typage explicite
+        console.error('Service: Erreur mise à jour géométrie', error);
+        return throwError(() => error);
+      })
+    );
+  }
 
   getActifById(id: number): Observable<Actif> {
   return this.http.get<Actif>(`${this.API_URL}/actifs/${id}`)
