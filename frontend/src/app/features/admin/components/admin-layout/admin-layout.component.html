@@ -56,32 +56,21 @@
   <mat-sidenav-content>
     <!-- Admin Toolbar -->
     <mat-toolbar class="admin-toolbar" color="primary">
-      <button
-        type="button"
-        aria-label="Toggle sidenav"
-        mat-icon-button
-        (click)="drawer.toggle()"
-        *ngIf="isHandset$ | async"
-        class="menu-button"
-      >
-        <mat-icon>menu</mat-icon>
-      </button>
-      
-      <mat-icon class="toolbar-admin-icon">admin_panel_settings</mat-icon>
-      <span class="toolbar-title">Administration Portuaire</span>
-      
-      <span class="toolbar-spacer"></span>
-      
-      <!-- User Info -->
-      <div class="admin-user-info" *ngIf="currentUser$ | async as user">
-        <span class="admin-user-name">{{ user.prenom }} {{ user.nom }}</span>
-        <mat-icon class="admin-badge">verified_user</mat-icon>
-      </div>
-      
-      <button mat-icon-button (click)="logout()" matTooltip="Déconnexion">
-        <mat-icon>exit_to_app</mat-icon>
-      </button>
-    </mat-toolbar>
+  <button
+    type="button"
+    aria-label="Toggle sidenav"
+    mat-icon-button
+    (click)="drawer.toggle()"
+    
+    class="menu-button"
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
+  
+  <mat-icon class="toolbar-admin-icon">admin_panel_settings</mat-icon>
+  <span class="toolbar-title">Administration Portuaire</span>
+  
+  </mat-toolbar>
 
     <!-- Breadcrumb Navigation -->
     <div class="admin-breadcrumb">

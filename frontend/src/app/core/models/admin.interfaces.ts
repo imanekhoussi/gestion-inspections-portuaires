@@ -7,13 +7,14 @@ export type EtatActif =
   | 'Arrêt'
   | 'Hors service';
 
-export type EtatInspection = 
-  | 'Planifiée'
-  | 'En cours'
-  | 'Terminée'
-  | 'Validée'
-  | 'Rejetée'
-  | 'Annulée';
+export enum EtatInspection {
+  PROGRAMMEE = 'PROGRAMMEE',
+  EN_COURS = 'EN_COURS', 
+  CLOTUREE = 'CLOTUREE',
+  VALIDEE = 'VALIDEE',
+  REJETEE = 'REJETEE',
+  ANNULEE = 'ANNULEE'
+}
 
 export type FrequenceInspection = 
   | 'Quotidienne'
@@ -146,11 +147,15 @@ export interface Inspection extends BaseEntity {
   dateFin: Date;
   etat: EtatInspection;
   commentaire?: string;
-  actifIds: string[];
+  actifIds: string[]; // This might be unused if 'actifs' is always present
   idInspecteur?: string;
-  type?: TypeInspection;
+
+  // ✅ FIX: Renamed properties to match backend relations
+  typeInspection?: TypeInspection; // Was 'type'
+  createur?: Utilisateur;         // Was 'inspecteur'
+
+  // This one was correct
   actifs?: Actif[];
-  inspecteur?: Utilisateur;
   resultats?: ResultatInspection[];
 }
 

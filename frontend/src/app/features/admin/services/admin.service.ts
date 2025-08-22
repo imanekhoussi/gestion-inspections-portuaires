@@ -20,7 +20,7 @@ import {
   CreateActifDto, UpdateActifDto,
   // Autres types
   ArborescenceResponse, StatistiquesAdmin, PaginatedResponse,
-  FiltresUtilisateurs, FiltresGroupes, FiltresTypesInspection, 
+  FiltresUtilisateurs, FiltresGroupes, FiltresTypesInspection,
   FiltresInspections, FiltresActifs, FiltresArborescence,
   ApiResponse
 } from '../../../core/models/admin.interfaces';
@@ -30,7 +30,7 @@ import {
 })
 export class AdminService {
   private readonly apiUrl = `${API_URL}/admin`;
-  
+
   // Subjects pour la mise à jour en temps réel
   private utilisateursSubject = new BehaviorSubject<Utilisateur[]>([]);
   private famillesSubject = new BehaviorSubject<Famille[]>([]);
@@ -61,7 +61,7 @@ export class AdminService {
       });
     }
 
-    
+
     return this.http.get<Utilisateur[]>(`${this.apiUrl}/utilisateurs`, { params })
       .pipe(
         tap(users => this.utilisateursSubject.next(users))
@@ -76,7 +76,7 @@ export class AdminService {
       );
   }
 
-  
+
   updateUtilisateur(id: string, data: UpdateUtilisateurDto): Observable<Utilisateur> {
     return this.http.patch<Utilisateur>(`${this.apiUrl}/utilisateurs/${id}`, data)
       .pipe(
@@ -97,7 +97,7 @@ export class AdminService {
   }
 
   // ===== FAMILLES =====
- 
+
   getFamilles(): Observable<Famille[]> {
     return this.http.get<Famille[]>(`${this.apiUrl}/familles`)
       .pipe(
@@ -161,7 +161,7 @@ export class AdminService {
   }
 
   updateGroupe(id: string, data: UpdateGroupeDto): Observable<Groupe> {
- return this.http.patch<ApiResponse<Groupe>>(`${this.apiUrl}/groupes/${id}`, data)
+   return this.http.patch<ApiResponse<Groupe>>(`${this.apiUrl}/groupes/${id}`, data)
     .pipe(
       map(response => response.data!),
       tap(() => this.refreshGroupes())
@@ -227,29 +227,16 @@ export class AdminService {
   }
 
   // ===== INSPECTIONS =====
+  
+
   getInspections(filtres?: FiltresInspections): Observable<PaginatedResponse<Inspection>> {
-  let params = new HttpParams();
-  if (filtres) {
-    Object.keys(filtres).forEach(key => {
-      const value = (filtres as any)[key];
-      if (value !== undefined && value !== null && value !== '') {
-        params = params.set(key, value.toString());
-      }
-    });
-  }
+  const params = this.buildParams(filtres);
 
   return this.http.get<PaginatedResponse<Inspection>>(`${this.apiUrl}/inspections`, { params })
     .pipe(
       tap(response => this.inspectionsSubject.next(response.data))
     );
 }
-
-  getInspection(id: string): Observable<Inspection> {
-    return this.http.get<ApiResponse<Inspection>>(`${this.apiUrl}/inspections/${id}`)
-      .pipe(
-        map(response => response.data!)
-      );
-  }
 
   createInspection(data: CreateInspectionDto): Observable<Inspection> {
     return this.http.post<ApiResponse<Inspection>>(`${this.apiUrl}/inspections`, data)
@@ -367,7 +354,7 @@ export class AdminService {
   rechercherEntites(terme: string, types: string[] = []): Observable<any[]> {
     let params = new HttpParams()
       .set('q', terme);
-    
+
     if (types.length > 0) {
       params = params.set('types', types.join(','));
     }
@@ -381,7 +368,7 @@ export class AdminService {
   exporterDonnees(type: string, filtres?: any): Observable<Blob> {
     let params = new HttpParams()
       .set('type', type);
-    
+
     if (filtres) {
       Object.keys(filtres).forEach(key => {
         const value = filtres[key];
@@ -391,9 +378,9 @@ export class AdminService {
       });
     }
 
-    return this.http.get(`${this.apiUrl}/export`, { 
-      params, 
-      responseType: 'blob' 
+    return this.http.get(`${this.apiUrl}/export`, {
+      params,
+      responseType: 'blob'
     });
   }
 
@@ -402,7 +389,7 @@ export class AdminService {
     let params = new HttpParams()
       .set('type', type)
       .set('code', code);
-    
+
     if (excludeId) {
       params = params.set('excludeId', excludeId);
     }
@@ -427,5 +414,23 @@ export class AdminService {
   private handleError(error: any): Observable<never> {
     console.error('Erreur AdminService:', error);
     throw error;
+  }
+  private buildParams(filters: any): HttpParams {
+    let params = new HttpParams();
+    if (filters) {
+      for (const key in filters) {
+        if (Object.prototype.hasOwnProperty.call(filters, key)) {
+          const value = filters[key];
+          if (value !== null && value !== undefined && value !== '') {
+            if (value instanceof Date) {
+              params = params.set(key, value.toISOString());
+            } else {
+              params = params.set(key, value.toString());
+            }
+          }
+        }
+      }
+    }
+    return params;
   }
 }

@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+.form-section {
+  margin-bottom: 16px;
+  &.mat-expansion-panel {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.full-width {
+  grid-column: 1 / -1;
+}
+.actifs-selection {
+  .actifs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 8px;
+  }
+  .actif-info {
+    display: flex;
+    flex-direction: column;
+    margin-left: 8px;
+    line-height: 1.3;
+  }
+}
+.mat-mdc-dialog-content {
+  padding: 0 24px;
+}

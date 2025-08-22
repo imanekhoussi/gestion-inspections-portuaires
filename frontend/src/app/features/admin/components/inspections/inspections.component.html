@@ -1,588 +1,488 @@
-<!-- src/app/features/admin/components/inspections/inspections.component.html -->
 <div class="admin-section">
-  <!-- Header -->
   <div class="section-header">
     <div class="header-content">
       <h1>
-        <mat-icon>assignment</mat-icon>
-        Gestion des Inspections
+        <mat-icon class="header-icon">assignment</mat-icon>
+        <span>Gestion des Inspections</span>
       </h1>
-      <p>Création, planification et suivi des inspections portuaires</p>
+      <p class="header-description">Création, planification et suivi des inspections portuaires</p>
     </div>
     <div class="header-actions">
-      <button 
-        mat-stroked-button 
+      <button
+        mat-stroked-button
         color="primary"
         routerLink="/admin/types-inspection"
         matTooltip="Gérer les types d'inspection"
-      >
+        class="action-button">
         <mat-icon>rule</mat-icon>
-        Types
+        <span>Types d'inspection</span>
       </button>
-      <button 
-        mat-raised-button 
-        color="primary" 
-        (click)="openCreateForm()"
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="openAddDialog()"
         class="add-button"
-      >
+        matTooltip="Créer une nouvelle inspection">
         <mat-icon>add_task</mat-icon>
-        Nouvelle inspection
+        <span>Nouvelle inspection</span>
       </button>
     </div>
   </div>
-
-  <!-- Indicateur de chargement global -->
+<div style="padding: 16px; background: #ffeb3b; margin: 16px 0;">
+  <h3>🔧 Debug Panel (Remove after fixing)</h3>
+  <button mat-raised-button color="warn" (click)="loadInspectionsSimple()">
+    Emergency Load
+  </button>
+  <button mat-raised-button (click)="debugDataSource()">
+    Debug DataSource
+  </button>
+  <p>DataSource length: {{ dataSource.data.length }}</p>
+  <p>Total inspections: {{ totalInspections }}</p>
+  <p>Is loading: {{ isLoading }}</p>
+</div>
   <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>Chargement des inspections...</p>
+    <div class="loading-content">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p class="loading-text">Chargement des inspections...</p>
+      <p class="loading-subtext">Veuillez patienter</p>
+    </div>
   </div>
 
-  <div *ngIf="!isLoading">
-    
-    <!-- Statistiques rapides -->
-    <div class="stats-overview">
-      <mat-card class="stat-card" *ngFor="let etatOption of etatOptions">
-        <mat-card-content>
-          <div class="stat-content">
-            <mat-icon 
-              class="stat-icon" 
-              [style.color]="etatOption.color"
-            >
-              {{ etatOption.icon }}
-            </mat-icon>
-            <div class="stat-info">
-              <h3>{{ getStatsByEtat()[etatOption.value] || 0 }}</h3>
-              <p>{{ etatOption.label }}</p>
+  <div *ngIf="!isLoading" class="content-container">
+    <div class="stats-section">
+      <h2 class="section-title">
+        <mat-icon>analytics</mat-icon>
+        Aperçu des statistiques
+      </h2>
+      <div class="stats-grid">
+        <mat-card
+          class="stat-card"
+          *ngFor="let etatOption of etatOptions; trackBy: trackByEtat"
+          [class.stat-card-highlighted]="getStatsByEtat(etatOption.value) > 0">
+          <mat-card-content>
+            <div class="stat-content">
+              <div class="stat-icon-container" [style.background-color]="etatOption.color + '20'">
+                <mat-icon
+                  class="stat-icon"
+                  [style.color]="etatOption.color">
+                  {{ etatOption.icon }}
+                </mat-icon>
+              </div>
+              <div class="stat-info">
+                <h3 class="stat-number">{{ getStatsByEtat(etatOption.value) }}</h3>
+                <p class="stat-label">{{ etatOption.label }}</p>
+                <div class="stat-progress" *ngIf="totalInspections > 0">
+                  <div
+                    class="stat-progress-bar"
+                    [style.width.%]="(getStatsByEtat(etatOption.value) / totalInspections) * 100"
+                    [style.background-color]="etatOption.color">
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-      
-      <!-- Stat spéciale pour les retards -->
-      <mat-card class="stat-card retard-card">
-        <mat-card-content>
-          <div class="stat-content">
-            <mat-icon class="stat-icon retard-icon">schedule_send</mat-icon>
-            <div class="stat-info">
-              <h3>{{ getInspectionsEnRetard() }}</h3>
-              <p>En retard</p>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
+          </mat-card-content>
+        </mat-card>
+      </div>
     </div>
 
-    <!-- Filtres et recherche -->
     <mat-card class="filters-card">
       <mat-card-header>
-        <mat-card-title>
+        <mat-card-title class="filters-title">
           <mat-icon>filter_list</mat-icon>
-          Filtres et recherche
+          <span>Filtres et recherche</span>
+          <mat-chip
+            *ngIf="hasActiveFilters()"
+            class="filters-count-chip"
+            color="primary">
+            {{ getActiveFiltersCount() }} filtre(s) actif(s)
+          </mat-chip>
         </mat-card-title>
+        <mat-card-subtitle *ngIf="hasActiveFilters()">
+          Filtres appliqués : {{ getActiveFiltersText() }}
+        </mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
         <div class="filters-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Rechercher</mat-label>
-            <input 
-              matInput 
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Rechercher une inspection</mat-label>
+            <input
+              matInput
               (keyup)="onSearchChange($event)"
               placeholder="Titre, type, inspecteur..."
-              [value]="filtres.search || ''"
-            >
+              [(ngModel)]="filtres.search"
+              autocomplete="off">
             <mat-icon matSuffix>search</mat-icon>
+            <mat-hint>Recherche dans le titre, type et inspecteur</mat-hint>
           </mat-form-field>
-          
+
           <mat-form-field appearance="outline">
             <mat-label>Type d'inspection</mat-label>
-            <mat-select [(value)]="filtres.idType" (selectionChange)="applyFilters()">
-              <mat-option value="">Tous les types</mat-option>
-              <mat-option *ngFor="let type of typesInspection" [value]="type.id">
-                {{ type.nom }}
+            <mat-select
+              [(ngModel)]="filtres.idType"
+              (selectionChange)="applyFilters()"
+              placeholder="Sélectionner un type">
+              <mat-option [value]="undefined">
+                <mat-icon>all_inclusive</mat-icon>
+                Tous les types
               </mat-option>
+              <mat-optgroup label="Types disponibles">
+                <mat-option
+                  *ngFor="let type of typesInspection; trackBy: trackByTypeId"
+                  [value]="type.id">
+                  <span class="option-content">
+                    <mat-icon>rule</mat-icon>
+                    {{ type.nom }}
+                  </span>
+                </mat-option>
+              </mat-optgroup>
             </mat-select>
-            <mat-icon matSuffix>rule</mat-icon>
           </mat-form-field>
-          
+
           <mat-form-field appearance="outline">
-            <mat-label>État</mat-label>
-            <mat-select [(value)]="filtres.etat" (selectionChange)="applyFilters()">
-              <mat-option value="">Tous les états</mat-option>
-              <mat-option *ngFor="let etat of etatOptions" [value]="etat.value">
-                <div class="etat-option">
-                  <mat-icon [style.color]="etat.color">{{ etat.icon }}</mat-icon>
-                  {{ etat.label }}
-                </div>
+            <mat-label>État de l'inspection</mat-label>
+            <mat-select
+              [(ngModel)]="filtres.etat"
+              (selectionChange)="applyFilters()"
+              placeholder="Sélectionner un état">
+              <mat-option [value]="undefined">
+                <mat-icon>all_inclusive</mat-icon>
+                Tous les états
               </mat-option>
+              <mat-optgroup label="États disponibles">
+                <mat-option
+                  *ngFor="let etat of etatOptions; trackBy: trackByEtatValue"
+                  [value]="etat.value">
+                  <span class="option-content">
+                    <mat-icon [style.color]="etat.color">{{ etat.icon }}</mat-icon>
+                    {{ etat.label }}
+                  </span>
+                </mat-option>
+              </mat-optgroup>
             </mat-select>
-            <mat-icon matSuffix>flag</mat-icon>
           </mat-form-field>
-          
+
           <mat-form-field appearance="outline">
-            <mat-label>Date de début</mat-label>
-            <input 
-              matInput 
-              [matDatepicker]="pickerDebut"
-              [(ngModel)]="filtres.dateDebut"
-              (dateChange)="applyFilters()"
-            >
-            <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
-            <mat-datepicker #pickerDebut></mat-datepicker>
+            <mat-label>Période de début</mat-label>
+            <mat-date-range-input [rangePicker]="picker">
+              <input
+                matStartDate
+                [(ngModel)]="filtres.dateDebutMin"
+                (dateChange)="applyFilters()"
+                placeholder="Date début">
+              <input
+                matEndDate
+                [(ngModel)]="filtres.dateDebutMax"
+                (dateChange)="applyFilters()"
+                placeholder="Date fin">
+            </mat-date-range-input>
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-date-range-picker #picker></mat-date-range-picker>
           </mat-form-field>
-          
-          <mat-form-field appearance="outline">
-            <mat-label>Date de fin</mat-label>
-            <input 
-              matInput 
-              [matDatepicker]="pickerFin"
-              [(ngModel)]="filtres.dateFin"
-              (dateChange)="applyFilters()"
-            >
-            <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
-            <mat-datepicker #pickerFin></mat-datepicker>
-          </mat-form-field>
-          
-          <button 
-            mat-stroked-button 
-            (click)="clearFilters()"
-            class="clear-filters-btn"
-          >
-            <mat-icon>clear_all</mat-icon>
-            Effacer
-          </button>
+
+          <div class="filter-actions">
+            <button
+              mat-stroked-button
+              (click)="clearFilters()"
+              class="clear-filters-btn"
+              [disabled]="!hasActiveFilters()"
+              matTooltip="Supprimer tous les filtres">
+              <mat-icon>clear_all</mat-icon>
+              <span>Effacer les filtres</span>
+            </button>
+            <button
+              mat-stroked-button
+              (click)="exportInspections()"
+              class="export-btn"
+              matTooltip="Exporter la liste des inspections">
+              <mat-icon>download</mat-icon>
+              <span>Exporter</span>
+            </button>
+          </div>
         </div>
       </mat-card-content>
     </mat-card>
 
-    <!-- Formulaire de création/édition -->
-    <mat-card *ngIf="showForm" class="form-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>{{ isEditMode ? 'edit' : 'add_task' }}</mat-icon>
-          {{ isEditMode ? 'Modifier l\'inspection' : 'Nouvelle inspection' }}
-        </mat-card-title>
-      </mat-card-header>
-      
-      <mat-card-content>
-        <form [formGroup]="inspectionForm" (ngSubmit)="onSubmit()" class="inspection-form">
-          
-          <!-- Étape 1: Informations générales -->
-          <mat-expansion-panel expanded="true" class="form-section">
-            <mat-expansion-panel-header>
-              <mat-panel-title>
-                <mat-icon>info</mat-icon>
-                Informations générales
-              </mat-panel-title>
-            </mat-expansion-panel-header>
-            
-            <div class="form-grid">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Titre de l'inspection</mat-label>
-                <input matInput formControlName="titre" placeholder="Ex: Contrôle sécurité Quai A">
-                <mat-icon matSuffix>assignment</mat-icon>
-                <mat-hint>Nom descriptif de l'inspection</mat-hint>
-                <mat-error *ngIf="inspectionForm.get('titre')?.invalid && inspectionForm.get('titre')?.touched">
-                  {{ getErrorMessage('titre') }}
-                </mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Type d'inspection</mat-label>
-                <mat-select formControlName="idType" [disabled]="typesLoading">
-                  <mat-option *ngFor="let type of typesInspection" [value]="type.id">
-                    <div class="type-option">
-                      <strong>{{ type.nom }}</strong>
-                      <small>{{ type.frequence }}</small>
-                    </div>
-                  </mat-option>
-                </mat-select>
-                <mat-icon matSuffix>rule</mat-icon>
-                <mat-error *ngIf="inspectionForm.get('idType')?.invalid && inspectionForm.get('idType')?.touched">
-                  {{ getErrorMessage('idType') }}
-                </mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Inspecteur assigné</mat-label>
-                <mat-select formControlName="idInspecteur" [disabled]="utilisateursLoading">
-                  <mat-option value="">Aucun inspecteur assigné</mat-option>
-                  <mat-option *ngFor="let inspecteur of inspecteurs" [value]="inspecteur.id">
-                    <div class="inspecteur-option">
-                      <strong>{{ inspecteur.nom }}</strong>
-                      <small>{{ inspecteur.email }}</small>
-                    </div>
-                  </mat-option>
-                </mat-select>
-                <mat-icon matSuffix>person</mat-icon>
-                <mat-hint>Optionnel - peut être assigné plus tard</mat-hint>
-              </mat-form-field>
-            </div>
-          </mat-expansion-panel>
-
-          <!-- Étape 2: Période d'inspection -->
-          <mat-expansion-panel expanded="true" class="form-section">
-            <mat-expansion-panel-header>
-              <mat-panel-title>
-                <mat-icon>date_range</mat-icon>
-                Période d'inspection
-              </mat-panel-title>
-            </mat-expansion-panel-header>
-            
-            <div class="form-grid">
-              <mat-form-field appearance="outline">
-                <mat-label>Date de début</mat-label>
-                <input 
-                  matInput 
-                  [matDatepicker]="pickerDebutForm"
-                  formControlName="dateDebut"
-                >
-                <mat-datepicker-toggle matSuffix [for]="pickerDebutForm"></mat-datepicker-toggle>
-                <mat-datepicker #pickerDebutForm></mat-datepicker>
-                <mat-error *ngIf="inspectionForm.get('dateDebut')?.invalid && inspectionForm.get('dateDebut')?.touched">
-                  {{ getErrorMessage('dateDebut') }}
-                </mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Date de fin</mat-label>
-                <input 
-                  matInput 
-                  [matDatepicker]="pickerFinForm"
-                  formControlName="dateFin"
-                >
-                <mat-datepicker-toggle matSuffix [for]="pickerFinForm"></mat-datepicker-toggle>
-                <mat-datepicker #pickerFinForm></mat-datepicker>
-                <mat-error *ngIf="inspectionForm.get('dateFin')?.invalid && inspectionForm.get('dateFin')?.touched">
-                  {{ getErrorMessage('dateFin') }}
-                </mat-error>
-              </mat-form-field>
-            </div>
-          </mat-expansion-panel>
-
-          <!-- Étape 3: Sélection des actifs -->
-          <mat-expansion-panel expanded="true" class="form-section">
-            <mat-expansion-panel-header>
-              <mat-panel-title>
-                <mat-icon>precision_manufacturing</mat-icon>
-                Actifs à inspecter ({{ inspectionForm.get('actifIds')?.value?.length || 0 }} sélectionné(s))
-              </mat-panel-title>
-            </mat-expansion-panel-header>
-            
-            <div class="actifs-selection">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Rechercher des actifs</mat-label>
-                <input matInput #actifSearch placeholder="Nom, code, site...">
-                <mat-icon matSuffix>search</mat-icon>
-              </mat-form-field>
-              
-              <div class="actifs-grid">
-                <mat-checkbox 
-                  *ngFor="let actif of actifs" 
-                  [checked]="inspectionForm.get('actifIds')?.value?.includes(actif.id)"
-                  (change)="onActifToggle(actif.id, $event.checked)"
-                  class="actif-checkbox"
-                >
-                  <div class="actif-info">
-                    <div class="actif-header">
-                      <strong>{{ actif.nom }}</strong>
-                      <mat-chip 
-                        class="actif-etat-chip"
-                        [class]="'etat-' + actif.etat.toLowerCase()"
-                      >
-                        {{ actif.etat }}
-                      </mat-chip>
-                    </div>
-                    <div class="actif-details">
-                      <small>{{ actif.code }} • {{ actif.site }}</small>
-                    </div>
-                  </div>
-                </mat-checkbox>
-              </div>
-              
-              <mat-error *ngIf="inspectionForm.get('actifIds')?.invalid && inspectionForm.get('actifIds')?.touched">
-                {{ getErrorMessage('actifIds') }}
-              </mat-error>
-            </div>
-          </mat-expansion-panel>
-
-          <!-- Étape 4: Commentaire optionnel -->
-          <mat-expansion-panel class="form-section">
-            <mat-expansion-panel-header>
-              <mat-panel-title>
-                <mat-icon>comment</mat-icon>
-                Commentaire (optionnel)
-              </mat-panel-title>
-            </mat-expansion-panel-header>
-            
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Commentaire ou instructions spéciales</mat-label>
-              <textarea 
-                matInput 
-                formControlName="commentaire"
-                rows="3"
-                placeholder="Instructions particulières, points d'attention..."
-              ></textarea>
-              <mat-icon matSuffix>note</mat-icon>
-            </mat-form-field>
-          </mat-expansion-panel>
-
-          <div class="form-actions">
-            <button mat-button type="button" (click)="closeForm()">
-              <mat-icon>cancel</mat-icon>
-              Annuler
-            </button>
-            <button mat-raised-button color="primary" type="submit" [disabled]="inspectionForm.invalid">
-              <mat-icon>{{ isEditMode ? 'save' : 'add_task' }}</mat-icon>
-              {{ isEditMode ? 'Modifier' : 'Créer' }}
-            </button>
-          </div>
-        </form>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Dialogue de changement d'état -->
-    <mat-card *ngIf="showEtatDialog && selectedInspection" class="etat-dialog">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>flag</mat-icon>
-          Changer l'état de l'inspection
-        </mat-card-title>
-        <mat-card-subtitle>
-          {{ selectedInspection.titre }}
-        </mat-card-subtitle>
-      </mat-card-header>
-      
-      <mat-card-content>
-        <form [formGroup]="etatForm" (ngSubmit)="onEtatSubmit()">
-          <div class="etat-current">
-            <h4>État actuel</h4>
-            <mat-chip 
-              class="etat-chip"
-              [style.background-color]="getEtatOption(selectedInspection.etat).color"
-              [style.color]="'white'"
-            >
-              <mat-icon>{{ getEtatOption(selectedInspection.etat).icon }}</mat-icon>
-              {{ getEtatOption(selectedInspection.etat).label }}
-            </mat-chip>
-          </div>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nouvel état</mat-label>
-            <mat-select formControlName="etat">
-              <mat-option *ngFor="let etat of getNextStates(selectedInspection.etat)" [value]="etat.value">
-                <div class="etat-option">
-                  <mat-icon [style.color]="etat.color">{{ etat.icon }}</mat-icon>
-                  <div class="etat-info">
-                    <strong>{{ etat.label }}</strong>
-                    <small>{{ etat.description }}</small>
-                  </div>
-                </div>
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Commentaire</mat-label>
-            <textarea 
-              matInput 
-              formControlName="commentaire"
-              rows="3"
-              placeholder="Raison du changement d'état, observations..."
-            ></textarea>
-            <mat-icon matSuffix>comment</mat-icon>
-          </mat-form-field>
-
-          <div class="etat-actions">
-            <button mat-button type="button" (click)="closeEtatDialog()">
-              <mat-icon>cancel</mat-icon>
-              Annuler
-            </button>
-            <button mat-raised-button color="primary" type="submit" [disabled]="etatForm.invalid">
-              <mat-icon>save</mat-icon>
-              Changer l'état
-            </button>
-          </div>
-        </form>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Table des inspections -->
     <mat-card class="table-card">
       <mat-card-header>
-        <mat-card-title>
+        <mat-card-title class="table-title">
           <mat-icon>list</mat-icon>
-          Inspections ({{ totalInspections }})
+          <span>Liste des inspections</span>
+          <mat-chip class="total-count-chip" color="accent">
+            {{ totalInspections }} inspection(s)
+          </mat-chip>
         </mat-card-title>
+        <mat-card-subtitle *ngIf="dataSource.data.length !== totalInspections">
+          Affichage de {{ dataSource.data.length }} sur {{ totalInspections }} inspections
+        </mat-card-subtitle>
       </mat-card-header>
-
       <mat-card-content>
-        <div class="table-container">
-          <table mat-table [dataSource]="dataSource" matSort class="inspections-table">
-            
-            <!-- Colonne Titre -->
-            <ng-container matColumnDef="titre">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Inspection</th>
-              <td mat-cell *matCellDef="let inspection">
-                <div class="inspection-info">
-                  <div class="inspection-header">
-                    <strong>{{ inspection.titre }}</strong>
-                    <mat-icon 
-                      *ngIf="isInspectionEnRetard(inspection)"
-                      class="retard-icon"
-                      matTooltip="Inspection en retard"
-                    >
-                      schedule_send
-                    </mat-icon>
+        <div *ngIf="dataSource.data.length > 0; else emptyState" class="table-container">
+          <div class="table-toolbar">
+            <div class="table-info" *ngIf="paginator">
+              <span class="results-info">
+                {{ paginator.pageIndex * paginator.pageSize + 1 }} -
+                {{ Math.min((paginator.pageIndex + 1) * paginator.pageSize, totalInspections) }}
+                sur {{ totalInspections }} inspections
+              </span>
+            </div>
+            <div class="table-actions">
+              <button
+                mat-icon-button
+                (click)="refreshData()"
+                matTooltip="Actualiser les données"
+                [disabled]="isLoading">
+                <mat-icon [class.spin]="isLoading">refresh</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                [matMenuTriggerFor]="columnsMenu"
+                matTooltip="Personnaliser les colonnes">
+                <mat-icon>view_column</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="dataSource" matSort class="inspections-table">
+              <ng-container matColumnDef="titre">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                  <span class="header-content">
+                    <mat-icon>title</mat-icon>
+                    Inspection
+                  </span>
+                </th>
+                <td mat-cell *matCellDef="let inspection" class="titre-cell">
+                  <div class="cell-content">
+                    <strong class="inspection-title">{{ inspection.titre }}</strong>
+                    <small class="inspection-id">ID: {{ inspection.id }}</small>
                   </div>
-                  <small>ID: {{ inspection.id }}</small>
-                </div>
-              </td>
-            </ng-container>
+                </td>
+              </ng-container>
 
-            <!-- Colonne Type -->
-            <ng-container matColumnDef="type">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
-              <td mat-cell *matCellDef="let inspection">
-                <div class="type-cell">
-                  <mat-icon class="type-icon">rule</mat-icon>
-                  {{ getTypeNom(inspection.idType) }}
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Période -->
-            <ng-container matColumnDef="periode">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Période</th>
-              <td mat-cell *matCellDef="let inspection">
-                <div class="periode-cell">
-                  <div class="date-range">
-                    <small>Du {{ inspection.dateDebut | date:'dd/MM/yyyy' }}</small>
-                    <small>Au {{ inspection.dateFin | date:'dd/MM/yyyy' }}</small>
-                  </div>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne État -->
-            <ng-container matColumnDef="etat">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>État</th>
-              <td mat-cell *matCellDef="let inspection">
-                <mat-chip 
-                  class="etat-chip"
-                  [style.background-color]="getEtatOption(inspection.etat).color"
-                  [style.color]="'white'"
-                >
-                  <mat-icon>{{ getEtatOption(inspection.etat).icon }}</mat-icon>
-                  {{ getEtatOption(inspection.etat).label }}
-                </mat-chip>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Actifs -->
-            <ng-container matColumnDef="actifs">
-              <th mat-header-cell *matHeaderCellDef>Actifs</th>
-              <td mat-cell *matCellDef="let inspection">
-                <div class="actifs-cell">
-                  <mat-chip class="actifs-count">
-                    <!-- MODIFICATION ICI -->
-                    {{ inspection.actifIds?.length || 0 }}
+              <ng-container matColumnDef="type">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                  <span class="header-content">
+                    <mat-icon>category</mat-icon>
+                    Type
+                  </span>
+                </th>
+                <td mat-cell *matCellDef="let inspection" class="type-cell">
+                  <mat-chip class="type-chip" color="primary">
+                    <mat-icon>rule</mat-icon>
+                    {{ getTypeNom(inspection.typeInspection) }}
                   </mat-chip>
-                  <!-- MODIFICATION ICI -->
-                  <div class="actifs-preview" *ngIf="inspection.actifIds?.length > 0">
-                    <small *ngFor="let nom of getActifsNoms(inspection.actifIds).slice(0, 2)">
-                      {{ nom }}
-                    </small>
-                    <!-- MODIFICATION ICI -->
-                    <small *ngIf="inspection.actifIds?.length > 2">
-                      +{{ inspection.actifIds.length - 2 }} autres
-                    </small>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="periode">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                  <span class="header-content">
+                    <mat-icon>date_range</mat-icon>
+                    Période
+                  </span>
+                </th>
+                <td mat-cell *matCellDef="let inspection" class="periode-cell">
+                  <div class="periode-content">
+                    <div class="date-range">
+                      <span class="date-start">{{ inspection.dateDebut | date:'dd/MM/yy' }}</span>
+                      <mat-icon class="date-separator">arrow_forward</mat-icon>
+                      <span class="date-end">{{ inspection.dateFin | date:'dd/MM/yy' }}</span>
+                    </div>
+                    <small class="duration">{{ getDuration(inspection.dateDebut, inspection.dateFin) }}</small>
                   </div>
-                </div>
-              </td>
-            </ng-container>
+                </td>
+              </ng-container>
 
-
-            <!-- Colonne Inspecteur -->
-            <ng-container matColumnDef="inspecteur">
-              <th mat-header-cell *matHeaderCellDef>Inspecteur</th>
-              <td mat-cell *matCellDef="let inspection">
-                <div class="inspecteur-cell">
-                  <mat-icon class="inspecteur-icon">person</mat-icon>
-                  {{ getInspecteurNom(inspection.idInspecteur) }}
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Actions -->
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let inspection">
-                <div class="action-buttons">
-                  <button 
-                    mat-icon-button 
-                    color="primary"
-                    (click)="openEditForm(inspection)"
-                    matTooltip="Modifier l'inspection"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  
-                  <button 
-                    mat-icon-button 
-                    color="accent"
-                    (click)="openEtatDialog(inspection)"
-                    [disabled]="!canChangeEtat(inspection)"
-                    matTooltip="Changer l'état"
-                  >
+              <ng-container matColumnDef="etat">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                  <span class="header-content">
                     <mat-icon>flag</mat-icon>
-                  </button>
-                  
-                  <button 
-                    mat-icon-button 
-                    color="primary"
-                    (click)="duplicateInspection(inspection)"
-                    matTooltip="Dupliquer l'inspection"
-                  >
-                    <mat-icon>content_copy</mat-icon>
-                  </button>
-                  
-                  <button 
-                    mat-icon-button 
-                    color="warn"
-                    (click)="deleteInspection(inspection)"
-                    matTooltip="Supprimer l'inspection"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </td>
-            </ng-container>
+                    État
+                  </span>
+                </th>
+                <td mat-cell *matCellDef="let inspection" class="etat-cell">
+                  <mat-chip
+                    class="etat-chip"
+                    [style.background-color]="getEtatOption(inspection.etat).color"
+                    [style.color]="'white'">
+                    <mat-icon>{{ getEtatOption(inspection.etat).icon }}</mat-icon>
+                    {{ getEtatOption(inspection.etat).label }}
+                  </mat-chip>
+                </td>
+              </ng-container>
 
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-          </table>
+              <ng-container matColumnDef="actifs">
+                <th mat-header-cell *matHeaderCellDef>
+                  <span class="header-content">
+                    <mat-icon>inventory</mat-icon>
+                    Actifs
+                  </span>
+                </th>
+                <td mat-cell *matCellDef="let inspection" class="actifs-cell">
+                  <div class="actifs-content" *ngIf="inspection.actifs?.length > 0; else noActifs">
+                    <mat-chip class="actifs-count-chip" color="accent">
+                      <mat-icon>inventory</mat-icon>
+                      {{ inspection.actifs.length }}
+                    </mat-chip>
+                    <button
+                      mat-icon-button
+                      (click)="showActifsDetails(inspection.actifs, $event)"
+                      matTooltip="Voir les détails des actifs"
+                      class="actifs-details-btn">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </div>
+                  <ng-template #noActifs>
+                    <span class="no-actifs">Aucun actif</span>
+                  </ng-template>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="inspecteur">
+                <th mat-header-cell *matHeaderCellDef>
+                  <span class="header-content">
+                    <mat-icon>person</mat-icon>
+                    Inspecteur
+                  </span>
+                </th>
+                <td mat-cell *matCellDef="let inspection" class="inspecteur-cell">
+                  <div class="inspecteur-content">
+                    <mat-chip class="inspecteur-chip">
+                      <mat-icon>person</mat-icon>
+                      {{ getInspecteurNom(inspection.createur) }}
+                    </mat-chip>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>
+                  <span class="header-content">
+                    <mat-icon>settings</mat-icon>
+                    Actions
+                  </span>
+                </th>
+                <td mat-cell *matCellDef="let inspection" class="actions-cell">
+                  <div class="action-buttons">
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      (click)="openEditDialog(inspection)"
+                      matTooltip="Modifier l'inspection"
+                      class="action-btn edit-btn">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      (click)="duplicateInspection(inspection)"
+                      matTooltip="Dupliquer l'inspection"
+                      class="action-btn duplicate-btn">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      [matMenuTriggerFor]="actionMenu"
+                      matTooltip="Plus d'actions"
+                      class="action-btn more-btn">
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+
+                    <mat-menu #actionMenu="matMenu">
+                      <button mat-menu-item (click)="viewInspectionDetails(inspection)">
+                        <mat-icon>visibility</mat-icon>
+                        <span>Voir les détails</span>
+                      </button>
+                      <button mat-menu-item (click)="exportInspection(inspection)">
+                        <mat-icon>download</mat-icon>
+                        <span>Exporter</span>
+                      </button>
+                      <mat-divider></mat-divider>
+                      <button
+                        mat-menu-item
+                        (click)="deleteInspection(inspection)"
+                        class="delete-menu-item">
+                        <mat-icon color="warn">delete</mat-icon>
+                        <span>Supprimer</span>
+                      </button>
+                    </mat-menu>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: displayedColumns;"
+                class="table-row"
+                [class.row-highlighted]="isRowHighlighted(row)">
+              </tr>
+            </table>
+          </div>
+
+          <div class="pagination-container">
+            <mat-paginator
+              [length]="totalInspections"
+              [pageSize]="pageSize"
+              [pageSizeOptions]="[5, 10, 25, 50, 100]"
+              showFirstLastButtons
+              class="custom-paginator">
+            </mat-paginator>
+          </div>
         </div>
 
-        <!-- État vide -->
-        <div *ngIf="dataSource.data.length === 0" class="empty-state">
-          <mat-icon class="empty-icon">assignment_turned_in</mat-icon>
-          <h3>Aucune inspection trouvée</h3>
-          <p>Commencez par créer votre première inspection</p>
-          <button mat-raised-button color="primary" (click)="openCreateForm()">
-            <mat-icon>add_task</mat-icon>
-            Créer une inspection
-          </button>
-        </div>
-
-        <!-- Pagination -->
-        <mat-paginator 
-          [length]="totalInspections"
-          [pageSize]="pageSize"
-          [pageSizeOptions]="[10, 25, 50, 100]" 
-          showFirstLastButtons
-        ></mat-paginator>
+        <ng-template #emptyState>
+          <div class="empty-state">
+            <div class="empty-icon-container">
+              <mat-icon class="empty-icon">search_off</mat-icon>
+            </div>
+            <h3 class="empty-title">Aucune inspection trouvée</h3>
+            <p class="empty-description" *ngIf="hasActiveFilters(); else noInspectionsMessage">
+              Aucune inspection ne correspond à vos critères de recherche.
+              <br>Essayez d'ajuster vos filtres ou
+              <button mat-button color="primary" (click)="clearFilters()">supprimez-les</button>.
+            </p>
+            <ng-template #noInspectionsMessage>
+              <p class="empty-description">
+                Vous n'avez encore créé aucune inspection.
+                <br>Commencez par
+                <button mat-button color="primary" (click)="openAddDialog()">créer votre première inspection</button>.
+              </p>
+            </ng-template>
+            <div class="empty-actions">
+              <button
+                mat-raised-button
+                color="primary"
+                (click)="openAddDialog()"
+                class="empty-action-btn">
+                <mat-icon>add_task</mat-icon>
+                Créer une inspection
+              </button>
+              <button
+                mat-stroked-button
+                routerLink="/admin/types-inspection"
+                class="empty-action-btn">
+                <mat-icon>rule</mat-icon>
+                Gérer les types
+              </button>
+            </div>
+          </div>
+        </ng-template>
       </mat-card-content>
     </mat-card>
-
   </div>
+
+  <mat-menu #columnsMenu="matMenu">
+    <div class="columns-menu-content">
+      <h4 class="menu-title">Colonnes à afficher</h4>
+      <mat-selection-list [(ngModel)]="visibleColumns" (selectionChange)="updateDisplayedColumns()">
+        <mat-list-option
+          *ngFor="let column of availableColumns"
+          [value]="column.key"
+          [selected]="displayedColumns.includes(column.key)">
+          <mat-icon matListItemIcon>{{ column.icon }}</mat-icon>
+          {{ column.label }}
+        </mat-list-option>
+      </mat-selection-list>
+    </div>
+  </mat-menu>
 </div>

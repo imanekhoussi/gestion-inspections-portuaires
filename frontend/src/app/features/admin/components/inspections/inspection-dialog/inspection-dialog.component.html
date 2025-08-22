@@ -1,0 +1,54 @@
+<h2 mat-dialog-title>
+  <mat-icon>{{ isEditMode ? 'edit' : 'add_task' }}</mat-icon>
+  {{ isEditMode ? 'Modifier l\'inspection' : 'Nouvelle inspection' }}
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="inspectionForm" class="inspection-form">
+    <mat-expansion-panel expanded="true" class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>info</mat-icon>
+          Informations générales
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Titre de l'inspection</mat-label>
+          <input matInput formControlName="titre" placeholder="Ex: Contrôle sécurité Quai A">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Type d'inspection</mat-label>
+          <mat-select formControlName="idType">
+            <mat-option *ngFor="let type of typesInspection" [value]="type.id">
+              {{ type.nom }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Inspecteur assigné</mat-label>
+          <mat-select formControlName="idInspecteur">
+             <mat-option *ngFor="let inspecteur of inspecteurs" [value]="inspecteur.id">
+                {{ inspecteur.nom }}
+             </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="inspectionForm.invalid">
+    <mat-icon>{{ isEditMode ? 'save' : 'add_task' }}</mat-icon>
+    {{ isEditMode ? 'Enregistrer' : 'Créer' }}
+  </button>
+</mat-dialog-actions>
