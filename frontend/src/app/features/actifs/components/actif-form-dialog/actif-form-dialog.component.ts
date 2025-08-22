@@ -47,7 +47,16 @@ interface DropdownOption {
   value: string | number;
   label: string;
   icon?: string;
+  color?: string; 
 }
+
+interface DropdownOption {
+  value: string | number;
+  label: string;
+  icon?: string;
+}
+
+
 
 interface GeometryInfo {
   length?: string;
@@ -128,8 +137,16 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
     { value: 'Équipement de manutention', label: 'Équipement de manutention', icon: 'precision_manufacturing' },
   ];
 
+  
+
   groupeOptions: DropdownOption[] = [];
   isLoadingGroupes = false;
+
+  etatOptions: DropdownOption[] = [
+  { value: 1, label: 'Bon état', icon: 'check_circle', color: '#4caf50' },
+  { value: 2, label: 'Moyen', icon: 'warning', color: '#ff9800' },
+  { value: 3, label: 'Mauvais', icon: 'error', color: '#f44336' }
+];
 
   constructor(
     private fb: FormBuilder,
@@ -149,6 +166,7 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
       zone: ['', Validators.required],
       ouvrage: ['', Validators.required],
       idGroupe: [{ value: null, disabled: false }, [Validators.required]],
+      indiceEtat: [null, [Validators.required, Validators.min(1), Validators.max(3)]],
       geometryType: [null, Validators.required],
       coordinates: [null, Validators.required],
     });
@@ -713,8 +731,9 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
       site: actif.site || '',
       zone: actif.zone || '',
       ouvrage: actif.ouvrage || '',
-      idGroupe: actif.idGroupe || actif.groupe?.id || null
-    };
+      idGroupe: actif.idGroupe || actif.groupe?.id || null,
+      indiceEtat: actif.indiceEtat || null
+};    
     
     this.actifForm.patchValue(formData);
 
@@ -739,6 +758,26 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
       panelClass: ['info-snackbar']
     });
   }
+
+ getEtatColor(indice: number | null): string {
+  if (!indice) return '#9e9e9e'; // Couleur par défaut
+  
+  const colorMap: { [key: number]: string } = {
+    1: '#4caf50',
+    2: '#ff9800',
+    3: '#f44336'
+  };
+  return colorMap[indice] || '#9e9e9e';
+}
+
+getEtatLabel(indice: number): string {
+  const labelMap: { [key: number]: string } = {
+    1: 'Bon état',
+    2: 'Moyen',
+    3: 'Mauvais'
+  };
+  return labelMap[indice] || 'Non défini';
+}
 
   private waitForMapAndDisplayGeometry(geometry: any): void {
     const checkMapAndDisplay = () => {
@@ -875,6 +914,8 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
     if (errors['minlength']) return `Minimum ${errors['minlength'].requiredLength} caractères`;
     if (errors['maxlength']) return `Maximum ${errors['maxlength'].requiredLength} caractères`;
     if (errors['pattern']) return 'Format invalide (A-Z, 0-9, -, _ )';
+    if (errors['min']) return `Valeur minimum: ${errors['min'].min}`;
+    if (errors['max']) return `Valeur maximum: ${errors['max'].max}`;
     
     return 'Valeur invalide';
   }

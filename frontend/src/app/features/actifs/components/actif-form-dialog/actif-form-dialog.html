@@ -113,9 +113,31 @@
             </mat-progress-spinner>
           </mat-form-field>
         </div>
-      </form>
+
+       <!-- État de l'actif - DOIT être ICI -->
+  <div class="form-row">
+    <mat-form-field appearance="outline">
+      <mat-label>État de l'actif</mat-label>
+      <mat-select formControlName="indiceEtat">
+        <mat-option *ngFor="let etat of etatOptions" [value]="etat.value">
+          {{ etat.label }}
+        </mat-option>
+      </mat-select>
+      <mat-icon matSuffix [style.color]="getEtatColor(actifForm.get('indiceEtat')?.value)">
+        assessment
+      </mat-icon>
+      <mat-hint>Évaluez l'état général de l'actif</mat-hint>
+      <mat-error *ngIf="isFieldInvalid('indiceEtat')">
+        {{ getFieldError('indiceEtat') }}
+      </mat-error>
+    </mat-form-field>
+  </div>
+</form>
     </div>
   </section>
+
+ 
+
 
   <!-- Map Section -->
   <section class="map-section">
