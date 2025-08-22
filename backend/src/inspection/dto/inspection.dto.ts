@@ -1,4 +1,4 @@
-// src/inspection/dto/inspection.dto.ts - CORRIGER LA PROPRIÉTÉ MANQUANTE
+// src/inspection/dto/inspection.dto.ts
 
 import { IsString, IsNotEmpty, IsNumber, IsDateString, IsArray, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
@@ -26,6 +26,12 @@ export class CreateInspectionDto {
   @IsArray()
   @IsNumber({}, { each: true })
   actifIds: number[];
+
+  // ✅ CORRECTION: Propriété manquante ajoutée
+  @ApiProperty({ required: false, description: 'ID de l\'inspecteur assigné' })
+  @IsOptional()
+  @IsNumber()
+  idInspecteur?: number;
 }
 
 export class UpdateInspectionDto extends PartialType(CreateInspectionDto) {}
@@ -59,9 +65,9 @@ export class RejeterInspectionDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  motifRejet: string; // ✅ CORRECTION: propriété correcte
+  motifRejet: string;
 
-  // Alias pour compatibilité avec votre controller
+  // Alias pour compatibilité avec le controller
   get motif(): string {
     return this.motifRejet;
   }

@@ -28,19 +28,8 @@
       </button>
     </div>
   </div>
-<div style="padding: 16px; background: #ffeb3b; margin: 16px 0;">
-  <h3>🔧 Debug Panel (Remove after fixing)</h3>
-  <button mat-raised-button color="warn" (click)="loadInspectionsSimple()">
-    Emergency Load
-  </button>
-  <button mat-raised-button (click)="debugDataSource()">
-    Debug DataSource
-  </button>
-  <p>DataSource length: {{ dataSource.data.length }}</p>
-  <p>Total inspections: {{ totalInspections }}</p>
-  <p>Is loading: {{ isLoading }}</p>
-</div>
-  <div *ngIf="isLoading" class="loading-container">
+
+  <div *ngIf="isLoading && dataSource.data.length === 0" class="loading-container">
     <div class="loading-content">
       <mat-spinner diameter="50"></mat-spinner>
       <p class="loading-text">Chargement des inspections...</p>
@@ -48,7 +37,7 @@
     </div>
   </div>
 
-  <div *ngIf="!isLoading" class="content-container">
+  <div *ngIf="!isLoading || dataSource.data.length > 0" class="content-container">
     <div class="stats-section">
       <h2 class="section-title">
         <mat-icon>analytics</mat-icon>
@@ -107,7 +96,7 @@
             <mat-label>Rechercher une inspection</mat-label>
             <input
               matInput
-              (keyup)="onSearchChange($event)"
+              (input)="onSearchChange($event)"
               placeholder="Titre, type, inspecteur..."
               [(ngModel)]="filtres.search"
               autocomplete="off">
@@ -161,24 +150,6 @@
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Période de début</mat-label>
-            <mat-date-range-input [rangePicker]="picker">
-              <input
-                matStartDate
-                [(ngModel)]="filtres.dateDebutMin"
-                (dateChange)="applyFilters()"
-                placeholder="Date début">
-              <input
-                matEndDate
-                [(ngModel)]="filtres.dateDebutMax"
-                (dateChange)="applyFilters()"
-                placeholder="Date fin">
-            </mat-date-range-input>
-            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-date-range-picker #picker></mat-date-range-picker>
-          </mat-form-field>
-
           <div class="filter-actions">
             <button
               mat-stroked-button
@@ -216,7 +187,7 @@
         </mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <div *ngIf="dataSource.data.length > 0; else emptyState" class="table-container">
+        <div *ngIf="dataSource.data.length > 0 || isLoading; else emptyState" class="table-container">
           <div class="table-toolbar">
             <div class="table-info" *ngIf="paginator">
               <span class="results-info">
@@ -243,181 +214,181 @@
           </div>
 
           <div class="table-wrapper">
-            <table mat-table [dataSource]="dataSource" matSort class="inspections-table">
-              <ng-container matColumnDef="titre">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                  <span class="header-content">
-                    <mat-icon>title</mat-icon>
-                    Inspection
-                  </span>
-                </th>
-                <td mat-cell *matCellDef="let inspection" class="titre-cell">
-                  <div class="cell-content">
-                    <strong class="inspection-title">{{ inspection.titre }}</strong>
-                    <small class="inspection-id">ID: {{ inspection.id }}</small>
-                  </div>
-                </td>
-              </ng-container>
+  <table mat-table [dataSource]="dataSource" matSort class="inspections-table">
+    <ng-container matColumnDef="titre">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>
+        <span class="header-content">
+          <mat-icon>title</mat-icon>
+          Inspection
+        </span>
+      </th>
+      <td mat-cell *matCellDef="let inspection" class="titre-cell">
+        <div class="cell-content">
+          <strong class="inspection-title">{{ inspection.titre }}</strong>
+          <small class="inspection-id">ID: {{ inspection.id }}</small>
+        </div>
+      </td>
+    </ng-container>
 
-              <ng-container matColumnDef="type">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                  <span class="header-content">
-                    <mat-icon>category</mat-icon>
-                    Type
-                  </span>
-                </th>
-                <td mat-cell *matCellDef="let inspection" class="type-cell">
-                  <mat-chip class="type-chip" color="primary">
-                    <mat-icon>rule</mat-icon>
-                    {{ getTypeNom(inspection.typeInspection) }}
-                  </mat-chip>
-                </td>
-              </ng-container>
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>
+        <span class="header-content">
+          <mat-icon>category</mat-icon>
+          Type
+        </span>
+      </th>
+      <td mat-cell *matCellDef="let inspection" class="type-cell">
+        <mat-chip class="type-chip" color="primary">
+          <mat-icon>rule</mat-icon>
+          {{ getTypeNom(inspection.typeInspection) }}
+        </mat-chip>
+      </td>
+    </ng-container>
 
-              <ng-container matColumnDef="periode">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                  <span class="header-content">
-                    <mat-icon>date_range</mat-icon>
-                    Période
-                  </span>
-                </th>
-                <td mat-cell *matCellDef="let inspection" class="periode-cell">
-                  <div class="periode-content">
-                    <div class="date-range">
-                      <span class="date-start">{{ inspection.dateDebut | date:'dd/MM/yy' }}</span>
-                      <mat-icon class="date-separator">arrow_forward</mat-icon>
-                      <span class="date-end">{{ inspection.dateFin | date:'dd/MM/yy' }}</span>
-                    </div>
-                    <small class="duration">{{ getDuration(inspection.dateDebut, inspection.dateFin) }}</small>
-                  </div>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="etat">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                  <span class="header-content">
-                    <mat-icon>flag</mat-icon>
-                    État
-                  </span>
-                </th>
-                <td mat-cell *matCellDef="let inspection" class="etat-cell">
-                  <mat-chip
-                    class="etat-chip"
-                    [style.background-color]="getEtatOption(inspection.etat).color"
-                    [style.color]="'white'">
-                    <mat-icon>{{ getEtatOption(inspection.etat).icon }}</mat-icon>
-                    {{ getEtatOption(inspection.etat).label }}
-                  </mat-chip>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="actifs">
-                <th mat-header-cell *matHeaderCellDef>
-                  <span class="header-content">
-                    <mat-icon>inventory</mat-icon>
-                    Actifs
-                  </span>
-                </th>
-                <td mat-cell *matCellDef="let inspection" class="actifs-cell">
-                  <div class="actifs-content" *ngIf="inspection.actifs?.length > 0; else noActifs">
-                    <mat-chip class="actifs-count-chip" color="accent">
-                      <mat-icon>inventory</mat-icon>
-                      {{ inspection.actifs.length }}
-                    </mat-chip>
-                    <button
-                      mat-icon-button
-                      (click)="showActifsDetails(inspection.actifs, $event)"
-                      matTooltip="Voir les détails des actifs"
-                      class="actifs-details-btn">
-                      <mat-icon>info</mat-icon>
-                    </button>
-                  </div>
-                  <ng-template #noActifs>
-                    <span class="no-actifs">Aucun actif</span>
-                  </ng-template>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="inspecteur">
-                <th mat-header-cell *matHeaderCellDef>
-                  <span class="header-content">
-                    <mat-icon>person</mat-icon>
-                    Inspecteur
-                  </span>
-                </th>
-                <td mat-cell *matCellDef="let inspection" class="inspecteur-cell">
-                  <div class="inspecteur-content">
-                    <mat-chip class="inspecteur-chip">
-                      <mat-icon>person</mat-icon>
-                      {{ getInspecteurNom(inspection.createur) }}
-                    </mat-chip>
-                  </div>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef>
-                  <span class="header-content">
-                    <mat-icon>settings</mat-icon>
-                    Actions
-                  </span>
-                </th>
-                <td mat-cell *matCellDef="let inspection" class="actions-cell">
-                  <div class="action-buttons">
-                    <button
-                      mat-icon-button
-                      color="primary"
-                      (click)="openEditDialog(inspection)"
-                      matTooltip="Modifier l'inspection"
-                      class="action-btn edit-btn">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button
-                      mat-icon-button
-                      (click)="duplicateInspection(inspection)"
-                      matTooltip="Dupliquer l'inspection"
-                      class="action-btn duplicate-btn">
-                      <mat-icon>content_copy</mat-icon>
-                    </button>
-                    <button
-                      mat-icon-button
-                      [matMenuTriggerFor]="actionMenu"
-                      matTooltip="Plus d'actions"
-                      class="action-btn more-btn">
-                      <mat-icon>more_vert</mat-icon>
-                    </button>
-
-                    <mat-menu #actionMenu="matMenu">
-                      <button mat-menu-item (click)="viewInspectionDetails(inspection)">
-                        <mat-icon>visibility</mat-icon>
-                        <span>Voir les détails</span>
-                      </button>
-                      <button mat-menu-item (click)="exportInspection(inspection)">
-                        <mat-icon>download</mat-icon>
-                        <span>Exporter</span>
-                      </button>
-                      <mat-divider></mat-divider>
-                      <button
-                        mat-menu-item
-                        (click)="deleteInspection(inspection)"
-                        class="delete-menu-item">
-                        <mat-icon color="warn">delete</mat-icon>
-                        <span>Supprimer</span>
-                      </button>
-                    </mat-menu>
-                  </div>
-                </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-              <tr
-                mat-row
-                *matRowDef="let row; columns: displayedColumns;"
-                class="table-row"
-                [class.row-highlighted]="isRowHighlighted(row)">
-              </tr>
-            </table>
+    <ng-container matColumnDef="periode">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>
+        <span class="header-content">
+          <mat-icon>date_range</mat-icon>
+          Période
+        </span>
+      </th>
+      <td mat-cell *matCellDef="let inspection" class="periode-cell">
+        <div class="periode-content">
+          <div class="date-range">
+            <span class="date-start">{{ inspection.dateDebut | date:'dd/MM/yy' }}</span>
+            <mat-icon class="date-separator">arrow_forward</mat-icon>
+            <span class="date-end">{{ inspection.dateFin | date:'dd/MM/yy' }}</span>
           </div>
+          <small class="duration">{{ getDuration(inspection.dateDebut, inspection.dateFin) }}</small>
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="etat">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>
+        <span class="header-content">
+          <mat-icon>flag</mat-icon>
+          État
+        </span>
+      </th>
+      <td mat-cell *matCellDef="let inspection" class="etat-cell">
+        <mat-chip
+          class="etat-chip"
+          [style.background-color]="getEtatOption(inspection.etat).color"
+          [style.color]="'white'">
+          <mat-icon>{{ getEtatOption(inspection.etat).icon }}</mat-icon>
+          {{ getEtatOption(inspection.etat).label }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actifs">
+      <th mat-header-cell *matHeaderCellDef>
+        <span class="header-content">
+          <mat-icon>inventory</mat-icon>
+          Actifs
+        </span>
+      </th>
+      <td mat-cell *matCellDef="let inspection" class="actifs-cell">
+        <div class="actifs-content" *ngIf="inspection.actifs?.length > 0; else noActifs">
+          <mat-chip class="actifs-count-chip" color="accent">
+            <mat-icon>inventory</mat-icon>
+            {{ inspection.actifs.length }}
+          </mat-chip>
+          <button
+            mat-icon-button
+            (click)="showActifsDetails(inspection.actifs, $event)"
+            matTooltip="Voir les détails des actifs"
+            class="actifs-details-btn">
+            <mat-icon>info</mat-icon>
+          </button>
+        </div>
+        <ng-template #noActifs>
+          <span class="no-actifs">Aucun actif</span>
+        </ng-template>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="inspecteur">
+      <th mat-header-cell *matHeaderCellDef>
+        <span class="header-content">
+          <mat-icon>person</mat-icon>
+          Inspecteur
+        </span>
+      </th>
+      <td mat-cell *matCellDef="let inspection" class="inspecteur-cell">
+        <div class="inspecteur-content">
+          <mat-chip class="inspecteur-chip">
+            <mat-icon>person</mat-icon>
+            {{ getInspecteurNom(inspection.createur) }}
+          </mat-chip>
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>
+        <span class="header-content">
+          <mat-icon>settings</mat-icon>
+          Actions
+        </span>
+      </th>
+      <td mat-cell *matCellDef="let inspection" class="actions-cell">
+        <div class="action-buttons">
+          <button
+            mat-icon-button
+            color="primary"
+            (click)="openEditDialog(inspection)"
+            matTooltip="Modifier l'inspection"
+            class="action-btn edit-btn">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            (click)="duplicateInspection(inspection)"
+            matTooltip="Dupliquer l'inspection"
+            class="action-btn duplicate-btn">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="actionMenu"
+            matTooltip="Plus d'actions"
+            class="action-btn more-btn">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+
+          <mat-menu #actionMenu="matMenu">
+            <button mat-menu-item (click)="viewInspectionDetails(inspection)">
+              <mat-icon>visibility</mat-icon>
+              <span>Voir les détails</span>
+            </button>
+            <button mat-menu-item (click)="exportInspection(inspection)">
+              <mat-icon>download</mat-icon>
+              <span>Exporter</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button
+              mat-menu-item
+              (click)="deleteInspection(inspection)"
+              class="delete-menu-item">
+              <mat-icon color="warn">delete</mat-icon>
+              <span>Supprimer</span>
+            </button>
+          </mat-menu>
+        </div>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr
+      mat-row
+      *matRowDef="let row; columns: displayedColumns;"
+      class="table-row"
+      [class.row-highlighted]="isRowHighlighted(row)">
+    </tr>
+  </table>
+</div>
 
           <div class="pagination-container">
             <mat-paginator

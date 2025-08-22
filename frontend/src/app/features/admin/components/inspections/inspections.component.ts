@@ -1,5 +1,4 @@
-// src/app/features/admin/components/inspections/inspections.component.ts
-
+// 1. CLEANED inspections.component.ts
 import { Component, OnInit, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -22,7 +21,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterModule } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil, merge } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 import { AdminService } from '../../services/admin.service';
 import { NotificationAdminService } from '../../services/notification-admin.service';
@@ -52,12 +51,10 @@ interface TableColumn {
   sortable: boolean;
 }
 
-// Extend the FiltresInspections interface to include the missing date range properties
 interface ComponentFiltres extends FiltresInspections {
-    dateDebutMin?: Date;
-    dateDebutMax?: Date;
+  dateDebutMin?: Date;
+  dateDebutMax?: Date;
 }
-
 
 @Component({
   selector: 'app-inspections',
@@ -74,7 +71,7 @@ interface ComponentFiltres extends FiltresInspections {
   styleUrls: ['./inspections.component.scss']
 })
 export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
-  // ===== TABLE CONFIGURATION =====
+  // Table configuration
   availableColumns: TableColumn[] = [
     { key: 'titre', label: 'Inspection', icon: 'title', sortable: true },
     { key: 'type', label: 'Type', icon: 'category', sortable: true },
@@ -92,35 +89,33 @@ export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = true;
   isRefreshing = false;
 
-  // ===== DATA PROPERTIES =====
+  // Data properties
   typesInspection: TypeInspection[] = [];
   actifs: Actif[] = [];
   utilisateurs: Utilisateur[] = [];
   inspecteurs: Utilisateur[] = [];
 
-  // ===== FILTERING AND PAGINATION =====
+  // Filtering and pagination
   filtres: ComponentFiltres = {};
   totalInspections = 0;
   pageSize = 10;
 
-  // ===== SEARCH DEBOUNCE =====
+  // Search debounce
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
 
-  // ===== STATE OPTIONS =====
+  // State options
   etatOptions: EtatInspectionOption[] = [
-  { value: 'PROGRAMMEE' as EtatInspection, label: 'Planifiée', color: '#2196f3', icon: 'schedule' },
-  { value: 'EN_COURS' as EtatInspection, label: 'En cours', color: '#ff9800', icon: 'play_circle_filled' },
-  { value: 'CLOTUREE' as EtatInspection, label: 'Terminée', color: '#9c27b0', icon: 'task_alt' },
-  { value: 'VALIDEE' as EtatInspection, label: 'Validée', color: '#4caf50', icon: 'check_circle' },
-  { value: 'REJETEE' as EtatInspection, label: 'Rejetée', color: '#f44336', icon: 'cancel' },
-  { value: 'ANNULEE' as EtatInspection, label: 'Annulée', color: '#757575', icon: 'block' }
-];
+    { value: EtatInspection.PROGRAMMEE, label: 'Planifiée', color: '#2196f3', icon: 'schedule' },
+    { value: EtatInspection.EN_COURS, label: 'En cours', color: '#ff9800', icon: 'play_circle_filled' },
+    { value: EtatInspection.CLOTUREE, label: 'Terminée', color: '#9c27b0', icon: 'task_alt' },
+    { value: EtatInspection.VALIDEE, label: 'Validée', color: '#4caf50', icon: 'check_circle' },
+    { value: EtatInspection.REJETEE, label: 'Rejetée', color: '#f44336', icon: 'cancel' },
+    { value: EtatInspection.ANNULEE, label: 'Annulée', color: '#757575', icon: 'block' }
+  ];
 
-  // ===== VIEW CHILDREN =====
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-
 
   constructor(
     private adminService: AdminService,
@@ -131,32 +126,26 @@ export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setupSearchDebounce();
   }
 
-  // ===== LIFECYCLE HOOKS =====
   ngOnInit(): void {
     this.initializeComponent();
     this.loadDropdownData();
   }
 
   ngAfterViewInit(): void {
-  console.log('🚀 Initializing table...');
-  
-  if (this.paginator) {
-    this.dataSource.paginator = this.paginator;
-    console.log('📄 Paginator connected');
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
+    }
+    
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
+    
+    setTimeout(() => {
+      this.loadInspections();
+    }, 100);
+    
+    this.setupTableEvents();
   }
-  
-  if (this.sort) {
-    this.dataSource.sort = this.sort;
-    console.log('🔀 Sort connected');
-  }
-  
-  // Load data after a short delay to ensure everything is initialized
-  setTimeout(() => {
-    this.loadInspections();
-  }, 100);
-  
-  this.setupTableEvents();
-}
 
   ngOnDestroy(): void {
     this.cleanupComponent();
@@ -164,7 +153,18 @@ export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ===== INITIALIZATION METHODS =====
+  /**
+   * ADDED: Normalizes a string by removing accents and converting to lower case.
+   * NOTE: This requires the backend to perform the same normalization for the search to work.
+   */
+  private normalizeSearchTerm(term: string): string {
+    if (!term) return '';
+    return term
+      .normalize('NFD') // Decompose characters into base letters and accent marks
+      .replace(/[\u0300-\u036f]/g, '') // Remove the accent marks
+      .toLowerCase(); // Convert to lowercase
+  }
+
   private setupSearchDebounce(): void {
     this.searchSubject.pipe(
       debounceTime(300),
@@ -194,29 +194,24 @@ export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadDropdownData(): void {
-    // Load types with error handling
     this.adminService.getTypesInspection().pipe(
       takeUntil(this.destroy$)
     ).subscribe({
       next: (data) => this.typesInspection = data,
       error: (error) => {
-        console.error('Error loading inspection types:', error);
         this.notificationService.showError('Erreur lors du chargement des types d\'inspection');
       }
     });
 
-    // Load actifs with error handling
     this.adminService.getActifs().pipe(
       takeUntil(this.destroy$)
     ).subscribe({
       next: (response) => this.actifs = response.data,
       error: (error) => {
-        console.error('Error loading actifs:', error);
         this.notificationService.showError('Erreur lors du chargement des actifs');
       }
     });
 
-    // Load users with error handling
     this.adminService.getUtilisateurs().pipe(
       takeUntil(this.destroy$)
     ).subscribe({
@@ -227,13 +222,11 @@ export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
         );
       },
       error: (error) => {
-        console.error('Error loading users:', error);
         this.notificationService.showError('Erreur lors du chargement des utilisateurs');
       }
     });
   }
 
-  // ===== COMPONENT LIFECYCLE HELPERS =====
   private initializeComponent(): void {
     this.loadUserPreferences();
     this.setupKeyboardShortcuts();
@@ -248,52 +241,50 @@ export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.saveUserPreferences();
   }
 
-  // ===== DATA LOADING METHODS =====
-loadInspections(): void {
-  this.isLoading = true;
+  loadInspections(): void {
+    this.isLoading = true;
 
-  const currentFiltres: any = {
-    page: (this.paginator?.pageIndex || 0) + 1,
-    limit: this.paginator?.pageSize || this.pageSize,
-    sortBy: this.sort?.active || 'id',
-    sortOrder: this.sort?.direction?.toUpperCase() || 'DESC'
-  };
+    const currentFiltres: any = {
+      page: (this.paginator?.pageIndex || 0) + 1,
+      limit: this.paginator?.pageSize || this.pageSize,
+      sortBy: this.sort?.active || 'id',
+      sortOrder: this.sort?.direction?.toUpperCase() || 'DESC'
+    };
 
-  // Only add filters that have actual values
-  if (this.filtres.search?.trim()) {
-    currentFiltres.search = this.filtres.search.trim();
-  }
-  if (this.filtres.idType) {
-    currentFiltres.idType = this.filtres.idType;
-  }
-  if (this.filtres.etat) {
-    currentFiltres.etat = this.filtres.etat;
-  }
-
-  console.log('Sending filters:', currentFiltres);
-
-  this.adminService.getInspections(currentFiltres).pipe(
-    takeUntil(this.destroy$)
-  ).subscribe({
-    next: (response) => {
-      this.dataSource.data = response.data || [];
-      this.totalInspections = response.total || 0;
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    },
-    error: (error) => {
-      console.error('Load failed, using emergency fallback');
-      this.loadInspectionsSimple();
+    if (this.filtres.search?.trim()) {
+      // MODIFIED: Use the normalization function for accent-insensitive search
+      currentFiltres.search = this.normalizeSearchTerm(this.filtres.search.trim());
     }
-  });
-}
+    if (this.filtres.idType) {
+      currentFiltres.idType = this.filtres.idType;
+    }
+    if (this.filtres.etat) {
+      currentFiltres.etat = this.filtres.etat;
+    }
+
+    this.adminService.getInspections(currentFiltres).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (response) => {
+        this.dataSource.data = response.data || [];
+        this.totalInspections = response.total || 0;
+        this.isLoading = false;
+        this.isRefreshing = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.isRefreshing = false;
+        this.notificationService.showError('Erreur lors du chargement des inspections');
+      }
+    });
+  }
 
   refreshData(): void {
     this.isRefreshing = true;
     this.loadInspections();
   }
 
-  // ===== DIALOG METHODS =====
   openAddDialog(): void {
     this.openInspectionDialog(false);
   }
@@ -322,7 +313,6 @@ loadInspections(): void {
     dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(result => {
       if (!result) return;
 
-      // Process form data
       const finalActifIds = Array.isArray(result.actifIds)
         ? result.actifIds.map((id: string | number) => Number(id))
         : [];
@@ -340,7 +330,6 @@ loadInspections(): void {
           this.loadInspections();
         },
         error: (error) => {
-          console.error('Error saving inspection:', error);
           const message = isEditMode ? 'Erreur lors de la modification' : 'Erreur lors de la création';
           this.notificationService.showError(message);
         }
@@ -348,7 +337,6 @@ loadInspections(): void {
     });
   }
 
-  // ===== ACTION METHODS =====
   deleteInspection(inspection: Inspection): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
@@ -369,7 +357,6 @@ loadInspections(): void {
             this.loadInspections();
           },
           error: (error) => {
-            console.error('Error deleting inspection:', error);
             this.notificationService.showError('Erreur lors de la suppression');
           }
         });
@@ -387,7 +374,7 @@ loadInspections(): void {
       titre: `${inspection.titre} (Copie)`,
       idType: inspection.typeInspection.id,
       dateDebut: new Date(),
-      dateFin: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      dateFin: new Date(Date.now() + 24 * 60 * 60 * 1000),
       actifIds: inspection.actifs?.map(a => a.id) || [],
       idInspecteur: inspection.createur?.id
     };
@@ -400,38 +387,28 @@ loadInspections(): void {
         this.loadInspections();
       },
       error: (error) => {
-        console.error('Error duplicating inspection:', error);
         this.notificationService.showError('Erreur lors de la duplication');
       }
     });
   }
 
   viewInspectionDetails(inspection: Inspection): void {
-    // TODO: Implement inspection details view
-    console.log('View details for inspection:', inspection);
     this.notificationService.showInfo('Fonctionnalité en cours de développement');
   }
 
   exportInspection(inspection: Inspection): void {
-    // TODO: Implement single inspection export
-    console.log('Export inspection:', inspection);
     this.notificationService.showInfo('Export en cours de développement');
   }
 
   exportInspections(): void {
-    // TODO: Implement bulk export
-    console.log('Export all inspections with filters:', this.filtres);
     this.notificationService.showInfo('Export en cours de développement');
   }
 
   showActifsDetails(actifs: Actif[], event: Event): void {
     event.stopPropagation();
-    // TODO: Implement actifs details popup
-    console.log('Show actifs details:', actifs);
     this.notificationService.showInfo('Détails des actifs - en cours de développement');
   }
 
-  // ===== FILTERING METHODS =====
   onSearchChange(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.searchSubject.next(target.value);
@@ -445,13 +422,12 @@ loadInspections(): void {
   }
 
   clearFilters(): void {
-  this.filtres = {};
-  if (this.paginator) {
-    this.paginator.pageIndex = 0;
+    this.filtres = {};
+    if (this.paginator) {
+      this.paginator.pageIndex = 0;
+    }
+    this.loadInspections();
   }
-  console.log('🧹 Filters cleared, reloading...');
-  this.loadInspections();
-}
 
   hasActiveFilters(): boolean {
     return Object.keys(this.filtres).some(key => {
@@ -495,43 +471,36 @@ loadInspections(): void {
     return activeFilters.join(', ');
   }
 
-  // ===== TABLE MANAGEMENT =====
   updateDisplayedColumns(): void {
-    // Always include actions column
     const columns = this.visibleColumns.filter(col => col !== 'actions');
     this.displayedColumns = [...columns, 'actions'];
   }
 
   isRowHighlighted(row: Inspection): boolean {
-  const today = new Date();
-  const startDate = new Date(row.dateDebut);
-  const endDate = new Date(row.dateFin);
+    const today = new Date();
+    const startDate = new Date(row.dateDebut);
+    const endDate = new Date(row.dateFin);
 
-  // Use enum values instead of French strings
-  return row.etat === EtatInspection.EN_COURS ||
-         (startDate <= today && endDate >= today && row.etat === EtatInspection.PROGRAMMEE);
-}
-  // ===== KEYBOARD SHORTCUTS =====
+    return row.etat === EtatInspection.EN_COURS ||
+           (startDate <= today && endDate >= today && row.etat === EtatInspection.PROGRAMMEE);
+  }
+
   onKeyDown(event: KeyboardEvent): void {
-    // Ctrl/Cmd + N for new inspection
     if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
       event.preventDefault();
       this.openAddDialog();
     }
 
-    // Ctrl/Cmd + R for refresh
     if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
       event.preventDefault();
       this.refreshData();
     }
 
-    // Escape to clear filters
     if (event.key === 'Escape' && this.hasActiveFilters()) {
       this.clearFilters();
     }
   }
 
-  // ===== LOCAL STORAGE FOR USER PREFERENCES =====
   saveUserPreferences(): void {
     const preferences = {
       pageSize: this.pageSize,
@@ -563,15 +532,14 @@ loadInspections(): void {
     }
   }
 
-  // ===== UTILITY METHODS =====
   getEtatOption(etatValue: EtatInspection): EtatInspectionOption {
-  return this.etatOptions.find(opt => opt.value === etatValue) || {
-    value: EtatInspection.ANNULEE,
-    label: 'Inconnu',
-    color: '#888',
-    icon: 'help'
-  };
-}
+    return this.etatOptions.find(opt => opt.value === etatValue) || {
+      value: EtatInspection.ANNULEE,
+      label: 'Inconnu',
+      color: '#888',
+      icon: 'help'
+    };
+  }
 
   getTypeNom(type?: TypeInspection): string {
     return type?.nom || 'Type non défini';
@@ -598,50 +566,11 @@ loadInspections(): void {
     return `${Math.round(diffDays / 30)} mois`;
   }
 
-  // ===== TR
-  // ACKBY FUNCTIONS FOR PERFORMANCE =====
   trackByEtat = (index: number, item: EtatInspectionOption): string => item.value;
-
   trackByTypeId = (index: number, item: TypeInspection): string => item.id;
-
   trackByEtatValue = (index: number, item: EtatInspectionOption): string => item.value;
-
   trackByInspectionId = (index: number, item: Inspection): string => item.id;
-
   trackByColumnKey = (index: number, item: TableColumn): string => item.key;
 
-  // ===== MATH UTILITIES FOR TEMPLATE =====
   Math = Math;
-  loadInspectionsSimple(): void {
-  console.log('🆘 Using emergency simple load...');
-  this.isLoading = true;
-  
-  // Direct HTTP call bypassing complex filtering
-  this.adminService.getInspections({}).pipe(
-    takeUntil(this.destroy$)
-  ).subscribe({
-    next: (response) => {
-      console.log('🆘 Emergency response:', response);
-      this.dataSource.data = response.data || [];
-      this.totalInspections = response.total || 0;
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    },
-    error: (error) => {
-      console.error('🆘 Emergency load failed:', error);
-      this.isLoading = false;
-      this.notificationService.showError('Impossible de charger les inspections');
-    }
-  });
-}
-debugDataSource(): void {
-  console.log('🐛 DataSource debug info:');
-  console.log('- Data array:', this.dataSource.data);
-  console.log('- Data length:', this.dataSource.data.length);
-  console.log('- Total inspections:', this.totalInspections);
-  console.log('- Is loading:', this.isLoading);
-  console.log('- Current filters:', this.filtres);
-  console.log('- Paginator:', this.paginator);
-  console.log('- Sort:', this.sort);
-}
 }
