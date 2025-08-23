@@ -125,6 +125,70 @@ export class InspectionService {
     return inspectionWithRelations;
   }
 
+  async update(id: number, updateInspectionDto: UpdateInspectionDto): Promise<Inspection> {
+    const { actifIds, dateDebut, dateFin, ...inspectionData } = updateInspectionDto;
+
+    // Find existing inspection with relations
+    const inspection = await this.findOne(id);
+
+    // Update basic fields only if provided
+    Object.keys(inspectionData).forEach(key => {
+      if (inspectionData[key] !== undefined) {
+        inspection[key] = inspectionData[key];
+      }
+    });
+
+    // Update dates if provided
+    if (dateDebut !== undefined) {
+      const startDate = new Date(dateDebut);
+      inspection.dateDebut = startDate;
+    }
+    
+    if (dateFin !== undefined) {
+      const endDate = new Date(dateFin);
+      inspection.dateFin = endDate;
+    }
+
+    // Validate dates if both are present
+    if (inspection.dateDebut >= inspection.dateFin) {
+      throw new BadRequestException('La date de début doit être antérieure à la date de fin');
+    }
+
+    // Update actifs relationship if provided
+    if (actifIds !== undefined) {
+      if (actifIds.length > 0) {
+        const actifs = await this.actifRepository.find({
+          where: { id: In(actifIds) }
+        });
+        
+        if (actifs.length !== actifIds.length) {
+          const foundIds = actifs.map(a => a.id);
+          const missingIds = actifIds.filter(id => !foundIds.includes(id));
+          throw new BadRequestException(`Actifs non trouvés: ${missingIds.join(', ')}`);
+        }
+        
+        inspection.actifs = actifs;
+      } else {
+        inspection.actifs = [];
+      }
+    }
+
+    // Save updated inspection (TypeORM will handle junction table updates)
+    const savedInspection = await this.inspectionRepository.save(inspection);
+
+    // Return with relations loaded
+    const inspectionWithRelations = await this.inspectionRepository.findOne({
+      where: { id: savedInspection.id },
+      relations: ['typeInspection', 'actifs', 'createur']
+    });
+
+    if (!inspectionWithRelations) {
+      throw new BadRequestException('Erreur lors de la récupération de l\'inspection mise à jour');
+    }
+
+    return inspectionWithRelations;
+  }
+
   async cloturer(id: number, userId: number, commentaire?: string): Promise<Inspection> {
     const inspection = await this.findOne(id);
     

@@ -85,8 +85,7 @@ export class InspectionController {
   @ApiResponse({ status: 500, description: 'Erreur serveur.' })
   async create(@Body() createInspectionDto: CreateInspectionDto) {
     try {
-      // TODO: Récupérer le vrai userId depuis l'authentification
-      const userId = 1; // Temporaire pour les tests
+      const userId = 1; // TODO: Récupérer le vrai userId depuis l'authentification
       
       const inspection = await this.inspectionService.create(createInspectionDto, userId);
 
@@ -99,6 +98,33 @@ export class InspectionController {
       return {
         success: false,
         message: 'Erreur lors de la création de l\'inspection',
+        error: error.message
+      };
+    }
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Mettre à jour une inspection (mise à jour partielle)' })
+  @ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
+  @ApiResponse({ status: 200, description: 'L\'inspection a été mise à jour.', type: Inspection })
+  @ApiResponse({ status: 400, description: 'Données invalides.' })
+  @ApiResponse({ status: 404, description: 'Inspection non trouvée.' })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateInspectionDto: UpdateInspectionDto
+  ) {
+    try {
+      const inspection = await this.inspectionService.update(id, updateInspectionDto);
+
+      return {
+        success: true,
+        data: inspection,
+        message: 'Inspection mise à jour avec succès'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erreur lors de la mise à jour',
         error: error.message
       };
     }
