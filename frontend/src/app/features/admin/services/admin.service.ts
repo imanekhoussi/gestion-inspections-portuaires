@@ -284,7 +284,8 @@ export class AdminService {
   }
 
   updateInspection(id: string, data: UpdateInspectionDto): Observable<Inspection> {
-    return this.http.put<any>(`${this.apiUrl}/inspections/${id}`, data)
+    
+    return this.http.patch<any>(`${this.apiUrl}/inspections/${id}`, data) // ✅ Correctly sends a PATCH request
       .pipe(
         map(response => response.data || response),
         tap(() => this.refreshInspections()),
