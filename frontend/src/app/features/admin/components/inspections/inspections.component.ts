@@ -1,6 +1,8 @@
 // src/app/features/admin/components/inspections/inspections.component.ts
 
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, AfterViewInit } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -70,7 +72,7 @@ interface EtatInspectionOption {
   templateUrl: './inspections.component.html',
   styleUrls: ['./inspections.component.scss']
 })
-export class InspectionsComponent implements OnInit, AfterViewInit {
+export class InspectionsComponent implements OnInit, AfterViewInit, OnDestroy {
   displayedColumns: string[] = ['titre', 'type', 'periode', 'etat', 'actifs', 'actions'];
   dataSource = new MatTableDataSource<Inspection>();
   isLoading = true;
@@ -97,7 +99,8 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-
+private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
   constructor(
     private adminService: AdminService,
     private notificationService: NotificationAdminService,
@@ -106,6 +109,22 @@ export class InspectionsComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.loadData();
+
+    this.searchSubject.pipe(
+      debounceTime(400),       // Wait for 400ms of silence after the last keystroke
+      takeUntil(this.destroy$) // Ensure the subscription is cleaned up
+    ).subscribe(() => {
+      this.applyFilters();
+    });
+  }
+  // ngOnDestroy to prevent memory leaks by unsubscribing
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+  // receive input from the template
+  onSearchChange(searchValue: string): void {
+    this.searchSubject.next(searchValue);
   }
 
   ngAfterViewInit(): void {

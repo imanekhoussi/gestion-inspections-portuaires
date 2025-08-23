@@ -9,7 +9,7 @@ import {
   RejeterInspectionDto,
   ReprogrammerInspectionDto
 } from './dto/inspection.dto';
-import { Inspection } from '../entities/inspection.entity';
+import { Inspection, EtatInspection } from '../entities/inspection.entity';
 
 @ApiTags('Inspections')
 @Controller('admin/inspections')
@@ -17,18 +17,33 @@ export class InspectionController {
   constructor(private readonly inspectionService: InspectionService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Récupérer toutes les inspections avec pagination' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Numéro de page', example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Éléments par page', example: 10 })
-  @ApiResponse({ status: 200, description: 'Liste paginée des inspections.' })
-  async findAll(
+  @ApiOperation({ summary: 'Récupérer toutes les inspections avec pagination et filtres' }) // 👈 Update summary
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Rechercher par titre' })
+  @ApiQuery({ name: 'etat', required: false, enum: EtatInspection, description: 'Filtrer par état' })
+  @ApiQuery({ name: 'idType', required: false, type: Number, description: 'Filtrer par type d\'inspection' })
+  @ApiQuery({ name: 'dateDebut', required: false, type: String, description: 'Date de début de la période' })
+  @ApiQuery({ name: 'dateFin', required: false, type: String, description: 'Date de fin de la période' })
+  @ApiResponse({ status: 200, description: 'Liste paginée et filtrée des inspections.' })
+   async findAll(
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
+    @Query('limit') limit: number = 10,
+    @Query('search') search?: string,
+    @Query('etat') etat?: EtatInspection,
+    @Query('idType') idType?: number,
+    @Query('dateDebut') dateDebut?: string,
+    @Query('dateFin') dateFin?: string,
   ) {
     try {
       const result = await this.inspectionService.findAll({ 
         page: +page, 
-        limit: +limit 
+        limit: +limit,
+        search,
+        etat,
+        idType: idType ? +idType : undefined,
+        dateDebut,
+        dateFin,
       });
 
       return {

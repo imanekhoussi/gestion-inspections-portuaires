@@ -42,8 +42,10 @@
           <!-- Search Input -->
           <mat-form-field appearance="outline">
             <mat-label>Rechercher par titre</mat-label>
-            <input matInput [(ngModel)]="filtres.search" (keyup.enter)="applyFilters()" placeholder="Titre...">
-            <mat-icon matSuffix>search</mat-icon>
+           <input matInput 
+       [(ngModel)]="filtres.search" 
+       (input)="onSearchChange($any($event.target).value)">
+        <mat-icon matSuffix>search</mat-icon>
           </mat-form-field>
           
           <!-- Type Filter -->

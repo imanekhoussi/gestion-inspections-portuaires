@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, Between, In, Like  } from 'typeorm';
 import { Inspection, EtatInspection } from '../entities/inspection.entity';
 import { CreateInspectionDto, UpdateInspectionDto } from './dto/inspection.dto';
 import { Actif } from '../entities/actif.entity';
@@ -14,9 +14,34 @@ export class InspectionService {
     private actifRepository: Repository<Actif>,
   ) {}
 
-  async findAll(options: { page: number; limit: number }): Promise<any> {
-    const { page, limit } = options;
+  async findAll(options: { 
+    page: number; 
+    limit: number;
+    search?: string;
+    etat?: EtatInspection;
+    idType?: number;
+    dateDebut?: string;
+    dateFin?: string;
+  }): Promise<any> {
+    const { page, limit, search, etat, idType, dateDebut, dateFin } = options;
+
+    // Build the 'where' clause dynamically based on provided filters
+    const where: any = {};
+    if (search) {
+      where.titre = Like(`%${search}%`);
+    }
+    if (etat) {
+      where.etat = etat;
+    }
+    if (idType) {
+      where.typeInspection = { id: idType };
+    }
+    if (dateDebut && dateFin) {
+      where.dateDebut = Between(new Date(dateDebut), new Date(dateFin));
+    }
+
     const [data, total] = await this.inspectionRepository.findAndCount({
+      where, // Apply the dynamic filters
       take: limit,
       skip: (page - 1) * limit,
       relations: ['typeInspection', 'actifs', 'createur'],
