@@ -1,0 +1,147 @@
+<!-- src/app/features/admin/components/inspections/inspection-dialog/inspection-dialog.component.html -->
+<form [formGroup]="inspectionForm" (ngSubmit)="onSubmit()">
+  <h1 mat-dialog-title>
+    <mat-icon>{{ isEditMode ? 'edit' : 'add_task' }}</mat-icon>
+    {{ isEditMode ? 'Modifier l\'inspection' : 'Nouvelle inspection' }}
+  </h1>
+
+  <mat-dialog-content class="mat-typography">
+    <!-- Section 1: General Information -->
+    <mat-expansion-panel expanded="true" class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>info</mat-icon>
+          Informations générales
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Titre de l'inspection</mat-label>
+          <input matInput formControlName="titre" placeholder="Ex: Contrôle sécurité Quai A">
+          <mat-icon matSuffix>assignment</mat-icon>
+          <mat-error *ngIf="inspectionForm.get('titre')?.invalid && inspectionForm.get('titre')?.touched">
+            {{ getErrorMessage('titre') }}
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Type d'inspection</mat-label>
+          <mat-select formControlName="idType">
+            <mat-option *ngFor="let type of typesInspection" [value]="type.id">
+              {{ type.nom }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>rule</mat-icon>
+          <mat-error *ngIf="inspectionForm.get('idType')?.invalid && inspectionForm.get('idType')?.touched">
+            {{ getErrorMessage('idType') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Section 2: Planned Period -->
+    <mat-expansion-panel expanded="true" class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>date_range</mat-icon>
+          Période planifiée
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Date de début planifiée</mat-label>
+          <input matInput [matDatepicker]="pickerDebutForm" formControlName="dateDebut">
+          <mat-datepicker-toggle matSuffix [for]="pickerDebutForm"></mat-datepicker-toggle>
+          <mat-datepicker #pickerDebutForm></mat-datepicker>
+          <mat-error *ngIf="inspectionForm.get('dateDebut')?.invalid && inspectionForm.get('dateDebut')?.touched">
+            {{ getErrorMessage('dateDebut') }}
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Date de fin planifiée</mat-label>
+          <input matInput [matDatepicker]="pickerFinForm" formControlName="dateFin">
+          <mat-datepicker-toggle matSuffix [for]="pickerFinForm"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFinForm></mat-datepicker>
+           <mat-error *ngIf="inspectionForm.get('dateFin')?.invalid && inspectionForm.get('dateFin')?.touched">
+            {{ getErrorMessage('dateFin') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Section 3: Asset Selection -->
+    <mat-expansion-panel expanded="true" class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>precision_manufacturing</mat-icon>
+          Actifs à inspecter ({{ inspectionForm.get('actifIds')?.value?.length || 0 }} sélectionné(s))
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <!-- Group selection dropdown -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Choisir un groupe d'actifs</mat-label>
+        <mat-select formControlName="idGroupe">
+          <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">
+            {{ groupe.nom }}
+          </mat-option>
+        </mat-select>
+        <mat-icon matSuffix>category</mat-icon>
+        <mat-error *ngIf="inspectionForm.get('idGroupe')?.invalid && inspectionForm.get('idGroupe')?.touched">
+          Veuillez sélectionner un groupe.
+        </mat-error>
+      </mat-form-field>
+      
+      <!-- Asset checkboxes, shown only when a group is selected -->
+      <div *ngIf="inspectionForm.get('idGroupe')?.value" class="actifs-selection">
+        <div class="actifs-grid">
+          <!-- Loop over the filtered list of assets -->
+          <mat-checkbox 
+            *ngFor="let actif of filteredActifs" 
+            [checked]="inspectionForm.get('actifIds')?.value?.includes(actif.id)"
+            (change)="onActifToggle(actif.id, $event.checked)"
+            class="actif-checkbox"
+          >
+            <div class="actif-info">
+              <strong>{{ actif.nom }}</strong>
+              <small>{{ actif.code }} • {{ actif.site }}</small>
+            </div>
+          </mat-checkbox>
+        </div>
+        <mat-error *ngIf="inspectionForm.get('actifIds')?.invalid && inspectionForm.get('actifIds')?.touched">
+          Veuillez sélectionner au moins un actif.
+        </mat-error>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Section 4: Comment -->
+    <mat-expansion-panel class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>comment</mat-icon>
+          Commentaire (optionnel)
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Commentaire ou instructions</mat-label>
+        <textarea matInput formControlName="commentaire" rows="3"></textarea>
+      </mat-form-field>
+    </mat-expansion-panel>
+
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="onCancel()">
+      <mat-icon>cancel</mat-icon>
+      Annuler
+    </button>
+    <button mat-raised-button color="primary" type="submit" [disabled]="inspectionForm.invalid">
+      <mat-icon>{{ isEditMode ? 'save' : 'add_task' }}</mat-icon>
+      {{ isEditMode ? 'Enregistrer' : 'Créer' }}
+    </button>
+  </mat-dialog-actions>
+</form>

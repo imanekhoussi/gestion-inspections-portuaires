@@ -3,6 +3,7 @@ import { HttpClient, HttpParams  } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { Inspection } from '../../../core/models/inspection.interface';
+import { map } from 'rxjs/operators';
 
 export interface CalendarEventData {
   title: string;
@@ -40,12 +41,14 @@ export class InspectionsService {
   deleteInspection(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
-  
-  getInspectionsForCalendar(start: string, end: string): Observable<CalendarEventData[]> {
-    const params = new HttpParams()
-      .set('startDate', start)
-      .set('endDate', end);
-    // This now calls the correct URL: '.../inspections/calendar'
-    return this.http.get<CalendarEventData[]>(`${this.API_URL}/calendar`, { params });
-  }
+getInspectionsForCalendar(start: string, end: string): Observable<CalendarEventData[]> {
+  const params = new HttpParams()
+    .set('startDate', start)
+    .set('endDate', end);
+    
+  return this.http.get<{success: boolean, data: CalendarEventData[]}>(`${this.API_URL}/calendar`, { params })
+    .pipe(
+      map(response => response.data) // Extract the data array from the wrapped response
+    );
+}
 }
