@@ -56,12 +56,9 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = [
     'titre',
     'actifNom',
-    'inspecteurNom',
     'datePrevue',
     'statut',
     'priorite',
-    'conformite',
-    'actions'
   ];
 
   dataSource = new MatTableDataSource<InspectionDisplay>();

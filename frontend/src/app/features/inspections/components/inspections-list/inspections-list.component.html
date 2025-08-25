@@ -6,16 +6,7 @@
     </div>
     
     <div class="header-actions">
-      <button 
-        mat-raised-button 
-        color="primary"
-        (click)="refreshData()"
-        [disabled]="isLoading"
-        matTooltip="Actualiser la liste"
-      >
-        <mat-icon [class.rotating]="isLoading">refresh</mat-icon>
-        Actualiser
-      </button>
+    
       
       <button 
         mat-raised-button
@@ -26,14 +17,7 @@
         Calendrier
       </button>
       
-      <button 
-        mat-raised-button 
-        color="accent"
-        matTooltip="Nouvelle inspection"
-      >
-        <mat-icon>add</mat-icon>
-        Nouvelle Inspection
-      </button>
+     
     </div>
   </div>
 
@@ -133,18 +117,7 @@
             </td>
           </ng-container>
 
-          <ng-container matColumnDef="conformite">
-            <th mat-header-cell *matHeaderCellDef>Conformité</th>
-            <td mat-cell *matCellDef="let inspection">
-              <mat-icon 
-                class="conformite-icon" 
-                [ngClass]="getConformiteClass(inspection.conformite)"
-                [matTooltip]="inspection.conformite === undefined ? 'Non évaluée' : (inspection.conformite ? 'Conforme' : 'Non conforme')"
-              >
-                {{ getConformiteIcon(inspection.conformite) }}
-              </mat-icon>
-            </td>
-          </ng-container>
+         
 
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>

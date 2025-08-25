@@ -142,11 +142,13 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
   groupeOptions: DropdownOption[] = [];
   isLoadingGroupes = false;
 
-  etatOptions: DropdownOption[] = [
-  { value: 1, label: 'Bon état', icon: 'check_circle', color: '#4caf50' },
-  { value: 2, label: 'Moyen', icon: 'warning', color: '#ff9800' },
-  { value: 3, label: 'Mauvais', icon: 'error', color: '#f44336' }
-];
+  etatOptions = [
+    { label: 'Très mauvais (1)', value: 1 },
+    { label: 'Mauvais (2)', value: 2 },
+    { label: 'Moyen (3)', value: 3 },
+    { label: 'Bon (4)', value: 4 },
+    { label: 'Excellent (5)', value: 5 }
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -166,11 +168,22 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
       zone: ['', Validators.required],
       ouvrage: ['', Validators.required],
       idGroupe: [{ value: null, disabled: false }, [Validators.required]],
-      indiceEtat: [null, [Validators.required, Validators.min(1), Validators.max(3)]],
+      indiceEtat: [null, [Validators.required, Validators.min(1), Validators.max(5)]],
       geometryType: [null, Validators.required],
       coordinates: [null, Validators.required],
     });
   }
+
+  getEtatText(indiceEtat: number): string {
+  if (!indiceEtat) return 'Non défini';
+  if (indiceEtat <= 2) return 'Mauvais';
+  if (indiceEtat === 3) return 'Moyen';
+  return 'Bon';
+}
+
+  formatLabel(value: number): string {
+  return value.toString();
+}
 
   private updateFormControlsState(): void {
     const codeControl = this.actifForm.get('code');
