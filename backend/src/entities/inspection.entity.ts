@@ -29,7 +29,6 @@ export class Inspection {
   @Column({ name: 'date_fin', type: 'date' })
   dateFin: Date;
 
-  // ✅ CORRECTION: Utiliser ENUM au lieu de string
   @Column({ 
     type: 'enum', 
     enum: EtatInspection, 

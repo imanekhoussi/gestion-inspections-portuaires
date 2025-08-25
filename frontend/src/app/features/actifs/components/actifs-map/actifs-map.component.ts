@@ -231,8 +231,6 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-// Replace your displaySingleActif method with this corrected version:
-
 private displaySingleActif(actif: Actif): void {
   console.log('🗺️ === DEBUT displaySingleActif ===');
   console.log('📦 Actif reçu:', actif);
@@ -336,7 +334,6 @@ private displaySingleActif(actif: Actif): void {
   }
 }
 
-// Méthode de fallback très simple (also needs fixes)
 private fallbackDisplayActif(actif: Actif): void {
   if (!actif.geometry) return;
   
@@ -431,28 +428,7 @@ private fallbackDisplayActif(actif: Actif): void {
     this.snackBar.open(`${filteredFeatures.length} actifs affichés`, 'Fermer', { duration: 2000 });
   }
 
-  private getFeatureStyle(feature: any): Style {
-    const indice = feature.get('indiceEtat') || 1;
-    const isSelected = feature.get('isSelected') || false;
-    const color = this.getColorByIndice(indice);
-    const radius = isSelected ? 12 : 8;
-    const strokeWidth = isSelected ? 3 : 2;
-
-    return new Style({
-      image: new Circle({
-        radius: radius,
-        fill: new Fill({ color: color }),
-        stroke: new Stroke({ color: 'white', width: strokeWidth })
-      }),
-      stroke: new Stroke({ color: color, width: strokeWidth + 2 }),
-      fill: new Fill({ color: `${color}40` }), // 25% opacity
-      text: new Text({
-        text: indice.toString(),
-        font: `bold ${isSelected ? '12px' : '10px'} sans-serif`,
-        fill: new Fill({ color: 'white' })
-      })
-    });
-  }
+  
 
   private getColorByIndice(indice: number): string {
     if (indice <= 2) return '#4caf50'; // Green
@@ -489,7 +465,74 @@ private fallbackDisplayActif(actif: Actif): void {
     `;
   }
 
-  toggleLegend(): void { this.isLegendVisible = !this.isLegendVisible; }
+// actifs-map.component.ts
+
+private getFeatureStyle(feature: any): Style {
+  const isSelected = feature.get('isSelected') || false;
+
+  // Rule 1: If legend is hidden, use a neutral gray style for ALL geometry types
+  if (!this.isLegendVisible && !isSelected) {
+    const neutralColor = '#888888'; // Neutral gray
+    const neutralFillColor = 'rgba(136, 136, 136, 0.3)'; // Gray with 30% opacity
+
+    return new Style({
+      // For Points
+      image: new Circle({
+        radius: 7,
+        fill: new Fill({ color: neutralColor }),
+        stroke: new Stroke({ color: 'white', width: 2 }),
+      }),
+      // For Lines and Polygon outlines
+      stroke: new Stroke({
+        color: neutralColor,
+        width: 3,
+      }),
+      // For Polygon interiors
+      fill: new Fill({
+        color: neutralFillColor,
+      }),
+    });
+  }
+
+  // Rule 2: If legend IS visible, use the detailed, colored style
+  const indice = feature.get('indiceEtat') || 1;
+  const color = this.getColorByIndice(indice);
+  const radius = isSelected ? 12 : 8;
+  const strokeWidth = isSelected ? 3 : 2;
+
+  return new Style({
+    // For Points
+    image: new Circle({
+      radius: radius,
+      fill: new Fill({ color: color }),
+      stroke: new Stroke({ color: 'white', width: strokeWidth }),
+    }),
+    // For Lines and Polygon outlines
+    stroke: new Stroke({
+      color: color,
+      width: strokeWidth + 2,
+    }),
+    // For Polygon interiors
+    fill: new Fill({
+      color: `${color}40`, // Adds ~25% opacity to the color
+    }),
+    // For Point text (only shows when legend is visible)
+    text: new Text({
+      text: indice.toString(),
+      font: `bold ${isSelected ? '12px' : '10px'} sans-serif`,
+      fill: new Fill({ color: 'white' }),
+    }),
+  });
+}
+
+toggleLegend(): void {
+  this.isLegendVisible = !this.isLegendVisible;
+  
+  // This command forces the map to redraw everything
+  if (this.actifVectorSource) {
+    this.actifVectorSource.changed();
+  }
+}
   toggleFilterPanel(): void { this.isFilterPanelVisible = !this.isFilterPanelVisible; }
   onFilterChange(): void { this.applyFilters(); }
 
