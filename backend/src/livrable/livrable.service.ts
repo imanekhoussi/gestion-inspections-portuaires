@@ -1,10 +1,11 @@
-// src/livrable/livrable.service.ts - VÉRIFIER QUE VOUS AVEZ BIEN CE CODE
-
+// src/livrable/livrable.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Livrable } from '../entities/livrable.entity';
 import { CreateLivrableDto, UpdateLivrableDto } from './dto/livrable.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class LivrableService {
@@ -18,10 +19,7 @@ export class LivrableService {
       ...createLivrableDto,
       insertBy
     });
-    const savedLivrable = await this.livrableRepository.save(livrable);
-
-    
-    return savedLivrable;
+    return await this.livrableRepository.save(livrable);
   }
 
   async findAll(): Promise<Livrable[]> {
@@ -50,22 +48,55 @@ export class LivrableService {
     });
   }
 
-  async update(id: number, updateLivrableDto: UpdateLivrableDto, updatedBy: number): Promise<Livrable> {
+  async downloadFile(id: number) {
     const livrable = await this.findOne(id);
-    const ancienEtat = { originalName: livrable.originalName, currentName: livrable.currentName };
+    const filePath = path.join('./uploads/livrables', livrable.currentName);
     
-    Object.assign(livrable, updateLivrableDto);
-    const updatedLivrable = await this.livrableRepository.save(livrable);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('Fichier non trouvé sur le serveur');
+    }
 
-   
-
-    return updatedLivrable;
+    return {
+      filePath,
+      originalName: livrable.originalName,
+      mimeType: this.getMimeType(livrable.originalName)
+    };
   }
 
-  async remove(id: number, deletedBy: number): Promise<void> {
+  async update(id: number, updateLivrableDto: UpdateLivrableDto): Promise<Livrable> {
+    const livrable = await this.findOne(id);
+    Object.assign(livrable, updateLivrableDto);
+    return await this.livrableRepository.save(livrable);
+  }
+
+  async remove(id: number): Promise<void> {
     const livrable = await this.findOne(id);
     
-   
+    // Supprimer le fichier physique
+    const filePath = path.join('./uploads/livrables', livrable.currentName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    
     await this.livrableRepository.remove(livrable);
+  }
+
+  private getMimeType(filename: string): string {
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.txt': 'text/plain',
+      '.zip': 'application/zip'
+    };
+    
+    return mimeTypes[ext] || 'application/octet-stream';
   }
 }
