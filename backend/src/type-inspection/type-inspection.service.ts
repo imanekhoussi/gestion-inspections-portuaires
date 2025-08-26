@@ -5,31 +5,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TypeInspection } from '../entities/type-inspection.entity';
 import { CreateTypeInspectionDto, UpdateTypeInspectionDto } from './dto/type-inspection.dto';
-import { LogHistoriqueService } from '../log-historique/log-historique.service';
-import { TypeAction, TypeEntite } from '../entities/log-historique.entity';
 
 @Injectable()
 export class TypeInspectionService {
   constructor(
     @InjectRepository(TypeInspection)
-    private typeInspectionRepository: Repository<TypeInspection>,
-    private logService: LogHistoriqueService,
+    private typeInspectionRepository: Repository<TypeInspection>
   ) {}
 
   async create(createTypeInspectionDto: CreateTypeInspectionDto, createdBy: number): Promise<TypeInspection> {
     const typeInspection = this.typeInspectionRepository.create(createTypeInspectionDto);
     const savedType = await this.typeInspectionRepository.save(typeInspection);
 
-    // Log de création
-    await this.logService.enregistrerLog(
-      TypeAction.CREATION,
-      TypeEntite.TYPE_INSPECTION,
-      savedType.id,
-      createdBy,
-      null,
-      { nom: savedType.nom, frequence: savedType.frequence, idGroupe: savedType.idGroupe },
-      `Création du type d'inspection ${savedType.nom}`
-    );
+    
 
     return savedType;
   }
@@ -67,16 +55,7 @@ export class TypeInspectionService {
     Object.assign(typeInspection, updateTypeInspectionDto);
     const updatedType = await this.typeInspectionRepository.save(typeInspection);
 
-    // Log de modification
-    await this.logService.enregistrerLog(
-      TypeAction.MODIFICATION,
-      TypeEntite.TYPE_INSPECTION,
-      id,
-      updatedBy,
-      ancienEtat,
-      { nom: updatedType.nom, frequence: updatedType.frequence, idGroupe: updatedType.idGroupe },
-      `Modification du type d'inspection ${updatedType.nom}`
-    );
+   
 
     return updatedType;
   }
@@ -84,17 +63,7 @@ export class TypeInspectionService {
   async remove(id: number, deletedBy: number): Promise<void> {
     const typeInspection = await this.findOne(id);
     
-    // Log de suppression
-    await this.logService.enregistrerLog(
-      TypeAction.SUPPRESSION,
-      TypeEntite.TYPE_INSPECTION,
-      id,
-      deletedBy,
-      { nom: typeInspection.nom, frequence: typeInspection.frequence },
-      null,
-      `Suppression du type d'inspection ${typeInspection.nom}`
-    );
-
+   
     await this.typeInspectionRepository.remove(typeInspection);
   }
 }

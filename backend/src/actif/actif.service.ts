@@ -3,8 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateActifDto, UpdateActifDto } from './dto/actif.dto';
 import { Actif } from '../entities/actif.entity';
-import { LogHistoriqueService } from '../log-historique/log-historique.service';
-import { TypeAction, TypeEntite } from '../entities/log-historique.entity';
 
 @Injectable()
 export class ActifService {
@@ -13,7 +11,6 @@ export class ActifService {
   constructor(
     @InjectRepository(Actif)
     private actifRepository: Repository<Actif>,
-    private logService: LogHistoriqueService,
   ) {}
 
   async create(createActifDto: CreateActifDto, createdBy: number): Promise<Actif> {
@@ -83,27 +80,7 @@ export class ActifService {
       const savedActif = await this.actifRepository.save(newActif);
       this.logger.log(`✅ Actif sauvegardé - ID: ${savedActif.id}`);
 
-      // Log historique (non bloquant)
-      try {
-        await this.logService.enregistrerLog(
-          TypeAction.CREATION,
-          TypeEntite.ACTIF,
-          savedActif.id,
-          createdBy,
-          null,
-          {
-            nom: savedActif.nom,
-            code: savedActif.code,
-            site: savedActif.site,
-            zone: savedActif.zone,
-            hasGeometry: !!geometryForDb
-          },
-          `Création de l'actif ${savedActif.nom}`
-        );
-        this.logger.log('✅ Log enregistré');
-      } catch (logError) {
-        this.logger.warn(`⚠️ Erreur log (non bloquante): ${logError.message}`);
-      }
+     
 
       return savedActif;
 

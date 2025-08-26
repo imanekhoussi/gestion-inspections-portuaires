@@ -3,7 +3,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { LogHistorique, TypeAction, TypeEntite } from '../entities/log-historique.entity';
+import { LogHistorique } from '../entities/log-historique.entity';
 import { CreateLogHistoriqueDto, FilterLogHistoriqueDto } from './dto/log-historique.dto';
 
 @Injectable()
@@ -22,23 +22,19 @@ export class LogHistoriqueService {
     return await this.logRepository.save(log);
   }
 
-  // Méthode helper pour enregistrer facilement un log
-  async enregistrerLog(
-    typeAction: TypeAction,
-    typeEntite: TypeEntite,
-    entiteId: number,
+  // Méthode helper pour enregistrer un changement d'état d'inspection
+  async enregistrerChangementEtat(
+    inspectionId: number,
     interventionPar: number,
-    ancienEtat?: any,
-    nouvelEtat?: any,
+    ancienEtat?: string,
+    nouvelEtat?: string,
     commentaire?: string
   ): Promise<LogHistorique> {
     return this.create({
-      typeAction,
-      typeEntite,
-      entiteId,
-      ancienEtat: ancienEtat ? JSON.stringify(ancienEtat) : null,
-      nouvelEtat: nouvelEtat ? JSON.stringify(nouvelEtat) : null,
-      commentaire,
+      inspectionId,
+      ancienEtat,
+      nouvelEtat,
+      commentaire
     }, interventionPar);
   }
 
@@ -46,22 +42,19 @@ export class LogHistoriqueService {
   async findAll(filters?: FilterLogHistoriqueDto): Promise<LogHistorique[]> {
     const query = this.logRepository.createQueryBuilder('log')
       .leftJoinAndSelect('log.intervenant', 'intervenant')
-      .orderBy('log.dateIntervention', 'DESC');
-
-    if (filters?.typeAction) {
-      query.andWhere('log.typeAction = :typeAction', { typeAction: filters.typeAction });
-    }
-
-    if (filters?.typeEntite) {
-      query.andWhere('log.typeEntite = :typeEntite', { typeEntite: filters.typeEntite });
-    }
+      .leftJoinAndSelect('log.inspection', 'inspection')
+      .orderBy('log.date_intervention', 'DESC');
 
     if (filters?.interventionPar) {
-      query.andWhere('log.interventionPar = :interventionPar', { interventionPar: filters.interventionPar });
+      query.andWhere('log.intervention_par = :interventionPar', { interventionPar: filters.interventionPar });
+    }
+
+    if (filters?.inspectionId) {
+      query.andWhere('log.inspection_id = :inspectionId', { inspectionId: filters.inspectionId });
     }
 
     if (filters?.dateDebut && filters?.dateFin) {
-      query.andWhere('log.dateIntervention BETWEEN :dateDebut AND :dateFin', {
+      query.andWhere('log.date_intervention BETWEEN :dateDebut AND :dateFin', {
         dateDebut: filters.dateDebut,
         dateFin: filters.dateFin
       });
@@ -70,11 +63,11 @@ export class LogHistoriqueService {
     return await query.getMany();
   }
 
-  // Récupérer l'historique d'une entité spécifique
-  async findByEntite(typeEntite: TypeEntite, entiteId: number): Promise<LogHistorique[]> {
+  // Récupérer l'historique d'une inspection spécifique
+  async findByInspection(inspectionId: number): Promise<LogHistorique[]> {
     return await this.logRepository.find({
-      where: { typeEntite, entiteId },
-      relations: ['intervenant'],
+      where: { inspectionId },
+      relations: ['intervenant', 'inspection'],
       order: { dateIntervention: 'DESC' }
     });
   }
@@ -83,21 +76,9 @@ export class LogHistoriqueService {
   async findByUtilisateur(interventionPar: number): Promise<LogHistorique[]> {
     return await this.logRepository.find({
       where: { interventionPar },
-      relations: ['intervenant'],
+      relations: ['intervenant', 'inspection'],
       order: { dateIntervention: 'DESC' }
     });
-  }
-
-  // Statistiques des actions par type
-  async getStatistiquesActions(): Promise<any> {
-    const stats = await this.logRepository
-      .createQueryBuilder('log')
-      .select('log.typeAction', 'action')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('log.typeAction')
-      .getRawMany();
-
-    return stats;
   }
 
   // Activité récente (dernières 24h par exemple)
@@ -109,9 +90,31 @@ export class LogHistoriqueService {
       where: {
         dateIntervention: Between(dateDebut, new Date())
       },
-      relations: ['intervenant'],
+      relations: ['intervenant', 'inspection'],
       order: { dateIntervention: 'DESC' },
       take: 50 // Limiter à 50 entrées récentes
     });
+  }
+
+  // Récupérer l'historique chronologique complet d'une inspection
+  async getHistoriqueChronologique(inspectionId: number): Promise<LogHistorique[]> {
+    return await this.logRepository.find({
+      where: { inspectionId },
+      relations: ['intervenant'],
+      order: { dateIntervention: 'ASC' } // Chronologique pour suivre l'évolution
+    });
+  }
+
+  // Statistiques des changements d'état
+  async getStatistiquesEtats(): Promise<any> {
+    const transitions = await this.logRepository
+      .createQueryBuilder('log')
+      .select('log.ancien_etat', 'ancien')
+      .addSelect('log.nouveau_etat', 'nouveau')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('log.ancien_etat, log.nouveau_etat')
+      .getRawMany();
+
+    return transitions;
   }
 }

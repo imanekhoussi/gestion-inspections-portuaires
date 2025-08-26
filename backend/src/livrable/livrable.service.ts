@@ -5,15 +5,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Livrable } from '../entities/livrable.entity';
 import { CreateLivrableDto, UpdateLivrableDto } from './dto/livrable.dto';
-import { LogHistoriqueService } from '../log-historique/log-historique.service';
-import { TypeAction, TypeEntite } from '../entities/log-historique.entity';
 
 @Injectable()
 export class LivrableService {
   constructor(
     @InjectRepository(Livrable)
-    private livrableRepository: Repository<Livrable>,
-    private logService: LogHistoriqueService,
+    private livrableRepository: Repository<Livrable>
   ) {}
 
   async create(createLivrableDto: CreateLivrableDto, insertBy: number): Promise<Livrable> {
@@ -23,17 +20,7 @@ export class LivrableService {
     });
     const savedLivrable = await this.livrableRepository.save(livrable);
 
-    // Log de création
-    await this.logService.enregistrerLog(
-      TypeAction.CREATION,
-      TypeEntite.LIVRABLE,
-      savedLivrable.id,
-      insertBy,
-      null,
-      { originalName: savedLivrable.originalName, taille: savedLivrable.taille },
-      `Ajout du livrable ${savedLivrable.originalName}`
-    );
-
+    
     return savedLivrable;
   }
 
@@ -70,16 +57,7 @@ export class LivrableService {
     Object.assign(livrable, updateLivrableDto);
     const updatedLivrable = await this.livrableRepository.save(livrable);
 
-    // Log de modification
-    await this.logService.enregistrerLog(
-      TypeAction.MODIFICATION,
-      TypeEntite.LIVRABLE,
-      id,
-      updatedBy,
-      ancienEtat,
-      { originalName: updatedLivrable.originalName, currentName: updatedLivrable.currentName },
-      `Modification du livrable ${updatedLivrable.originalName}`
-    );
+   
 
     return updatedLivrable;
   }
@@ -87,17 +65,7 @@ export class LivrableService {
   async remove(id: number, deletedBy: number): Promise<void> {
     const livrable = await this.findOne(id);
     
-    // Log de suppression
-    await this.logService.enregistrerLog(
-      TypeAction.SUPPRESSION,
-      TypeEntite.LIVRABLE,
-      id,
-      deletedBy,
-      { originalName: livrable.originalName, taille: livrable.taille },
-      null,
-      `Suppression du livrable ${livrable.originalName}`
-    );
-
+   
     await this.livrableRepository.remove(livrable);
   }
 }
