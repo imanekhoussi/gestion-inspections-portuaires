@@ -1,5 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
+// src/inspection/inspection.controller.ts - UPDATED WITH REAL AUTH
+
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  Query, 
+  ParseIntPipe, 
+  HttpStatus, 
+  UseGuards, 
+  Req 
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { InspectionService } from './inspection.service';
 import { 
   CreateInspectionDto, 
@@ -10,14 +25,21 @@ import {
   ReprogrammerInspectionDto
 } from './dto/inspection.dto';
 import { Inspection, EtatInspection } from '../entities/inspection.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleUtilisateur } from '../entities/utilisateur.entity';
 
 @ApiTags('Inspections')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/inspections')
 export class InspectionController {
   constructor(private readonly inspectionService: InspectionService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Récupérer toutes les inspections avec pagination et filtres' }) // 👈 Update summary
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.OPERATEUR)
+  @ApiOperation({ summary: 'Récupérer toutes les inspections avec pagination et filtres' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String, description: 'Rechercher par titre' })
@@ -66,6 +88,7 @@ export class InspectionController {
   }
 
   @Get('calendar')
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.OPERATEUR)
   @ApiOperation({ summary: 'Récupérer les inspections par période pour le calendrier' })
   @ApiQuery({ name: 'startDate', type: String, description: 'Date de début (YYYY-MM-DD)', example: '2025-01-01' })
   @ApiQuery({ name: 'endDate', type: String, description: 'Date de fin (YYYY-MM-DD)', example: '2025-12-31' })
@@ -94,13 +117,18 @@ export class InspectionController {
   }
 
   @Post()
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE)
   @ApiOperation({ summary: 'Créer une nouvelle inspection' })
   @ApiResponse({ status: 201, description: 'L\'inspection a été créée avec succès.', type: Inspection })
   @ApiResponse({ status: 400, description: 'Données invalides.' })
   @ApiResponse({ status: 500, description: 'Erreur serveur.' })
-  async create(@Body() createInspectionDto: CreateInspectionDto) {
+  async create(
+    @Body() createInspectionDto: CreateInspectionDto,
+    @Req() req: any
+  ) {
     try {
-      const userId = 1; // TODO: Récupérer le vrai userId depuis l'authentification
+      // Get real user ID from JWT token
+      const userId = req.user.id;
       
       const inspection = await this.inspectionService.create(createInspectionDto, userId);
 
@@ -119,6 +147,7 @@ export class InspectionController {
   }
 
   @Patch(':id')
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE)
   @ApiOperation({ summary: 'Mettre à jour une inspection (mise à jour partielle)' })
   @ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
   @ApiResponse({ status: 200, description: 'L\'inspection a été mise à jour.', type: Inspection })
@@ -146,23 +175,27 @@ export class InspectionController {
   }
 
   @Post(':id/cloturer')
-  @ApiOperation({ summary: 'Clôturer une inspection' })
+  @Roles(RoleUtilisateur.OPERATEUR, RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Clôturer une inspection avec mise à jour des actifs' })
   @ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
   @ApiResponse({ status: 200, description: 'L\'inspection a été clôturée.', type: Inspection })
   @ApiResponse({ status: 400, description: 'L\'inspection ne peut pas être clôturée.' })
   @ApiResponse({ status: 404, description: 'Inspection non trouvée.' })
   async cloturer(
     @Param('id', ParseIntPipe) id: number,
-    @Body() cloturerDto: CloturerInspectionDto
+    @Body() cloturerDto: CloturerInspectionDto,
+    @Req() req: any
   ) {
     try {
-      const userId = 1; // TODO: Récupérer depuis l'authentification
-      const inspection = await this.inspectionService.cloturer(id, userId, cloturerDto.commentaire);
+      // Get real user ID from JWT token (populated by JwtStrategy.validate())
+      const userId = req.user.id;
+      
+      const inspection = await this.inspectionService.cloturer(id, userId, cloturerDto);
 
       return {
         success: true,
         data: inspection,
-        message: 'Inspection clôturée avec succès'
+        message: `Inspection clôturée avec succès par ${req.user.nom}`
       };
     } catch (error) {
       return {
@@ -174,6 +207,7 @@ export class InspectionController {
   }
 
   @Post(':id/valider')
+  @Roles(RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.ADMIN)
   @ApiOperation({ summary: 'Valider une inspection clôturée' })
   @ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
   @ApiResponse({ status: 200, description: 'L\'inspection a été validée.', type: Inspection })
@@ -181,16 +215,19 @@ export class InspectionController {
   @ApiResponse({ status: 404, description: 'Inspection non trouvée.' })
   async valider(
     @Param('id', ParseIntPipe) id: number,
-    @Body() validerDto: ValiderInspectionDto
+    @Body() validerDto: ValiderInspectionDto,
+    @Req() req: any
   ) {
     try {
-      const userId = 1; // TODO: Récupérer depuis l'authentification
+      // Get real user ID from JWT token
+      const userId = req.user.id;
+      
       const inspection = await this.inspectionService.valider(id, userId, validerDto.commentaire);
 
       return {
         success: true,
         data: inspection,
-        message: 'Inspection validée avec succès'
+        message: `Inspection validée avec succès par ${req.user.nom}`
       };
     } catch (error) {
       return {
@@ -202,6 +239,7 @@ export class InspectionController {
   }
 
   @Post(':id/rejeter')
+  @Roles(RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.ADMIN)
   @ApiOperation({ summary: 'Rejeter une inspection clôturée' })
   @ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
   @ApiResponse({ status: 200, description: 'L\'inspection a été rejetée.', type: Inspection })
@@ -209,16 +247,19 @@ export class InspectionController {
   @ApiResponse({ status: 404, description: 'Inspection non trouvée.' })
   async rejeter(
     @Param('id', ParseIntPipe) id: number,
-    @Body() rejeterDto: RejeterInspectionDto
+    @Body() rejeterDto: RejeterInspectionDto,
+    @Req() req: any
   ) {
     try {
-      const userId = 1; // TODO: Récupérer depuis l'authentification
+      // Get real user ID from JWT token
+      const userId = req.user.id;
+      
       const inspection = await this.inspectionService.rejeter(id, userId, rejeterDto.motif);
 
       return {
         success: true,
         data: inspection,
-        message: 'Inspection rejetée avec succès'
+        message: `Inspection rejetée avec succès par ${req.user.nom}`
       };
     } catch (error) {
       return {
@@ -230,6 +271,7 @@ export class InspectionController {
   }
 
   @Post(':id/reprogrammer')
+  @Roles(RoleUtilisateur.OPERATEUR, RoleUtilisateur.ADMIN)
   @ApiOperation({ summary: 'Reprogrammer une inspection rejetée' })
   @ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
   @ApiResponse({ status: 200, description: 'L\'inspection a été reprogrammée.', type: Inspection })
@@ -237,10 +279,13 @@ export class InspectionController {
   @ApiResponse({ status: 404, description: 'Inspection non trouvée.' })
   async reprogrammer(
     @Param('id', ParseIntPipe) id: number,
-    @Body() reprogrammerDto: ReprogrammerInspectionDto
+    @Body() reprogrammerDto: ReprogrammerInspectionDto,
+    @Req() req: any
   ) {
     try {
-      const userId = 1; // TODO: Récupérer depuis l'authentification
+      // Get real user ID from JWT token
+      const userId = req.user.id;
+      
       const inspection = await this.inspectionService.reprogrammer(
         id, 
         new Date(reprogrammerDto.nouvelleDate), 
@@ -250,7 +295,7 @@ export class InspectionController {
       return {
         success: true,
         data: inspection,
-        message: 'Inspection reprogrammée avec succès'
+        message: `Inspection reprogrammée avec succès par ${req.user.nom}`
       };
     } catch (error) {
       return {
@@ -262,6 +307,7 @@ export class InspectionController {
   }
 
   @Get('by-zone')
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.OPERATEUR)
   @ApiOperation({ summary: 'Inspections par zone géographique' })
   @ApiQuery({ name: 'site', required: false, description: 'Filtrer par site' })
   @ApiQuery({ name: 'zone', required: false, description: 'Filtrer par zone' })
@@ -287,6 +333,7 @@ export class InspectionController {
   }
 
   @Get('planification-map')
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE)
   @ApiOperation({ summary: 'Données de planification pour carte' })
   @ApiResponse({ status: 200, description: 'Inspections avec localisation pour carte.' })
   async getPlanificationMap() {
@@ -307,6 +354,7 @@ export class InspectionController {
   }
 
   @Get('operateur/:operateurId/inspections-locales')
+  @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE)
   @ApiOperation({ summary: 'Inspections assignées à un opérateur avec localisation' })
   @ApiParam({ name: 'operateurId', description: 'ID de l\'opérateur', type: Number })
   @ApiResponse({ status: 200, description: 'Inspections de l\'opérateur avec données géographiques.' })
@@ -322,6 +370,30 @@ export class InspectionController {
       return {
         success: false,
         message: 'Erreur lors de la récupération des inspections de l\'opérateur',
+        error: error.message
+      };
+    }
+  }
+
+  //  Get current user's inspections
+  @Get('my-inspections')
+  @Roles(RoleUtilisateur.OPERATEUR, RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.ADMIN)
+  @ApiOperation({ summary: 'Récupérer les inspections de l\'utilisateur connecté' })
+  @ApiResponse({ status: 200, description: 'Inspections de l\'utilisateur connecté.' })
+  async getMyInspections(@Req() req: any) {
+    try {
+      const userId = req.user.id;
+      const inspections = await this.inspectionService.getInspectionsOperateur(userId);
+
+      return {
+        success: true,
+        data: inspections,
+        message: `Inspections de ${req.user.nom}`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Erreur lors de la récupération des inspections',
         error: error.message
       };
     }

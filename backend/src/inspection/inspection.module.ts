@@ -6,6 +6,7 @@ import { TypeInspection } from '../entities/type-inspection.entity';
 import { Utilisateur } from '../entities/utilisateur.entity';
 import { InspectionController } from './inspection.controller';
 import { InspectionService } from './inspection.service';
+import { LogHistoriqueModule } from '../log-historique/log-historique.module';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { InspectionService } from './inspection.service';
       Actif, 
       TypeInspection, 
       Utilisateur
-    ])
+    ]),
+    LogHistoriqueModule 
   ],
   controllers: [InspectionController],
   providers: [InspectionService],

@@ -2,8 +2,9 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In, Like  } from 'typeorm';
 import { Inspection, EtatInspection } from '../entities/inspection.entity';
-import { CreateInspectionDto, UpdateInspectionDto } from './dto/inspection.dto';
+import { CreateInspectionDto, UpdateInspectionDto, CloturerInspectionDto } from './dto/inspection.dto';
 import { Actif } from '../entities/actif.entity';
+import { LogHistoriqueService } from '../log-historique/log-historique.service';
 
 @Injectable()
 export class InspectionService {
@@ -12,6 +13,7 @@ export class InspectionService {
     private inspectionRepository: Repository<Inspection>,
     @InjectRepository(Actif)
     private actifRepository: Repository<Actif>,
+     private logHistoriqueService: LogHistoriqueService,
   ) {}
 
   async findAll(options: { 
@@ -214,21 +216,53 @@ export class InspectionService {
     return inspectionWithRelations;
   }
 
-  async cloturer(id: number, userId: number, commentaire?: string): Promise<Inspection> {
+  async cloturer(id: number, userId: number, cloturerDto: CloturerInspectionDto): Promise<Inspection> {
     const inspection = await this.findOne(id);
     
     if (inspection.etat !== EtatInspection.EN_COURS) {
       throw new BadRequestException('Seules les inspections en cours peuvent être clôturées');
     }
 
+    // Store old state for logging
+    const ancienEtat = inspection.etat;
+
+    // Update inspection state
     inspection.etat = EtatInspection.CLOTUREE;
     inspection.cloturedBy = userId;
     inspection.cloturedAt = new Date();
-    if (commentaire) {
-      inspection.commentaireCloture = commentaire;
+    if (cloturerDto.commentaire) {
+      inspection.commentaireCloture = cloturerDto.commentaire;
     }
 
-    return await this.inspectionRepository.save(inspection);
+    // Update actifs condition indices if provided
+    if (cloturerDto.actifsUpdates && cloturerDto.actifsUpdates.length > 0) {
+      for (const update of cloturerDto.actifsUpdates) {
+        // Verify the actif exists and is part of this inspection
+        const actif = inspection.actifs.find(a => a.id === update.actifId);
+        if (!actif) {
+          throw new BadRequestException(`Actif ${update.actifId} n'est pas associé à cette inspection`);
+        }
+
+        // Update the actif's condition index
+        await this.actifRepository.update(update.actifId, {
+          indiceEtat: update.nouvelIndiceEtat
+        });
+      }
+    }
+
+    // Save the inspection
+    const updatedInspection = await this.inspectionRepository.save(inspection);
+
+    // Log the state change
+    await this.logHistoriqueService.enregistrerChangementEtat(
+      inspection.id,
+      userId,
+      ancienEtat,
+      EtatInspection.CLOTUREE,
+      cloturerDto.commentaire || 'Inspection clôturée par l\'opérateur'
+    );
+
+    return updatedInspection;
   }
 
   async valider(id: number, userId: number, commentaire?: string): Promise<Inspection> {
@@ -238,6 +272,8 @@ export class InspectionService {
       throw new BadRequestException('Seules les inspections clôturées peuvent être validées');
     }
 
+    const ancienEtat = inspection.etat;
+
     inspection.etat = EtatInspection.VALIDEE;
     inspection.validatedBy = userId;
     inspection.validatedAt = new Date();
@@ -245,7 +281,18 @@ export class InspectionService {
       inspection.commentaireValidation = commentaire;
     }
 
-    return await this.inspectionRepository.save(inspection);
+    const updatedInspection = await this.inspectionRepository.save(inspection);
+
+    // Log the state change
+    await this.logHistoriqueService.enregistrerChangementEtat(
+      inspection.id,
+      userId,
+      ancienEtat,
+      EtatInspection.VALIDEE,
+      commentaire || 'Inspection validée par le maître d\'ouvrage'
+    );
+
+    return updatedInspection;
   }
 
   async rejeter(id: number, userId: number, motif: string): Promise<Inspection> {
@@ -255,12 +302,25 @@ export class InspectionService {
       throw new BadRequestException('Seules les inspections clôturées peuvent être rejetées');
     }
 
+    const ancienEtat = inspection.etat;
+
     inspection.etat = EtatInspection.REJETEE;
     inspection.rejectedBy = userId;
     inspection.rejectedAt = new Date();
     inspection.motifRejet = motif;
 
-    return await this.inspectionRepository.save(inspection);
+    const updatedInspection = await this.inspectionRepository.save(inspection);
+
+    // Log the state change
+    await this.logHistoriqueService.enregistrerChangementEtat(
+      inspection.id,
+      userId,
+      ancienEtat,
+      EtatInspection.REJETEE,
+      motif
+    );
+
+    return updatedInspection;
   }
 
   async reprogrammer(id: number, nouvelleDate: Date, userId: number): Promise<Inspection> {
@@ -270,13 +330,26 @@ export class InspectionService {
       throw new BadRequestException('Seules les inspections rejetées peuvent être reprogrammées');
     }
 
+    const ancienEtat = inspection.etat;
+
     inspection.etat = EtatInspection.PROGRAMMEE;
     inspection.dateDebut = nouvelleDate;
     inspection.rejectedBy = null;
     inspection.rejectedAt = null;
     inspection.motifRejet = null;
 
-    return await this.inspectionRepository.save(inspection);
+    const updatedInspection = await this.inspectionRepository.save(inspection);
+
+    // Log the state change
+    await this.logHistoriqueService.enregistrerChangementEtat(
+      inspection.id,
+      userId,
+      ancienEtat,
+      EtatInspection.PROGRAMMEE,
+      'Inspection reprogrammée après rejet'
+    );
+
+    return updatedInspection;
   }
 
   private async findOne(id: number): Promise<Inspection> {

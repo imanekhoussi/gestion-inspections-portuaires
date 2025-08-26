@@ -1,4 +1,6 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, IsArray, IsEnum, IsOptional } from 'class-validator';
+// inspection.dto.ts =====
+
+import { IsString, IsNotEmpty, IsNumber, IsDateString, IsArray, IsEnum, IsOptional, ValidateNested, Min, Max } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { EtatInspection } from '../../entities/inspection.entity';
@@ -47,19 +49,53 @@ export class CreateInspectionDto {
 
 export class UpdateInspectionDto extends PartialType(CreateInspectionDto) {}
 
+// DTO for actif condition update
+export class ActifConditionUpdateDto {
+  @ApiProperty({ description: 'ID de l\'actif' })
+  @IsNumber()
+  actifId: number;
+
+  @ApiProperty({ 
+    description: 'Nouvel indice d\'état (1=Très mauvais, 2=Mauvais, 3=Moyen, 4=Bon, 5=Très bon)',
+    minimum: 1,
+    maximum: 5
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  nouvelIndiceEtat: number;
+
+  @ApiProperty({ description: 'Commentaire sur l\'état de l\'actif', required: false })
+  @IsOptional()
+  @IsString()
+  commentaire?: string;
+}
+
+// CloturerInspectionDto with actif updates
+export class CloturerInspectionDto {
+  @ApiProperty({ required: false, description: 'Commentaire de clôture' })
+  @IsOptional()
+  @IsString()
+  commentaire?: string;
+
+  @ApiProperty({ 
+    type: [ActifConditionUpdateDto],
+    description: 'Mise à jour des indices d\'état des actifs inspectés',
+    required: false
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ActifConditionUpdateDto)
+  actifsUpdates?: ActifConditionUpdateDto[];
+}
+
 export class UpdateEtatInspectionDto {
   @ApiProperty({ enum: EtatInspection, description: 'Nouvel état de l\'inspection' })
   @IsEnum(EtatInspection)
   etat: EtatInspection;
 
   @ApiProperty({ required: false, description: 'Commentaire sur le changement d\'état' })
-  @IsOptional()
-  @IsString()
-  commentaire?: string;
-}
-
-export class CloturerInspectionDto {
-  @ApiProperty({ required: false, description: 'Commentaire de clôture' })
   @IsOptional()
   @IsString()
   commentaire?: string;
@@ -78,7 +114,7 @@ export class RejeterInspectionDto {
   @IsNotEmpty()
   motifRejet: string;
 
-  // Alias for compatibility with your controller
+
   get motif(): string {
     return this.motifRejet;
   }
