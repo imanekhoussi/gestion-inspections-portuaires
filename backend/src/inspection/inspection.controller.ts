@@ -1,4 +1,3 @@
-// src/inspection/inspection.controller.ts - UPDATED WITH REAL AUTH
 
 import { 
   Controller, 
@@ -146,6 +145,71 @@ export class InspectionController {
     }
   }
 
+  @Get(':id')
+@Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.OPERATEUR)
+@ApiOperation({ summary: 'Récupérer une inspection par ID avec ses relations' })
+@ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
+@ApiResponse({ status: 200, description: 'Inspection trouvée avec ses relations.' })
+@ApiResponse({ status: 404, description: 'Inspection non trouvée.' })
+async findOne(@Param('id', ParseIntPipe) id: number) {
+  try {
+    const inspection = await this.inspectionService.findOne(id);
+
+    return {
+      success: true,
+      data: inspection
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Inspection non trouvée',
+      error: error.message
+    };
+  }
+}
+
+@Get(':id/livrables')
+@Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.OPERATEUR)
+@ApiOperation({ summary: 'Récupérer les livrables d\'une inspection' })
+@ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
+@ApiResponse({ status: 200, description: 'Liste des livrables de l\'inspection.' })
+async getLivrables(@Param('id', ParseIntPipe) id: number) {
+  try {
+    // Pour l'instant, retourner un tableau vide car vous n'avez pas encore d'entité Livrable
+    return {
+      success: true,
+      data: []
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erreur lors de la récupération des livrables',
+      error: error.message
+    };
+  }
+}
+
+@Get(':id/historique')
+@Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.OPERATEUR)
+@ApiOperation({ summary: 'Récupérer l\'historique d\'une inspection' })
+@ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
+@ApiResponse({ status: 200, description: 'Historique des modifications de l\'inspection.' })
+async getHistorique(@Param('id', ParseIntPipe) id: number) {
+  try {
+    // Pour l'instant, retourner un tableau vide car vous n'avez pas encore d'entité LogHistorique
+    return {
+      success: true,
+      data: []
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erreur lors de la récupération de l\'historique',
+      error: error.message
+    };
+  }
+}
+
   @Patch(':id')
   @Roles(RoleUtilisateur.ADMIN, RoleUtilisateur.MAITRE_OUVRAGE)
   @ApiOperation({ summary: 'Mettre à jour une inspection (mise à jour partielle)' })
@@ -205,6 +269,33 @@ export class InspectionController {
       };
     }
   }
+
+  @Post(':id/demarrer')
+@Roles(RoleUtilisateur.OPERATEUR, RoleUtilisateur.ADMIN)
+@ApiOperation({ summary: 'Démarrer une inspection programmée' })
+@ApiParam({ name: 'id', description: 'ID de l\'inspection', type: Number })
+@ApiResponse({ status: 200, description: 'L\'inspection a été démarrée.', type: Inspection })
+async demarrer(
+  @Param('id', ParseIntPipe) id: number,
+  @Req() req: any
+) {
+  try {
+    const userId = req.user.id;
+    const inspection = await this.inspectionService.demarrer(id, userId);
+
+    return {
+      success: true,
+      data: inspection,
+      message: `Inspection démarrée avec succès par ${req.user.nom}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erreur lors du démarrage',
+      error: error.message
+    };
+  }
+}
 
   @Post(':id/valider')
   @Roles(RoleUtilisateur.MAITRE_OUVRAGE, RoleUtilisateur.ADMIN)
@@ -398,4 +489,6 @@ export class InspectionController {
       };
     }
   }
+
+  
 }

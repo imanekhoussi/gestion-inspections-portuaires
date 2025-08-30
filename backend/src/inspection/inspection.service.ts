@@ -100,6 +100,30 @@ export class InspectionService {
     });
   }
 
+  async demarrer(id: number, userId: number): Promise<Inspection> {
+  const inspection = await this.findOne(id);
+  
+  if (inspection.etat !== EtatInspection.PROGRAMMEE) {
+    throw new BadRequestException('Seules les inspections programmées peuvent être démarrées');
+  }
+
+  // Changer l'état
+  inspection.etat = EtatInspection.EN_COURS;
+
+  const updatedInspection = await this.inspectionRepository.save(inspection);
+
+  // Log le changement d'état
+  await this.logHistoriqueService.enregistrerChangementEtat(
+    inspection.id,
+    userId,
+    EtatInspection.PROGRAMMEE,
+    EtatInspection.EN_COURS,
+    'Inspection démarrée par l\'opérateur'
+  );
+
+  return updatedInspection;
+}
+
   async create(createInspectionDto: CreateInspectionDto, userId: number): Promise<Inspection> {
     const { actifIds, dateDebut, dateFin, ...inspectionData } = createInspectionDto;
 
@@ -352,7 +376,7 @@ export class InspectionService {
     return updatedInspection;
   }
 
-  private async findOne(id: number): Promise<Inspection> {
+  async findOne(id: number): Promise<Inspection> {
     const inspection = await this.inspectionRepository.findOne({
       where: { id },
       relations: ['typeInspection', 'actifs', 'createur']

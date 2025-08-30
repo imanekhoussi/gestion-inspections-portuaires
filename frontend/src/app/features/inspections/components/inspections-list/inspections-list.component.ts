@@ -13,9 +13,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 // ADDED: Import RouterLink for navigation
 import { RouterLink } from '@angular/router';
+import { Inspection } from '../../../../models/inspection.interface';
 
 import { InspectionsService } from '../../services/inspections.service';
-import { Inspection, InspectionStatut, InspectionPriorite } from '../../../../core/models/inspection.interface';
+//import { Inspection, InspectionStatut, InspectionPriorite } from '../../../../core/models/inspection.interface';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
@@ -25,6 +26,21 @@ interface InspectionDisplay extends Omit<Inspection, 'statut'> {
   inspecteurNom: string;
   datePrevue: Date;
   statut: string; // Override du statut en string pour l'affichage
+}
+// Ajoutez ces enums dans votre composant
+enum InspectionStatut {
+  PROGRAMMEE = 'PROGRAMMEE',
+  EN_COURS = 'EN_COURS', 
+  CLOTUREE = 'CLOTUREE',
+  VALIDEE = 'VALIDEE',
+  REJETEE = 'REJETEE'
+}
+
+enum InspectionPriorite {
+  BASSE = 'BASSE',
+  NORMALE = 'NORMALE', 
+  HAUTE = 'HAUTE',
+  CRITIQUE = 'CRITIQUE'
 }
 
 @Component({
@@ -61,6 +77,8 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     'priorite',
   ];
 
+
+  
   dataSource = new MatTableDataSource<InspectionDisplay>();
   isLoading = true;
   error: string | null = null;
@@ -97,6 +115,8 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
       // Access the 'data' property which contains the array of inspections
       const inspectionsArray = response.data;
 
+      
+
       // Add a check to ensure the data is actually an array
       if (!Array.isArray(inspectionsArray)) {
         console.error('Invalid response format: Expected an array of inspections.', response);
@@ -118,9 +138,9 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
       this.dataSource.data = transformedInspections;
       
       // (Recommended) Update the paginator's total length from the response
-      if (this.paginator) {
-        this.paginator.length = response.total;
-      }
+      if (this.paginator && response.meta) {
+  this.paginator.length = response.meta.total;  
+}
 
       this.isLoading = false;
       
@@ -147,7 +167,7 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
     const mapping: { [key: string]: string } = {
       'programmee': 'programmée',
       'en_cours': 'en cours', 
-      'cloturee': 'terminée',
+      'cloturee': 'Clôturée',    
       'validee': 'validée',
       'rejetee': 'rejetée'
     };
@@ -169,7 +189,7 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
         return 'status-scheduled';
       case 'en cours':
         return 'status-in-progress';
-      case 'terminée':
+      case 'clôturée':
         return 'status-completed';
       case 'validée':
         return 'status-validated';
@@ -234,7 +254,8 @@ export class InspectionsListComponent implements OnInit, AfterViewInit {
   }
 
   private performDelete(inspection: InspectionDisplay): void {
-    this.inspectionsService.deleteInspection(inspection.id).subscribe({
+    
+    this.inspectionsService.deleteInspection(Number(inspection.id)).subscribe({
       next: () => {
         this.snackBar.open('Inspection supprimée avec succès', 'Fermer', {
           duration: 3000,

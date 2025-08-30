@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "@nestjs/platform-express": "^11.1.6",
+    "bcrypt": "^6.0.0",
+    "multer": "^2.0.2",
     "ol-ext": "^4.0.33"
+  },
+  "devDependencies": {
+    "@types/multer": "^2.0.0"
   }
 }
