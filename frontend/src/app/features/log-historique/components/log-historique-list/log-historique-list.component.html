@@ -16,9 +16,9 @@
       </button>
       
       <button mat-stroked-button (click)="toggleStats()">
-  <mat-icon>analytics</mat-icon>
-  Voir Statistiques
-</button>
+        <mat-icon>analytics</mat-icon>
+        Voir Statistiques
+      </button>
 
       <button mat-stroked-button (click)="exportLogs()">
         <mat-icon>download</mat-icon>
@@ -188,12 +188,14 @@
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let log">
               <div class="actions-cell">
+                <!-- Details button -->
                 <button mat-icon-button 
                         [matTooltip]="'Voir détails'" 
                         (click)="viewDetails(log)">
                   <mat-icon>visibility</mat-icon>
                 </button>
                 
+                <!-- Inspection history button -->
                 <button mat-icon-button 
                         *ngIf="log.inspection && !inspectionId"
                         [matTooltip]="'Voir historique inspection'" 
@@ -201,6 +203,7 @@
                   <mat-icon>history</mat-icon>
                 </button>
                 
+                <!-- User activity button -->
                 <button mat-icon-button 
                         *ngIf="log.intervenant"
                         [matTooltip]="'Voir activité utilisateur'" 
@@ -215,7 +218,8 @@
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
               class="log-row"
-              [class.highlight-row]="row.nouvelEtat === 'VALIDEE'"></tr>
+              [class.highlight-row]="row.nouvelEtat === 'VALIDEE'">
+          </tr>
         </table>
 
         <!-- Message si aucune donnée -->

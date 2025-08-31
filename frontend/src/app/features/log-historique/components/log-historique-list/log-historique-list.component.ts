@@ -202,13 +202,16 @@ export class LogHistoriqueListComponent implements OnInit {
     });
   }
 
-  viewInspectionHistory(inspectionId: string): void {
-    this.router.navigate(['/historique/inspection', inspectionId]);
-  }
+  viewInspectionHistory(inspectionId: string | number): void {
+  console.log('Navigating to inspection history for ID:', inspectionId);
+  this.router.navigate(['/historique/inspection', inspectionId.toString()]);
+}
 
-  viewUserActivity(userId: string): void {
-    this.router.navigate(['/historique/utilisateur', userId]);
-  }
+  viewUserActivity(userId: string | number): void {
+  console.log('Navigating to user activity for ID:', userId);
+  this.router.navigate(['/historique/utilisateur', userId.toString()]);
+}
+
 
   formatDate(date: Date | string): string {
     return this.logService.formatDate(date);
