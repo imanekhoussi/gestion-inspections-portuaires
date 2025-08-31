@@ -78,24 +78,25 @@ export class LogStatistiquesComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    forkJoin({
-      logs: this.logService.findAll(),
-      transitions: this.logService.getStatistiquesEtats().pipe(catchError(() => of([])))
-    }).pipe(
+    // Pour test, chargez seulement les logs pour voir si ça fonctionne
+    this.logService.findAll().pipe(
       catchError(error => {
         console.error('Erreur lors du chargement des statistiques:', error);
-        this.error.set('Erreur lors du chargement des statistiques');
+        this.error.set('Erreur lors du chargement des statistiques: ' + error.message);
         this.snackBar.open('Erreur lors du chargement des statistiques', 'Fermer', { duration: 3000 });
-        return of({ logs: [], transitions: [] });
+        return of([]);
       })
-    ).subscribe(({ logs, transitions }) => {
+    ).subscribe(logs => {
+      console.log('Logs reçus:', logs); // Debug
       this.logsData.set(logs);
-      this.calculateStatistics(logs, transitions);
+      this.calculateStatistics(logs, []);
       this.loading.set(false);
     });
   }
 
   private calculateStatistics(logs: LogHistorique[], transitions: any[]): void {
+    console.log('Calcul des statistiques avec', logs.length, 'logs'); // Debug
+
     // Statistiques globales
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -161,7 +162,7 @@ export class LogStatistiquesComponent implements OnInit {
       .map(([etat, count]) => ({
         etat,
         count,
-        pourcentage: Math.round((count / totalEtats) * 100)
+        pourcentage: totalEtats > 0 ? Math.round((count / totalEtats) * 100) : 0
       }))
       .sort((a, b) => b.count - a.count);
 
@@ -188,6 +189,13 @@ export class LogStatistiquesComponent implements OnInit {
       .slice(0, 5);
 
     this.topUsers.set(topUsersArray);
+
+    console.log('Statistiques calculées:', {
+      globales: this.statsGlobales(),
+      transitions: this.statsTransitions(),
+      etats: this.statsEtats(),
+      topUsers: this.topUsers()
+    }); // Debug
   }
 
   refreshData(): void {
@@ -195,7 +203,6 @@ export class LogStatistiquesComponent implements OnInit {
   }
 
   exportStats(): void {
-    // Implémentation de l'export
     this.snackBar.open('Export en cours de développement', 'Fermer', { duration: 2000 });
   }
 

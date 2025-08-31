@@ -1,14 +1,12 @@
-// src/app/features/log-historique/components/log-historique-list/log-historique-list.component.ts
-
 import { Component, OnInit, inject, signal, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 // Angular Material
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
-import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,7 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
@@ -28,6 +26,8 @@ import { LogHistoriqueService } from '../../services/log-historique.service';
 import { LogHistorique, LogHistoriqueFilter } from '../../../../core/models/log-historique.interface';
 import { debounceTime, distinctUntilChanged, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { LogDetailDialogComponent } from '../log-detail-dialog/log-detail-dialog.component';
+
 
 @Component({
   selector: 'app-log-historique-list',
@@ -35,8 +35,6 @@ import { of } from 'rxjs';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    
-    // Angular Material
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
@@ -59,41 +57,36 @@ import { of } from 'rxjs';
   styleUrls: ['./log-historique-list.component.scss']
 })
 export class LogHistoriqueListComponent implements OnInit {
-  @Input() inspectionId?: string; // Pour afficher les logs d'une inspection spécifique
+  @Input() inspectionId?: string;
   @Input() showFilters: boolean = true;
   @Input() showActions: boolean = true;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  // Services injectés
+  // Services
   private readonly logService = inject(LogHistoriqueService);
   private readonly dialog = inject(MatDialog);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  // Configuration du tableau
+  // Table Columns
   displayedColumns: string[] = [
-    'dateIntervention',
-    'intervenant',
-    'inspection',
-    'ancienEtat',
-    'nouvelEtat',
-    'commentaire',
-    'actions'
+    'dateIntervention', 'intervenant', 'inspection', 'ancienEtat',
+    'nouvelEtat', 'commentaire', 'actions'
   ];
 
-  // Signals pour la gestion d'état
+  // State Signals
   loading = signal(false);
   error = signal<string | null>(null);
   logs = signal<LogHistorique[]>([]);
-  showStats = signal(false);
-
-  // Données pour le tableau
+  
+  // Table Data Source
   dataSource = new MatTableDataSource<LogHistorique>([]);
 
-  // Formulaire de filtres
+  // Filter Form
   filterForm: FormGroup;
 
   constructor() {
@@ -103,11 +96,6 @@ export class LogHistoriqueListComponent implements OnInit {
       dateDebut: [''],
       dateFin: ['']
     });
-
-    // Ajuster les colonnes selon le contexte
-    if (this.inspectionId) {
-      this.displayedColumns = this.displayedColumns.filter(col => col !== 'inspection');
-    }
   }
 
   ngOnInit(): void {
@@ -121,21 +109,23 @@ export class LogHistoriqueListComponent implements OnInit {
   }
 
   private initializeComponent(): void {
-    this.loadData();
+    this.route.paramMap.subscribe(params => {
+      const userId = params.get('userId');
+      if (userId) {
+        this.loadDataForUser(userId);
+      } else {
+        this.loadData();
+      }
+    });
   }
 
   private setupFilterSubscription(): void {
-    this.filterForm.valueChanges
-      .pipe(
-        debounceTime(300),
-        distinctUntilChanged()
-      )
-      .subscribe(() => {
-        this.applyFilters();
-      });
+    this.filterForm.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(() => this.applyFilters());
   }
 
-  // Chargement des données
   loadData(): void {
     this.loading.set(true);
     this.error.set(null);
@@ -145,10 +135,10 @@ export class LogHistoriqueListComponent implements OnInit {
       : this.logService.findAll();
 
     request$.pipe(
-      catchError(error => {
-        console.error('Erreur lors du chargement des logs:', error);
-        this.error.set('Erreur lors du chargement des logs');
-        this.snackBar.open('Erreur lors du chargement des logs', 'Fermer', { duration: 3000 });
+      catchError(err => {
+        console.error('Error loading logs:', err);
+        this.error.set('Failed to load logs.');
+        this.snackBar.open('Error loading logs', 'Close', { duration: 3000 });
         return of([]);
       })
     ).subscribe(logs => {
@@ -158,40 +148,36 @@ export class LogHistoriqueListComponent implements OnInit {
     });
   }
 
-  // Application des filtres
+  loadDataForUser(userId: string): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.showFilters = false;
+    
+    this.logService.findByUtilisateur(userId).pipe(
+      catchError(err => {
+        console.error(`Error loading logs for user ${userId}:`, err);
+        this.error.set(`Failed to load logs for user ${userId}.`);
+        this.snackBar.open('Error loading user logs', 'Close', { duration: 3000 });
+        return of([]);
+      })
+    ).subscribe(logs => {
+      this.logs.set(logs);
+      this.dataSource.data = logs;
+      this.loading.set(false);
+    });
+  }
+
   applyFilters(): void {
-    if (this.inspectionId) {
-      // En mode inspection spécifique, pas de filtres avancés
-      return;
-    }
+    if (this.inspectionId) return;
 
-    const filters: LogHistoriqueFilter = {};
-    const formValue = this.filterForm.value;
-
-    if (formValue.interventionPar) {
-      filters.interventionPar = formValue.interventionPar;
-    }
-    if (formValue.inspectionId) {
-      filters.inspectionId = formValue.inspectionId;
-    }
-    if (formValue.dateDebut) {
-      filters.dateDebut = this.formatDateForApi(formValue.dateDebut);
-    }
-    if (formValue.dateFin) {
-      filters.dateFin = this.formatDateForApi(formValue.dateFin);
-    }
-
-    if (Object.keys(filters).length === 0) {
-      this.loadData();
-      return;
-    }
+    const filters: LogHistoriqueFilter = this.filterForm.value;
+    // Further filter processing can be added here as needed
 
     this.loading.set(true);
     this.logService.findAll(filters).pipe(
-      catchError(error => {
-        console.error('Erreur lors de l\'application des filtres:', error);
-        this.error.set('Erreur lors de l\'application des filtres');
-        this.snackBar.open('Erreur lors de l\'application des filtres', 'Fermer', { duration: 3000 });
+      catchError(err => {
+        console.error('Error applying filters:', err);
+        this.error.set('Failed to apply filters.');
         return of([]);
       })
     ).subscribe(logs => {
@@ -201,24 +187,29 @@ export class LogHistoriqueListComponent implements OnInit {
     });
   }
 
-  // Actions du tableau
   viewDetails(log: LogHistorique): void {
-    // Pour l'instant, juste un log - vous pourrez ajouter un dialog plus tard
-    console.log('Détails du log:', log);
-    this.snackBar.open('Fonctionnalité en développement', 'Fermer', { duration: 2000 });
+    const dialogRef = this.dialog.open(LogDetailDialogComponent, {
+      width: '600px',
+      data: log
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.action === 'viewInspection') {
+        this.viewInspectionHistory(result.inspectionId);
+      } else if (result?.action === 'viewUser') {
+        this.viewUserActivity(result.userId);
+      }
+    });
   }
 
   viewInspectionHistory(inspectionId: string): void {
-    // ✅ CHANGED from '/logs/inspection'
     this.router.navigate(['/historique/inspection', inspectionId]);
   }
 
   viewUserActivity(userId: string): void {
-    // ✅ CHANGED from '/logs/utilisateur'
     this.router.navigate(['/historique/utilisateur', userId]);
   }
 
-  // Utilitaires d'affichage
   formatDate(date: Date | string): string {
     return this.logService.formatDate(date);
   }
@@ -227,33 +218,29 @@ export class LogHistoriqueListComponent implements OnInit {
     return this.logService.getEtatBadgeClass(etat);
   }
 
-  // Actions du composant
   resetFilters(): void {
     this.filterForm.reset();
     this.loadData();
   }
 
   exportLogs(): void {
-    // Implémentation de l'export
-    this.snackBar.open('Export en cours de développement', 'Fermer', { duration: 2000 });
+    this.snackBar.open('Export feature is not yet implemented.', 'Close', { duration: 2000 });
   }
 
   refreshData(): void {
-    this.loadData();
+    this.initializeComponent();
   }
 
   toggleStats(): void {
-    this.showStats.update(value => !value);
-  }
+  this.router.navigate(['/historique/statistiques']);
+}
 
-  // Gestion de l'activité récente
   loadActiviteRecente(heures: number = 24): void {
     this.loading.set(true);
     this.logService.getActiviteRecente(heures).pipe(
-      catchError(error => {
-        console.error('Erreur lors du chargement de l\'activité récente:', error);
-        this.error.set('Erreur lors du chargement de l\'activité récente');
-        this.snackBar.open('Erreur lors du chargement de l\'activité récente', 'Fermer', { duration: 3000 });
+      catchError(err => {
+        console.error('Error loading recent activity:', err);
+        this.error.set('Failed to load recent activity.');
         return of([]);
       })
     ).subscribe(logs => {
@@ -261,9 +248,5 @@ export class LogHistoriqueListComponent implements OnInit {
       this.dataSource.data = logs;
       this.loading.set(false);
     });
-  }
-
-  private formatDateForApi(date: Date): string {
-    return date.toISOString().split('T')[0];
   }
 }

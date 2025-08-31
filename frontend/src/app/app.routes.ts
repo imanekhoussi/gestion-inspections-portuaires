@@ -68,8 +68,6 @@ export const routes: Routes = [
         path: 'inspections',
         loadComponent: () => import('./features/inspections/components/inspections-list/inspections-list.component').then(m => m.InspectionsListComponent)
       },
-      
-      
       {
         path: 'planning/calendar',
         loadComponent: () => import('./features/inspections/components/inspections-calendar/inspections-calendar').then(m => m.InspectionsCalendarComponent)
@@ -78,16 +76,20 @@ export const routes: Routes = [
         path: 'historique',
         children: [
           {
-            path: '', // The base path at /historique
+            path: '',
             loadComponent: () => import('./features/log-historique/components/log-historique-list/log-historique-list.component').then(m => m.LogHistoriqueListComponent)
           },
           {
-            path: 'inspection/:inspectionId', // The route for a specific inspection's history
+            path: 'inspection/:inspectionId',
             loadComponent: () => import('./features/log-historique/components/log-inspection-history/log-inspection-history.component').then(m => m.LogInspectionHistoryComponent)
           },
           {
-            path: 'utilisateur/:userId', // The route for a specific user's activity
+            path: 'utilisateur/:userId',
             loadComponent: () => import('./features/log-historique/components/log-historique-list/log-historique-list.component').then(m => m.LogHistoriqueListComponent)
+          },
+          {
+            path: 'statistiques',
+            loadComponent: () => import('./features/log-historique/components/log-statistiques/log-statistiques.component').then(m => m.LogStatistiquesComponent)
           }
         ]
       }
