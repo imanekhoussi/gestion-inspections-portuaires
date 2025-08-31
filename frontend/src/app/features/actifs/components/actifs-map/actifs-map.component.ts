@@ -81,7 +81,7 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   siteFilters: FilterOption[] = [];
   zoneFilters: FilterOption[] = [];
   etatChips: EtatChip[] = [
-    { value: '1-2', label: 'Bon état', count: 0, selected: true, color: '#4caf50' },
+    { value: '1-2', label: 'Bon ', count: 0, selected: true, color: '#4caf50' },
     { value: '3', label: 'Moyen', count: 0, selected: true, color: '#ff9800' },
     { value: '4-5', label: 'Mauvais', count: 0, selected: true, color: '#f44336' }
   ];

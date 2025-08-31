@@ -32,17 +32,20 @@
     <div id="map" class="ol-map" [class.loading]="isLoading">
 
       <div *ngIf="!selectedActif && isFilterPanelVisible" class="floating-panel filter-panel" cdkDrag [cdkDragBoundary]="dragBoundarySelector">
-        <div class="panel-header" cdkDragHandle>
-          <div class="panel-title">
+        <!-- Minimal header for filter panel -->
+        <div class="panel-header-minimal" cdkDragHandle>
+          <div class="panel-title-minimal">
             <mat-icon>filter_list</mat-icon>
-            <h4>Filtres</h4>
+            <span>Filtres</span>
           </div>
-          <button mat-icon-button (click)="toggleFilterPanel()" matTooltip="Fermer"><mat-icon>close</mat-icon></button>
+          <button mat-icon-button (click)="toggleFilterPanel()" matTooltip="Fermer" class="close-btn-minimal">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
-        <div class="panel-content">
+        <div class="panel-content filter-content">          
           <div class="filter-section">
             <label>Fond de carte</label>
-            <mat-form-field appearance="outline" [subscriptSizing]="'dynamic'">
+            <mat-form-field appearance="outline" [subscriptSizing]="'dynamic'" class="ultra-compact-select">
               <mat-select [(value)]="selectedBaseMap" (selectionChange)="onBaseMapChange()">
                 <mat-option value="osm">OpenStreetMap</mat-option>
                 <mat-option value="satellite">Satellite</mat-option>
@@ -76,6 +79,8 @@
             </mat-expansion-panel>
           </mat-accordion>
         </div>
+        <!-- Resize handle hint for filter panel -->
+        <div class="resize-handle-hint" matTooltip="Redimensionner le panneau"></div>
       </div>
 
       <div *ngIf="isLegendVisible" class="floating-panel legend-panel" cdkDrag [cdkDragBoundary]="dragBoundarySelector">

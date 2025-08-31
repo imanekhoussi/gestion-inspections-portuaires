@@ -88,16 +88,70 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
   z-index: 1000;
-  width: 320px;
+  min-width: 220px; // Reduced minimum width
+  max-width: 450px; // Added maximum width
   
-  &.filter-panel { top: 20px; left: 20px; }
-  &.legend-panel { top: 20px; right: 20px; width: 240px; }
+  &.filter-panel { 
+    top: 20px; 
+    left: 20px; 
+    width: 280px; // Reduced from 320px
+    resize: both; // Make it resizable
+    overflow: hidden; // Required for resize to work properly
+    min-height: 160px; // Smaller with minimal header
+    max-height: calc(100vh - 100px); // Maximum height
+  }
+  
+  &.legend-panel { 
+    top: 20px; 
+    right: 20px; 
+    width: 200px; // Reduced from 240px
+    min-height: 150px; // Smaller minimum height
+    max-height: calc(100vh - 100px);
+  }
+
+  // Add resize handle styling for WebKit browsers
+  &.filter-panel::-webkit-resizer {
+    background: linear-gradient(135deg, 
+      transparent 0%, transparent 40%, 
+      #1976d2 40%, #1976d2 60%, 
+      transparent 60%, transparent 100%);
+    border-radius: 0 0 12px 0;
+  }
+}
+
+// Optional visual resize handle hint
+.resize-handle-hint {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, 
+    transparent 0%, transparent 40%, 
+    rgba(25, 118, 210, 0.5) 40%, rgba(25, 118, 210, 0.5) 60%, 
+    transparent 60%, transparent 100%);
+  cursor: nw-resize;
+  border-radius: 0 0 8px 0;
+  pointer-events: none; // Allow resize through this element
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, 
+      transparent 0%, transparent 40%, 
+      rgba(25, 118, 210, 0.8) 40%, rgba(25, 118, 210, 0.8) 60%, 
+      transparent 60%, transparent 100%);
+  }
 }
 
 .panel-header {
   background: #1976d2;
   color: white;
-  padding: 8px 16px;
+  padding: 6px 12px; // Reduced padding
   cursor: move;
   display: flex;
   justify-content: space-between;
@@ -107,69 +161,274 @@
   .panel-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    h4 { margin: 0; font-size: 16px; font-weight: 500; }
+    gap: 6px; // Reduced gap
+    h4 { 
+      margin: 0; 
+      font-size: 14px; // Reduced font size
+      font-weight: 500; 
+    }
+    mat-icon {
+      font-size: 18px; // Smaller icon
+      width: 18px;
+      height: 18px;
+    }
   }
   
-  button { color: white; }
+  button { 
+    color: white;
+    mat-icon {
+      font-size: 18px; // Smaller close button
+      width: 18px;
+      height: 18px;
+    }
+  }
 }
 
 .legend-panel .panel-header { background: #673ab7; }
 
 .panel-content {
-  padding: 16px;
-  max-height: calc(100vh - 250px);
+  padding: 12px; // Reduced padding
+  max-height: calc(100% - 45px); // Adjust for legend header
   overflow-y: auto;
+  font-size: 13px; // Smaller font size
+  
+  &.filter-content {
+    max-height: calc(100% - 28px); // Adjust for minimal header height
+    padding: 8px; // Even smaller padding for filter
+  }
+}
+
+// Minimal header for filter panel
+.panel-header-minimal {
+  background: #1976d2;
+  color: white;
+  padding: 4px 8px; // Much smaller padding
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 12px 12px 0 0;
+  height: 28px; // Fixed small height
+  
+  .panel-title-minimal {
+    display: flex;
+    align-items: center;
+    gap: 4px; // Small gap
+    
+    span { 
+      font-size: 12px; // Smaller font
+      font-weight: 500; 
+      margin: 0;
+    }
+    
+    mat-icon {
+      font-size: 14px; // Smaller icon
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  .close-btn-minimal { 
+    color: white;
+    width: 20px;
+    height: 20px;
+    line-height: 1;
+    
+    mat-icon {
+      font-size: 14px; // Smaller close button
+      width: 14px;
+      height: 14px;
+    }
+  }
 }
 
 .filter-section {
-  margin-bottom: 16px;
-  label { display: block; font-weight: 500; margin-bottom: 8px; color: #555; font-size: 14px; }
+  margin-bottom: 12px; // Reduced margin
+  label { 
+    display: block; 
+    font-weight: 500; 
+    margin-bottom: 6px; // Reduced margin
+    color: #555; 
+    font-size: 12px; // Smaller label
+  }
   .mat-mdc-form-field-subscript-wrapper { display: none; }
+  
+  // Ultra compact form field for dropdown
+  &.ultra-compact-select {
+    ::ng-deep .mat-mdc-form-field {
+      width: 100%;
+      font-size: 11px;
+      
+      .mat-mdc-form-field-flex {
+        height: 26px; // Even smaller height
+        align-items: center;
+      }
+      
+      .mat-mdc-form-field-infix {
+        min-height: 18px; // Very small
+        padding: 2px 0; // Minimal padding
+        font-size: 11px;
+      }
+      
+      .mat-mdc-text-field-wrapper {
+        height: 26px; // Match the flex height
+      }
+      
+      .mat-mdc-form-field-outline {
+        .mat-mdc-form-field-outline-start,
+        .mat-mdc-form-field-outline-notch,
+        .mat-mdc-form-field-outline-end {
+          border-width: 1px; // Thin border
+        }
+      }
+      
+      .mat-mdc-select {
+        font-size: 11px; // Very small font
+        line-height: 16px;
+        min-height: 18px;
+      }
+      
+      .mat-mdc-select-value {
+        font-size: 11px;
+        line-height: 16px;
+      }
+      
+      .mat-mdc-select-arrow-wrapper {
+        transform: translateY(-1px); // Center the arrow
+        
+        .mat-mdc-select-arrow {
+          width: 12px;
+          height: 12px;
+          
+          svg {
+            width: 12px;
+            height: 12px;
+          }
+        }
+      }
+      
+      // Make the dropdown panel options smaller too
+      .mat-mdc-select-panel {
+        .mat-mdc-option {
+          font-size: 11px;
+          min-height: 32px;
+          line-height: 32px;
+        }
+      }
+    }
+  }
+  
+  // Standard form field styling for others
+  ::ng-deep .mat-mdc-form-field:not(.ultra-compact-select) {
+    .mat-mdc-form-field-infix {
+      min-height: 32px; // Reduced height
+    }
+    .mat-mdc-text-field-wrapper {
+      height: 36px; // Reduced height
+    }
+  }
 }
 
 .etat-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px; // Reduced gap
   
   mat-chip-option {
     border-width: 2px;
     border-style: solid;
+    font-size: 11px; // Smaller text
+    min-height: 28px; // Smaller chips
+    
+    ::ng-deep .mdc-evolution-chip__text-label {
+      font-size: 11px;
+    }
   }
 }
 
 .checkbox-list {
   display: flex;
   flex-direction: column;
-  max-height: 150px;
+  max-height: 120px; // Reduced height
   overflow-y: auto;
-  padding-right: 8px;
+  padding-right: 6px;
+  
+  mat-checkbox {
+    margin-bottom: 4px; // Reduced spacing
+    font-size: 12px; // Smaller font
+    
+    ::ng-deep {
+      .mat-mdc-checkbox {
+        --mdc-checkbox-state-layer-size: 32px; // Smaller checkboxes
+      }
+      .mdc-form-field {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+// Make expansion panels more compact
+::ng-deep .mat-expansion-panel {
+  .mat-expansion-panel-header {
+    height: 40px; // Reduced height
+    font-size: 13px;
+    
+    .mat-expansion-panel-header-title {
+      font-size: 13px;
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        margin-right: 6px;
+      }
+    }
+  }
+  
+  .mat-expansion-panel-body {
+    padding: 8px 12px 12px; // Reduced padding
+  }
 }
 
 .legend-items .legend-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px;
-  margin-bottom: 6px;
-  border-radius: 6px;
+  gap: 8px; // Reduced gap
+  padding: 6px; // Reduced padding
+  margin-bottom: 4px; // Reduced margin
+  border-radius: 4px; // Smaller radius
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover { background-color: rgba(0, 0, 0, 0.05); }
   &.disabled { opacity: 0.5; }
-  .legend-symbol { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
-  span { font-size: 13px; font-weight: 500; }
+  .legend-symbol { 
+    width: 12px; // Smaller symbol
+    height: 12px; 
+    border-radius: 50%; 
+    border: 1px solid white; // Thinner border
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); // Smaller shadow
+  }
+  span { 
+    font-size: 11px; // Smaller text
+    font-weight: 500; 
+  }
 }
 
 .selected-actif-info {
-  border-left: 4px solid #2196f3;
-  padding: 12px;
-  margin-bottom: 16px;
+  border-left: 3px solid #2196f3; // Thinner border
+  padding: 8px; // Reduced padding
+  margin-bottom: 12px; // Reduced margin
   background: rgba(33, 150, 243, 0.05);
-  strong { display: block; margin-bottom: 4px; }
-  small { font-family: monospace; }
+  strong { 
+    display: block; 
+    margin-bottom: 3px; // Reduced margin
+    font-size: 12px; // Smaller font
+  }
+  small { 
+    font-family: monospace; 
+    font-size: 10px; // Smaller font
+  }
 }
 
 .ol-popup {
@@ -220,7 +479,51 @@
   }
 }
 
+// Enhanced mobile responsiveness
 @media (max-width: 1024px) {
-  .map-header { flex-direction: column; align-items: stretch; h2 { text-align: center; margin-bottom: 16px; } }
-  .floating-panel { width: calc(100vw - 40px); max-width: 400px; &.filter-panel, &.legend-panel { right: auto; left: 20px; } &.legend-panel { top: auto; bottom: 20px; } }
+  .map-header { 
+    flex-direction: column; 
+    align-items: stretch; 
+    h2 { text-align: center; margin-bottom: 16px; } 
+  }
+  
+  .floating-panel { 
+    width: calc(100vw - 40px); 
+    max-width: 350px; // Smaller max width on mobile
+    
+    &.filter-panel, &.legend-panel { 
+      right: auto; 
+      left: 20px; 
+      resize: none; // Disable resize on mobile
+    } 
+    
+    &.filter-panel {
+      border-radius: 12px; // Ensure border radius on mobile
+    }
+    
+    &.legend-panel { 
+      top: auto; 
+      bottom: 20px; 
+      max-height: 40vh; // Limit height on mobile
+    } 
+  }
+}
+
+@media (max-width: 768px) {
+  .floating-panel {
+    max-width: 300px;
+    font-size: 12px;
+    
+    .panel-content {
+      padding: 8px;
+    }
+    
+    &.filter-panel {
+      width: calc(100vw - 30px);
+    }
+    
+    &.legend-panel {
+      max-height: 35vh;
+    }
+  }
 }
