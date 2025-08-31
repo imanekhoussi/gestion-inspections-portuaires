@@ -24,7 +24,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
-import { LogHistoriqueService } from '../../services/log-historique';
+import { LogHistoriqueService } from '../../services/log-historique.service';
 import { LogHistorique, LogHistoriqueFilter } from '../../../../core/models/log-historique.interface';
 import { debounceTime, distinctUntilChanged, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -209,11 +209,13 @@ export class LogHistoriqueListComponent implements OnInit {
   }
 
   viewInspectionHistory(inspectionId: string): void {
-    this.router.navigate(['/logs/inspection', inspectionId]);
+    // ✅ CHANGED from '/logs/inspection'
+    this.router.navigate(['/historique/inspection', inspectionId]);
   }
 
   viewUserActivity(userId: string): void {
-    this.router.navigate(['/logs/utilisateur', userId]);
+    // ✅ CHANGED from '/logs/utilisateur'
+    this.router.navigate(['/historique/utilisateur', userId]);
   }
 
   // Utilitaires d'affichage

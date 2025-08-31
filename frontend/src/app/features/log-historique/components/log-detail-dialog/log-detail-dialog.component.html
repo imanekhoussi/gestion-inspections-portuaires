@@ -1,0 +1,123 @@
+<!-- src/app/features/log-historique/components/log-detail-dialog/log-detail-dialog.component.html -->
+
+<div class="dialog-header">
+  <h2 mat-dialog-title>
+    <mat-icon>history</mat-icon>
+    Détails du Log
+  </h2>
+  <button mat-icon-button mat-dialog-close>
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-content">
+  <div class="log-details">
+    
+    <!-- Information générale -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-card-title>Information générale</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="detail-row">
+          <span class="label">Date d'intervention:</span>
+          <span class="value">{{ formatDate(data.dateIntervention) }}</span>
+        </div>
+        
+        <div class="detail-row" *ngIf="data.intervenant">
+          <span class="label">Intervenant:</span>
+          <div class="user-info">
+            <span class="user-name">{{ data.intervenant.nom }} {{ data.intervenant.prenom }}</span>
+            <span class="user-email">{{ data.intervenant.email }}</span>
+          </div>
+        </div>
+
+        <div class="detail-row" *ngIf="data.inspection">
+          <span class="label">Inspection:</span>
+          <div class="inspection-info">
+            <span class="inspection-name">{{ data.inspection.titre }}</span>
+            <span class="inspection-id">#{{ data.inspection.id }}</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Changements d'état -->
+    <mat-card class="state-card">
+      <mat-card-header>
+        <mat-card-title>Changements d'état</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="state-transition">
+          <div class="state-item">
+            <span class="state-label">Ancien état:</span>
+            <mat-chip *ngIf="data.ancienEtat" 
+                     [ngClass]="getEtatBadgeClass(data.ancienEtat)">
+              {{ data.ancienEtat }}
+            </mat-chip>
+            <mat-chip *ngIf="!data.ancienEtat" class="nouveau-chip">
+              Nouveau
+            </mat-chip>
+          </div>
+          
+          <div class="arrow">
+            <mat-icon>arrow_forward</mat-icon>
+          </div>
+          
+          <div class="state-item">
+            <span class="state-label">Nouvel état:</span>
+            <mat-chip *ngIf="data.nouvelEtat" 
+                     [ngClass]="getEtatBadgeClass(data.nouvelEtat)">
+              {{ data.nouvelEtat }}
+            </mat-chip>
+            <mat-chip *ngIf="!data.nouvelEtat" class="supprime-chip">
+              Supprimé
+            </mat-chip>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Commentaire -->
+    <mat-card class="comment-card" *ngIf="data.commentaire">
+      <mat-card-header>
+        <mat-card-title>Commentaire</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="comment-content">
+          <mat-icon class="comment-icon">comment</mat-icon>
+          <p class="comment-text">{{ data.commentaire }}</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Actions rapides -->
+    <mat-card class="actions-card" *ngIf="data.inspection || data.intervenant">
+      <mat-card-header>
+        <mat-card-title>Actions rapides</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="quick-actions">
+          <button mat-stroked-button 
+                  *ngIf="data.inspection"
+                  (click)="viewInspectionHistory()">
+            <mat-icon>history</mat-icon>
+            Voir historique inspection
+          </button>
+          
+          <button mat-stroked-button 
+                  *ngIf="data.intervenant"
+                  (click)="viewUserActivity()">
+            <mat-icon>person_search</mat-icon>
+            Voir activité utilisateur
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button mat-dialog-close>Fermer</button>
+</mat-dialog-actions>

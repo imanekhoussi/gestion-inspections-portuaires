@@ -1,0 +1,240 @@
+<!-- src/app/features/log-historique/components/log-statistiques/log-statistiques.component.html -->
+
+<div class="statistiques-container">
+  
+  <!-- En-tête -->
+  <div class="header">
+    <h2 class="title">
+      <mat-icon>analytics</mat-icon>
+      Statistiques des Logs
+    </h2>
+    
+    <div class="header-actions">
+      <button mat-stroked-button (click)="refreshData()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Actualiser
+      </button>
+      
+      <button mat-stroked-button (click)="exportStats()">
+        <mat-icon>download</mat-icon>
+        Exporter
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicateur de chargement -->
+  <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
+
+  <!-- Message d'erreur -->
+  <mat-card *ngIf="error()" class="error-card">
+    <mat-card-content>
+      <div class="error-message">
+        <mat-icon color="warn">error</mat-icon>
+        <span>{{ error() }}</span>
+        <button mat-button color="primary" (click)="refreshData()">
+          Réessayer
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Contenu des statistiques -->
+  <div class="stats-content" *ngIf="!loading() && !error()">
+    
+    <!-- Statistiques globales -->
+    <div class="global-stats">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>timeline</mat-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-number">{{ statsGlobales().totalActions }}</span>
+            <span class="stat-label">Actions totales</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>people</mat-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-number">{{ statsGlobales().totalIntervenants }}</span>
+            <span class="stat-label">Intervenants actifs</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>assignment</mat-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-number">{{ statsGlobales().totalInspections }}</span>
+            <span class="stat-label">Inspections touchées</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>today</mat-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-number">{{ statsGlobales().actionsAujourdhui }}</span>
+            <span class="stat-label">Actions aujourd'hui</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Onglets détaillés -->
+    <mat-tab-group class="stats-tabs">
+      
+      <!-- Onglet Transitions d'états -->
+      <mat-tab label="Transitions d'états">
+        <div class="tab-content">
+          <mat-card class="transitions-card">
+            <mat-card-header>
+              <mat-card-title>Transitions les plus fréquentes</mat-card-title>
+              <mat-card-subtitle>Analyse des changements d'état</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="transitions-list">
+                <div class="transition-item" 
+                     *ngFor="let transition of statsTransitions(); let i = index"
+                     [class.top-transition]="i < 3">
+                  <div class="transition-rank">{{ i + 1 }}</div>
+                  <div class="transition-flow">
+                    <span class="etat-from" 
+                          [ngClass]="getEtatBadgeClass(transition.ancien)">
+                      {{ transition.ancien || 'Nouveau' }}
+                    </span>
+                    <mat-icon class="arrow">arrow_forward</mat-icon>
+                    <span class="etat-to" 
+                          [ngClass]="getEtatBadgeClass(transition.nouveau)">
+                      {{ transition.nouveau || 'Supprimé' }}
+                    </span>
+                  </div>
+                  <div class="transition-count">
+                    <span class="count">{{ transition.count }}</span>
+                    <span class="label">fois</span>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Onglet États -->
+      <mat-tab label="États">
+        <div class="tab-content">
+          <mat-card class="etats-card">
+            <mat-card-header>
+              <mat-card-title>Distribution des états</mat-card-title>
+              <mat-card-subtitle>Répartition des états finaux</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="etats-chart">
+                <div class="etat-bar" *ngFor="let etat of statsEtats()">
+                  <div class="etat-info">
+                    <span class="etat-name" [ngClass]="getEtatBadgeClass(etat.etat)">
+                      {{ etat.etat }}
+                    </span>
+                    <span class="etat-percentage">{{ etat.pourcentage }}%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" 
+                         [style.width.%]="etat.pourcentage"
+                         [ngClass]="getEtatBadgeClass(etat.etat)">
+                    </div>
+                  </div>
+                  <span class="etat-count">{{ etat.count }} actions</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Onglet Activité -->
+      <mat-tab label="Activité">
+        <div class="tab-content">
+          <div class="activity-cards">
+            
+            <mat-card class="activity-card">
+              <mat-card-header>
+                <mat-card-title>Activité récente</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="activity-stats">
+                  <div class="activity-item">
+                    <mat-icon>today</mat-icon>
+                    <div class="activity-info">
+                      <span class="activity-number">{{ statsGlobales().actionsAujourdhui }}</span>
+                      <span class="activity-label">Aujourd'hui</span>
+                    </div>
+                  </div>
+                  
+                  <mat-divider></mat-divider>
+                  
+                  <div class="activity-item">
+                    <mat-icon>date_range</mat-icon>
+                    <div class="activity-info">
+                      <span class="activity-number">{{ statsGlobales().actionsCetteSemaine }}</span>
+                      <span class="activity-label">Cette semaine</span>
+                    </div>
+                  </div>
+                  
+                  <mat-divider></mat-divider>
+                  
+                  <div class="activity-item">
+                    <mat-icon>trending_up</mat-icon>
+                    <div class="activity-info">
+                      <span class="activity-number">{{ getMoyenneQuotidienne() }}</span>
+                      <span class="activity-label">Moyenne/jour</span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="top-users-card">
+              <mat-card-header>
+                <mat-card-title>Utilisateurs les plus actifs</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="top-users-list">
+                  <div class="user-item" *ngFor="let user of topUsers(); let i = index">
+                    <div class="user-rank">{{ i + 1 }}</div>
+                    <div class="user-info">
+                      <span class="user-name">{{ user.nom }} {{ user.prenom }}</span>
+                      <span class="user-email">{{ user.email }}</span>
+                    </div>
+                    <div class="user-count">{{ user.count }}</div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+  </div>
+
+  <!-- Message si aucune donnée -->
+  <div *ngIf="!loading() && !error() && statsGlobales().totalActions === 0" class="no-data-message">
+    <mat-icon>analytics</mat-icon>
+    <h3>Aucune donnée disponible</h3>
+    <p>Il n'y a pas encore de logs à analyser.</p>
+  </div>
+
+</div>

@@ -1,0 +1,223 @@
+/* src/app/features/log-historique/components/log-detail-dialog/log-detail-dialog.component.scss */
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px 0;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #333;
+
+    mat-icon {
+      color: #2196f3;
+    }
+  }
+}
+
+.dialog-content {
+  padding: 16px 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.log-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-card, .state-card, .comment-card, .actions-card {
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .label {
+      font-weight: 500;
+      color: #666;
+      min-width: 140px;
+    }
+
+    .value {
+      color: #333;
+      font-weight: 400;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+
+      .user-name {
+        font-weight: 500;
+        color: #333;
+      }
+
+      .user-email {
+        font-size: 0.9rem;
+        color: #666;
+      }
+    }
+
+    .inspection-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+
+      .inspection-name {
+        font-weight: 500;
+        color: #333;
+      }
+
+      .inspection-id {
+        font-size: 0.9rem;
+        color: #666;
+        font-family: monospace;
+      }
+    }
+  }
+}
+
+.state-transition {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  padding: 16px;
+
+  .state-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    .state-label {
+      font-size: 0.9rem;
+      color: #666;
+      font-weight: 500;
+    }
+  }
+
+  .arrow {
+    color: #2196f3;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+
+.comment-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  .comment-icon {
+    color: #666;
+    margin-top: 2px;
+  }
+
+  .comment-text {
+    margin: 0;
+    line-height: 1.5;
+    color: #333;
+    word-break: break-word;
+  }
+}
+
+.quick-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.dialog-actions {
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+}
+
+// Badge styles
+.mat-mdc-chip {
+  font-size: 0.8rem;
+  font-weight: 500;
+  
+  &.badge-warning {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  
+  &.badge-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  &.badge-success {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  &.badge-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  &.badge-light {
+    background-color: #f8f9fa;
+    color: #6c757d;
+  }
+
+  &.nouveau-chip {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+
+  &.supprime-chip {
+    background-color: #fce4ec;
+    color: #c2185b;
+  }
+}
+
+@media (max-width: 600px) {
+  .dialog-content {
+    padding: 12px 16px;
+  }
+
+  .state-transition {
+    flex-direction: column;
+    gap: 12px;
+
+    .arrow {
+      transform: rotate(90deg);
+    }
+  }
+
+  .quick-actions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

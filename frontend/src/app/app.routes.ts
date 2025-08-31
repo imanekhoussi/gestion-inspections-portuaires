@@ -76,7 +76,20 @@ export const routes: Routes = [
       },
       {
         path: 'historique',
-        loadComponent: () => import('./features/log-historique/components/log-historique-list/log-historique-list.component').then(m => m.LogHistoriqueListComponent)
+        children: [
+          {
+            path: '', // The base path at /historique
+            loadComponent: () => import('./features/log-historique/components/log-historique-list/log-historique-list.component').then(m => m.LogHistoriqueListComponent)
+          },
+          {
+            path: 'inspection/:inspectionId', // The route for a specific inspection's history
+            loadComponent: () => import('./features/log-historique/components/log-inspection-history/log-inspection-history.component').then(m => m.LogInspectionHistoryComponent)
+          },
+          {
+            path: 'utilisateur/:userId', // The route for a specific user's activity
+            loadComponent: () => import('./features/log-historique/components/log-historique-list/log-historique-list.component').then(m => m.LogHistoriqueListComponent)
+          }
+        ]
       }
     ]
   }
