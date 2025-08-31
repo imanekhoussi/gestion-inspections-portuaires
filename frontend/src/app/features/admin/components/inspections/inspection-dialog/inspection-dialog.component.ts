@@ -1,4 +1,5 @@
-import { Component, Inject, OnInit } from '@angular/core';
+// src/app/features/admin/components/inspections/inspection-dialog/inspection-dialog.component.ts
+import { Component, Inject, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
@@ -14,6 +15,10 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { Inspection, TypeInspection, Actif, Groupe } from '../../../../../core/models/admin.interfaces';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { SelectionModel } from '@angular/cdk/collections';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 export interface InspectionDialogData {
   inspection?: Inspection;
@@ -37,18 +42,25 @@ export interface InspectionDialogData {
     MatDialogModule,
     MatExpansionModule,
     MatCheckboxModule,
-    MatChipsModule
+    MatChipsModule,
+    MatTableModule // <-- Added for mat-table
   ],
   templateUrl: './inspection-dialog.component.html',
   styleUrls: ['./inspection-dialog.component.scss']
 })
-export class InspectionDialogComponent implements OnInit {
+export class InspectionDialogComponent implements OnInit, OnDestroy {
   inspectionForm!: FormGroup;
   isEditMode: boolean;
   typesInspection: TypeInspection[];
   allActifs: Actif[];
   groupes: Groupe[];
-  filteredActifs: Actif[] = [];
+
+  // Properties for the asset selection table
+  displayedColumns: string[] = ['select', 'nom', 'code', 'site'];
+  dataSource = new MatTableDataSource<Actif>();
+  selection = new SelectionModel<Actif>(true, []); // `true` for multi-select
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
@@ -59,26 +71,24 @@ export class InspectionDialogComponent implements OnInit {
     this.typesInspection = data.typesInspection || [];
     this.allActifs = data.actifs || [];
     this.groupes = data.groupes || [];
-    this.filteredActifs = [];
   }
 
   ngOnInit(): void {
-  console.log('=== DIALOG DATA DEBUG ===');
-  console.log('Groups:', this.groupes?.map(g => ({ id: g.id, nom: g.nom })));
-  console.log('Actifs count:', this.allActifs?.length);
-  console.log('Sample actifs:', this.allActifs?.slice(0, 5)?.map(a => ({ 
-    id: a.id, nom: a.nom, idGroupe: a.idGroupe 
-  })));
-  
-  this.initForm();
-  this.listenToGroupChanges();
-}
+    this.initForm();
+    this.listenToGroupChanges();
+    this.listenToSelectionChanges();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   private initForm(): void {
     this.inspectionForm = this.fb.group({
       titre: ['', [Validators.required, Validators.minLength(3)]],
       idType: ['', Validators.required],
-      idGroupe: ['', Validators.required],
+      idGroupe: [null, Validators.required],
       dateDebut: [new Date(), Validators.required],
       dateFin: ['', Validators.required],
       actifIds: [[], [Validators.required, Validators.minLength(1)]],
@@ -88,19 +98,26 @@ export class InspectionDialogComponent implements OnInit {
     if (this.isEditMode && this.data.inspection) {
       const inspection = this.data.inspection;
       const firstActif = this.allActifs.find(a => inspection.actifIds.includes(a.id));
-      
+      const initialGroupId = firstActif ? firstActif.idGroupe : null;
+
       this.inspectionForm.patchValue({
         titre: inspection.titre,
         idType: inspection.idType,
-        idGroupe: firstActif ? firstActif.idGroupe : '',
+        idGroupe: initialGroupId,
         dateDebut: new Date(inspection.dateDebut),
         dateFin: new Date(inspection.dateFin),
         actifIds: inspection.actifIds || [],
         commentaire: inspection.commentaire || ''
       });
 
-      if (firstActif) {
-        this.filterActifsByGroup(firstActif.idGroupe);
+      if (initialGroupId) {
+        const filtered = this.allActifs.filter(actif => actif?.idGroupe?.toString() === initialGroupId.toString());
+        this.dataSource.data = filtered;
+
+        const initialSelectedActifs = this.dataSource.data.filter(actif =>
+          inspection.actifIds.includes(actif.id)
+        );
+        this.selection.select(...initialSelectedActifs);
       }
     } else {
       const tomorrow = new Date();
@@ -110,65 +127,42 @@ export class InspectionDialogComponent implements OnInit {
   }
 
   private listenToGroupChanges(): void {
-    this.inspectionForm.get('idGroupe')?.valueChanges.subscribe(groupId => {
-      this.filterActifsByGroup(groupId);
-      this.inspectionForm.get('actifIds')?.setValue([]);
-    });
+    this.inspectionForm.get('idGroupe')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(groupId => {
+        let filteredActifs: Actif[] = [];
+        if (groupId) {
+          filteredActifs = this.allActifs.filter(actif => actif?.idGroupe?.toString() === groupId.toString());
+        }
+        this.dataSource.data = filteredActifs;
+        this.selection.clear(); // Clear previous selection when group changes
+      });
   }
 
-  private filterActifsByGroup(groupId: string | null): void {
-  console.log('=== DEBUGGING ASSET FILTERING ===');
-  console.log('Selected group ID:', groupId);
-  console.log('All actifs count:', this.allActifs?.length || 0);
-  console.log('All actifs sample:', this.allActifs?.slice(0, 3));
-  
-  if (!this.allActifs) {
-    console.warn('Assets not loaded yet');
-    this.filteredActifs = [];
-    return;
-  }
-
-  if (groupId) {
-    console.log('Filtering actifs by group ID:', groupId);
-    
-    // Check what idGroupe values exist
-    const uniqueGroupIds = [...new Set(this.allActifs.map(a => a.idGroupe))];
-    console.log('Unique group IDs in actifs:', uniqueGroupIds);
-    
-    this.filteredActifs = this.allActifs.filter(actif => {
-      const matches = actif && actif.idGroupe && actif.idGroupe.toString() === groupId.toString();
-      if (matches) {
-        console.log('Found matching actif:', actif.nom, 'with idGroupe:', actif.idGroupe);
-      }
-      return matches;
-    });
-    
-    console.log(`Filtered ${this.filteredActifs.length} assets for group ${groupId}`);
-    console.log('Filtered actifs:', this.filteredActifs.map(a => ({ nom: a.nom, idGroupe: a.idGroupe })));
-  } else {
-    this.filteredActifs = [];
+  private listenToSelectionChanges(): void {
+    this.selection.changed
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        const ids = this.selection.selected.map(s => s.id);
+        this.inspectionForm.get('actifIds')?.setValue(ids);
+        this.inspectionForm.get('actifIds')?.markAsTouched();
+      });
   }
   
-  console.log('=== END DEBUGGING ===');
-}
+  /** Checks if all displayed assets are selected. */
+  isAllSelected() {
+    const numSelected = this.selection.selected.length;
+    const numRows = this.dataSource.data.length;
+    return numSelected === numRows;
+  }
 
-  onActifToggle(actifId: string, checked: boolean): void {
-    const currentActifIds = this.inspectionForm.get('actifIds')?.value || [];
-    let newActifIds: string[];
-
-    if (checked) {
-      if (!currentActifIds.includes(actifId)) {
-        newActifIds = [...currentActifIds, actifId];
-      } else {
-        newActifIds = currentActifIds;
-      }
-    } else {
-      newActifIds = currentActifIds.filter((id: string) => id !== actifId);
+  /** Selects all rows if they are not all selected; otherwise clear selection. */
+  masterToggle() {
+    if (this.isAllSelected()) {
+      this.selection.clear();
+      return;
     }
-    
-    this.inspectionForm.patchValue({ actifIds: newActifIds });
-    this.inspectionForm.get('actifIds')?.markAsTouched();
-    this.inspectionForm.get('actifIds')?.updateValueAndValidity();
+    this.selection.select(...this.dataSource.data);
   }
 
   onCancel(): void {
@@ -179,7 +173,6 @@ export class InspectionDialogComponent implements OnInit {
     if (this.inspectionForm.valid) {
       const { idGroupe, ...formData } = this.inspectionForm.value;
       
-      // Convert IDs to numbers and ensure proper date formatting
       const processedData = {
         ...formData,
         idType: parseInt(formData.idType),
@@ -188,16 +181,9 @@ export class InspectionDialogComponent implements OnInit {
         dateFin: formData.dateFin.toISOString()
       };
       
-      console.log('Sending inspection data:', processedData);
       this.dialogRef.close(processedData);
     } else {
-      console.log('Form is invalid:', this.inspectionForm.errors);
-      Object.keys(this.inspectionForm.controls).forEach(key => {
-        const control = this.inspectionForm.get(key);
-        if (control?.invalid) {
-          console.log(`${key} errors:`, control.errors);
-        }
-      });
+      this.inspectionForm.markAllAsTouched();
     }
   }
 

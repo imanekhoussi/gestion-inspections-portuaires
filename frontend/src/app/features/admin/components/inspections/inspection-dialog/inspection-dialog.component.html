@@ -1,4 +1,3 @@
-<!-- src/app/features/admin/components/inspections/inspection-dialog/inspection-dialog.component.html -->
 <form [formGroup]="inspectionForm" (ngSubmit)="onSubmit()">
   <h1 mat-dialog-title>
     <mat-icon>{{ isEditMode ? 'edit' : 'add_task' }}</mat-icon>
@@ -6,7 +5,6 @@
   </h1>
 
   <mat-dialog-content class="mat-typography">
-    <!-- Section 1: General Information -->
     <mat-expansion-panel expanded="true" class="form-section">
       <mat-expansion-panel-header>
         <mat-panel-title>
@@ -40,7 +38,6 @@
       </div>
     </mat-expansion-panel>
 
-    <!-- Section 2: Planned Period -->
     <mat-expansion-panel expanded="true" class="form-section">
       <mat-expansion-panel-header>
         <mat-panel-title>
@@ -72,16 +69,14 @@
       </div>
     </mat-expansion-panel>
 
-    <!-- Section 3: Asset Selection -->
     <mat-expansion-panel expanded="true" class="form-section">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>precision_manufacturing</mat-icon>
-          Actifs à inspecter ({{ inspectionForm.get('actifIds')?.value?.length || 0 }} sélectionné(s))
+          Actifs à inspecter ({{ selection.selected.length }} sélectionné(s))
         </mat-panel-title>
       </mat-expansion-panel-header>
       
-      <!-- Group selection dropdown -->
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Choisir un groupe d'actifs</mat-label>
         <mat-select formControlName="idGroupe">
@@ -95,21 +90,49 @@
         </mat-error>
       </mat-form-field>
       
-      <!-- Asset checkboxes, shown only when a group is selected -->
       <div *ngIf="inspectionForm.get('idGroupe')?.value" class="actifs-selection">
-        <div class="actifs-grid">
-          <!-- Loop over the filtered list of assets -->
-          <mat-checkbox 
-            *ngFor="let actif of filteredActifs" 
-            [checked]="inspectionForm.get('actifIds')?.value?.includes(actif.id)"
-            (change)="onActifToggle(actif.id, $event.checked)"
-            class="actif-checkbox"
-          >
-            <div class="actif-info">
-              <strong>{{ actif.nom }}</strong>
-              <small>{{ actif.code }} • {{ actif.site }}</small>
-            </div>
-          </mat-checkbox>
+        <div class="table-container">
+          <table mat-table [dataSource]="dataSource">
+
+            <ng-container matColumnDef="select">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-checkbox (change)="$event ? masterToggle() : null"
+                              [checked]="selection.hasValue() && isAllSelected()"
+                              [indeterminate]="selection.hasValue() && !isAllSelected()"
+                              aria-label="Select all assets">
+                </mat-checkbox>
+              </th>
+              <td mat-cell *matCellDef="let row">
+                <mat-checkbox (click)="$event.stopPropagation()"
+                              (change)="$event ? selection.toggle(row) : null"
+                              [checked]="selection.isSelected(row)"
+                              [aria-label]="'Select asset ' + row.nom">
+                </mat-checkbox>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="nom">
+              <th mat-header-cell *matHeaderCellDef> Nom </th>
+              <td mat-cell *matCellDef="let actif"> {{actif.nom}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="code">
+              <th mat-header-cell *matHeaderCellDef> Code </th>
+              <td mat-cell *matCellDef="let actif"> {{actif.code}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="site">
+              <th mat-header-cell *matHeaderCellDef> Site </th>
+              <td mat-cell *matCellDef="let actif"> {{actif.site}} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="selection.toggle(row)"></tr>
+            
+            <tr class="mat-row" *matNoDataRow>
+              <td class="mat-cell" colspan="4">Aucun actif trouvé pour ce groupe.</td>
+            </tr>
+          </table>
         </div>
         <mat-error *ngIf="inspectionForm.get('actifIds')?.invalid && inspectionForm.get('actifIds')?.touched">
           Veuillez sélectionner au moins un actif.
@@ -117,7 +140,6 @@
       </div>
     </mat-expansion-panel>
 
-    <!-- Section 4: Comment -->
     <mat-expansion-panel class="form-section">
       <mat-expansion-panel-header>
         <mat-panel-title>
