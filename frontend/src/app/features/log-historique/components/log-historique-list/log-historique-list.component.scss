@@ -1,0 +1,426 @@
+/* src/app/features/log-historique/components/log-historique-list/log-historique-list.component.scss */
+
+.log-historique-container {
+  padding: 20px;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: #333;
+
+      mat-icon {
+        color: #2196f3;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+    }
+  }
+
+  // Filtres
+  .filters-card {
+    margin-bottom: 20px;
+    
+    .filters-form {
+      .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        align-items: center;
+
+        mat-form-field {
+          width: 100%;
+        }
+
+        button {
+          height: fit-content;
+          align-self: end;
+          margin-bottom: 1.34375em; // Alignement avec les mat-form-field
+        }
+      }
+    }
+  }
+
+  // Carte d'erreur
+  .error-card {
+    margin-bottom: 20px;
+    border-left: 4px solid #f44336;
+
+    .error-message {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #f44336;
+
+      mat-icon {
+        font-size: 24px;
+      }
+
+      span {
+        flex: 1;
+      }
+    }
+  }
+
+  // Tableau
+  .table-card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    
+    .table-container {
+      overflow-x: auto;
+      margin: 0 -24px; // Compensation du padding de mat-card-content
+      
+      .logs-table {
+        width: 100%;
+        background: white;
+        
+        // En-têtes
+        .mat-mdc-header-cell {
+          background-color: #f8f9fa;
+          font-weight: 600;
+          color: #333;
+          border-bottom: 2px solid #e9ecef;
+        }
+        
+        // Lignes
+        .mat-mdc-row {
+          transition: background-color 0.2s ease;
+          border-bottom: 1px solid #e9ecef;
+          
+          &:hover {
+            background-color: #f8f9fa;
+          }
+          
+          &.highlight-row {
+            background-color: #e8f5e8;
+            
+            &:hover {
+              background-color: #d4edda;
+            }
+          }
+        }
+        
+        .mat-mdc-cell {
+          padding: 12px 8px;
+          
+          // Cellule date
+          .date-cell {
+            .date {
+              font-weight: 500;
+              color: #333;
+            }
+          }
+          
+          // Cellule utilisateur
+          .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            
+            .user-icon {
+              color: #666;
+              font-size: 20px;
+            }
+            
+            .user-info {
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+              
+              .user-name {
+                font-weight: 500;
+                color: #333;
+              }
+              
+              .user-email {
+                font-size: 0.8rem;
+                color: #666;
+              }
+            }
+          }
+          
+          // Cellule inspection
+          .inspection-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            
+            .inspection-name {
+              font-weight: 500;
+              color: #333;
+            }
+            
+            .inspection-id {
+              font-size: 0.8rem;
+              color: #666;
+              font-family: 'Courier New', monospace;
+            }
+          }
+          
+          // Cellule commentaire
+          .commentaire-cell {
+            max-width: 200px;
+            
+            .commentaire-text {
+              color: #333;
+              word-break: break-word;
+            }
+          }
+          
+          // Cellule actions
+          .actions-cell {
+            display: flex;
+            gap: 4px;
+            
+            button {
+              mat-icon {
+                font-size: 18px;
+              }
+            }
+          }
+          
+          // Données vides
+          .no-data {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9rem;
+          }
+        }
+      }
+      
+      // Message aucune donnée
+      .no-data-message {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+        
+        mat-icon {
+          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          color: #ccc;
+          margin-bottom: 16px;
+        }
+        
+        p {
+          margin: 0;
+          font-size: 1.1rem;
+        }
+      }
+    }
+  }
+}
+
+// Badges d'état
+.etat-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.badge-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
+  
+  &.badge-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #74c0fc;
+  }
+  
+  &.badge-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #51cf66;
+  }
+  
+  &.badge-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #ff6b6b;
+  }
+  
+  &.badge-secondary {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #ced4da;
+  }
+  
+  &.badge-light {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+  }
+}
+
+.nouveau-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #2196f3;
+}
+
+.supprime-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: #fce4ec;
+  color: #c2185b;
+  border: 1px solid #e91e63;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .log-historique-container {
+    padding: 16px;
+    
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      
+      .header-actions {
+        justify-content: center;
+      }
+    }
+    
+    .filters-card .filters-form .filter-row {
+      grid-template-columns: 1fr;
+      
+      button {
+        margin-bottom: 0;
+        align-self: stretch;
+      }
+    }
+    
+    .table-card .table-container {
+      margin: 0 -16px; // Ajustement pour mobile
+      
+      .logs-table {
+        .mat-mdc-cell, .mat-mdc-header-cell {
+          padding: 8px 4px;
+          font-size: 0.9rem;
+          
+          &:first-child {
+            padding-left: 16px;
+          }
+          
+          &:last-child {
+            padding-right: 16px;
+          }
+        }
+        
+        // Masquer certaines colonnes sur mobile
+        .mat-column-commentaire,
+        .mat-column-inspection {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .log-historique-container {
+    .table-card .table-container .logs-table {
+      // Sur très petit écran, masquer encore plus de colonnes
+      .mat-column-ancienEtat {
+        display: none;
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mat-mdc-row {
+  animation: fadeIn 0.3s ease-out;
+}
+
+// Loading states
+.mat-mdc-progress-bar {
+  height: 3px;
+  margin: 0 -24px 16px -24px;
+}
+
+// Ajustements pour les versions plus récentes d'Angular Material
+::ng-deep {
+  .mat-mdc-table {
+    .mat-mdc-header-row {
+      background-color: #f8f9fa;
+    }
+    
+    .mat-mdc-row:hover .mat-mdc-cell {
+      background-color: transparent;
+    }
+  }
+  
+  .mat-mdc-paginator {
+    background-color: transparent;
+  }
+  
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      background-color: white;
+    }
+  }
+}
+
+// Styles spécifiques pour les boutons d'action
+.actions-cell {
+  .mat-mdc-icon-button {
+    width: 36px;
+    height: 36px;
+    
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+    
+    .mat-mdc-button-touch-target {
+      width: 36px;
+      height: 36px;
+    }
+  }
+}

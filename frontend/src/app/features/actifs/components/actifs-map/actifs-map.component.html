@@ -11,11 +11,11 @@
       </button>
       <button mat-raised-button [color]="isLegendVisible ? 'accent' : 'basic'" (click)="toggleLegend()" matTooltip="Afficher/Masquer la légende">
         <mat-icon>legend_toggle</mat-icon>
-        Légende
+        Etat des actifs
       </button>
       <button mat-raised-button color="primary" (click)="centerOnTanger()" matTooltip="Centrer sur Tanger">
         <mat-icon>my_location</mat-icon>
-        Tanger
+        Port
       </button>
       <button mat-raised-button color="accent" (click)="zoomToActifs()" [disabled]="isLoading" matTooltip="Voir tous les actifs">
         <mat-icon>zoom_out_map</mat-icon>

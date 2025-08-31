@@ -1,0 +1,236 @@
+<!-- src/app/features/log-historique/components/log-historique-list/log-historique-list.component.html -->
+
+<div class="log-historique-container">
+  <!-- En-tête -->
+  <div class="header">
+    <h2 class="title">
+      <mat-icon>history</mat-icon>
+      <span *ngIf="!inspectionId">Historique des Logs</span>
+      <span *ngIf="inspectionId">Historique de l'Inspection</span>
+    </h2>
+
+    <div class="header-actions" *ngIf="showActions">
+      <button mat-stroked-button (click)="refreshData()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Actualiser
+      </button>
+      
+      <button mat-stroked-button (click)="toggleStats()">
+        <mat-icon>analytics</mat-icon>
+        {{ showStats() ? 'Masquer' : 'Voir' }} Statistiques
+      </button>
+
+      <button mat-stroked-button (click)="exportLogs()">
+        <mat-icon>download</mat-icon>
+        Exporter
+      </button>
+
+      <!-- Menu activité récente -->
+      <button mat-stroked-button [matMenuTriggerFor]="activiteMenu">
+        <mat-icon>schedule</mat-icon>
+        Activité Récente
+      </button>
+      <mat-menu #activiteMenu="matMenu">
+        <button mat-menu-item (click)="loadActiviteRecente(1)">Dernière heure</button>
+        <button mat-menu-item (click)="loadActiviteRecente(24)">Dernières 24h</button>
+        <button mat-menu-item (click)="loadActiviteRecente(168)">Dernière semaine</button>
+      </mat-menu>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <mat-card *ngIf="showFilters && !inspectionId" class="filters-card">
+    <mat-card-content>
+      <form [formGroup]="filterForm" class="filters-form">
+        <div class="filter-row">
+          <!-- Filtre par utilisateur -->
+          <mat-form-field>
+            <mat-label>Utilisateur</mat-label>
+            <input matInput formControlName="interventionPar" placeholder="ID utilisateur">
+          </mat-form-field>
+
+          <!-- Filtre par inspection -->
+          <mat-form-field>
+            <mat-label>Inspection</mat-label>
+            <input matInput formControlName="inspectionId" placeholder="ID inspection">
+          </mat-form-field>
+
+          <!-- Filtre par date de début -->
+          <mat-form-field>
+            <mat-label>Date de début</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="dateDebut">
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <!-- Filtre par date de fin -->
+          <mat-form-field>
+            <mat-label>Date de fin</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="dateFin">
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+
+          <!-- Bouton reset -->
+          <button mat-stroked-button type="button" (click)="resetFilters()">
+            <mat-icon>clear</mat-icon>
+            Reset
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Message d'erreur -->
+  <mat-card *ngIf="error()" class="error-card">
+    <mat-card-content>
+      <div class="error-message">
+        <mat-icon color="warn">error</mat-icon>
+        <span>{{ error() }}</span>
+        <button mat-button color="primary" (click)="refreshData()">
+          Réessayer
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Tableau des logs -->
+  <mat-card class="table-card">
+    <!-- Indicateur de chargement -->
+    <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
+
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort class="logs-table">
+          
+          <!-- Colonne Date -->
+          <ng-container matColumnDef="dateIntervention">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+            <td mat-cell *matCellDef="let log">
+              <div class="date-cell">
+                <span class="date">{{ formatDate(log.dateIntervention) }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Colonne Intervenant -->
+          <ng-container matColumnDef="intervenant">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Intervenant</th>
+            <td mat-cell *matCellDef="let log">
+              <div class="user-cell" *ngIf="log.intervenant">
+                <mat-icon class="user-icon">person</mat-icon>
+                <div class="user-info">
+                  <span class="user-name">
+                    {{ log.intervenant.nom }} {{ log.intervenant.prenom }}
+                  </span>
+                  <span class="user-email">{{ log.intervenant.email }}</span>
+                </div>
+              </div>
+              <span *ngIf="!log.intervenant" class="no-data">Non spécifié</span>
+            </td>
+          </ng-container>
+
+          <!-- Colonne Inspection -->
+          <ng-container matColumnDef="inspection">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Inspection</th>
+            <td mat-cell *matCellDef="let log">
+              <div class="inspection-cell" *ngIf="log.inspection">
+                <span class="inspection-name">{{ log.inspection.titre }}</span>
+                <span class="inspection-id">#{{ log.inspection.id }}</span>
+              </div>
+              <span *ngIf="!log.inspection" class="no-data">Non spécifiée</span>
+            </td>
+          </ng-container>
+
+          <!-- Colonne Ancien État -->
+          <ng-container matColumnDef="ancienEtat">
+            <th mat-header-cell *matHeaderCellDef>Ancien État</th>
+            <td mat-cell *matCellDef="let log">
+              <span *ngIf="log.ancienEtat" 
+                    class="etat-badge" 
+                    [ngClass]="getEtatBadgeClass(log.ancienEtat)">
+                {{ log.ancienEtat }}
+              </span>
+              <span *ngIf="!log.ancienEtat" class="nouveau-badge">Nouveau</span>
+            </td>
+          </ng-container>
+
+          <!-- Colonne Nouvel État -->
+          <ng-container matColumnDef="nouvelEtat">
+            <th mat-header-cell *matHeaderCellDef>Nouvel État</th>
+            <td mat-cell *matCellDef="let log">
+              <span *ngIf="log.nouvelEtat" 
+                    class="etat-badge" 
+                    [ngClass]="getEtatBadgeClass(log.nouvelEtat)">
+                {{ log.nouvelEtat }}
+              </span>
+              <span *ngIf="!log.nouvelEtat" class="supprime-badge">Supprimé</span>
+            </td>
+          </ng-container>
+
+          <!-- Colonne Commentaire -->
+          <ng-container matColumnDef="commentaire">
+            <th mat-header-cell *matHeaderCellDef>Commentaire</th>
+            <td mat-cell *matCellDef="let log">
+              <div class="commentaire-cell">
+                <span *ngIf="log.commentaire" 
+                      class="commentaire-text"
+                      [title]="log.commentaire">
+                  {{ log.commentaire.length > 50 ? (log.commentaire | slice:0:50) + '...' : log.commentaire }}
+                </span>
+                <span *ngIf="!log.commentaire" class="no-data">Aucun commentaire</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Colonne Actions -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let log">
+              <div class="actions-cell">
+                <button mat-icon-button 
+                        [matTooltip]="'Voir détails'" 
+                        (click)="viewDetails(log)">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                
+                <button mat-icon-button 
+                        *ngIf="log.inspection && !inspectionId"
+                        [matTooltip]="'Voir historique inspection'" 
+                        (click)="viewInspectionHistory(log.inspection.id)">
+                  <mat-icon>history</mat-icon>
+                </button>
+                
+                <button mat-icon-button 
+                        *ngIf="log.intervenant"
+                        [matTooltip]="'Voir activité utilisateur'" 
+                        (click)="viewUserActivity(log.intervenant.id)">
+                  <mat-icon>person_search</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- En-têtes et lignes -->
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+              class="log-row"
+              [class.highlight-row]="row.nouvelEtat === 'VALIDEE'"></tr>
+        </table>
+
+        <!-- Message si aucune donnée -->
+        <div *ngIf="!loading() && logs().length === 0" class="no-data-message">
+          <mat-icon>inbox</mat-icon>
+          <p>Aucun log trouvé avec les critères sélectionnés</p>
+        </div>
+      </div>
+
+      <!-- Paginateur -->
+      <mat-paginator 
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        showFirstLastButtons
+        aria-label="Sélectionner une page de logs">
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>

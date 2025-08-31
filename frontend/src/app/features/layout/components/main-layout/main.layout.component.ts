@@ -70,15 +70,36 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.navigationItems$ = this.currentUser$.pipe(
       map(user => {
-        if (user && user.role === 'admin') {
-          const adminItem: NavigationItem = {
+        // Start with the navigation items visible to everyone
+        const navItems = [...this.baseNavigationItems];
+        
+        if (!user) {
+          return navItems;
+        }
+
+        // IMPORTANT: Role names are case-sensitive. We assume 'admin' and 'maitre_ouvrage'.
+        // These must match the role string provided in the JWT token from your backend.
+        const userRole = user.role.toLowerCase();
+
+        // Add "Historique" link for Admin and Maître d'ouvrage roles
+        if (userRole === 'admin' || userRole === 'maitre_ouvrage') {
+          navItems.push({
+            label: 'Historique',
+            icon: 'history',
+            route: '/historique'
+          });
+        }
+
+        // Add "Administration" link for Admin role only
+        if (userRole === 'admin') {
+          navItems.push({
             label: 'Administration',
             route: '/admin',
             icon: 'admin_panel_settings'
-          };
-          return [...this.baseNavigationItems, adminItem];
+          });
         }
-        return this.baseNavigationItems;
+        
+        return navItems;
       })
     );
 

@@ -69,10 +69,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/inspections/components/inspections-list/inspections-list.component').then(m => m.InspectionsListComponent)
       },
       
-      // ✅ --- THIS IS THE NEW ROUTE YOU NEED TO ADD ---
+      
       {
         path: 'planning/calendar',
         loadComponent: () => import('./features/inspections/components/inspections-calendar/inspections-calendar').then(m => m.InspectionsCalendarComponent)
+      },
+      {
+        path: 'historique',
+        loadComponent: () => import('./features/log-historique/components/log-historique-list/log-historique-list.component').then(m => m.LogHistoriqueListComponent)
       }
     ]
   }
