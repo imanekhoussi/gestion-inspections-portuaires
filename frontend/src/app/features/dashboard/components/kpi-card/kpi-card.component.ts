@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
       <mat-card-content>
         <div class="kpi-header">
           <mat-icon class="kpi-icon">{{ icon }}</mat-icon>
-          <span class="kpi-value">{{ value | number:'1.1-1' }}{{ suffix }}</span>
+          <span class="kpi-value">{{ value || 0 }}{{ suffix }}</span>
         </div>
         <div class="kpi-title">{{ title }}</div>
         <div class="kpi-subtitle" *ngIf="subtitle">{{ subtitle }}</div>
@@ -51,6 +51,16 @@ import { MatIconModule } from '@angular/material/icon';
 
       &.accent {
         background: linear-gradient(135deg, #7b1fa2, #6a1b9a);
+        color: white;
+      }
+
+      &.info {
+        background: linear-gradient(135deg, #0288d1, #0277bd);
+        color: white;
+      }
+
+      &.secondary {
+        background: linear-gradient(135deg, #5e35b1, #512da8);
         color: white;
       }
     }

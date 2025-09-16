@@ -37,6 +37,13 @@ export class DashboardComponent implements OnInit {
     this.loadKpis();
   }
 
+  calculateValidationRate(): number {
+  if (!this.kpis || !this.kpis.totalInspections || this.kpis.totalInspections === 0) {
+    return 0;
+  }
+  const rate = (this.kpis.inspectionsValidees / this.kpis.totalInspections) * 100;
+  return Math.round(rate);
+}
   loadKpis(): void {
     this.isLoading = true;
     this.error = null;

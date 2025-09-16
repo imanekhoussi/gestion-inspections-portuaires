@@ -1,4 +1,3 @@
-// src/app/features/actifs/components/actif-map-dialog/actif-map-dialog.component.ts
 
 import { Component, Inject, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';

@@ -1,5 +1,3 @@
-//  src/app/core/models/log-historique.interface.ts
-
 import { User } from './user.interface';
 
 export interface LogHistorique {
@@ -19,7 +17,6 @@ export interface LogHistorique {
     statut: string;
   };
 }
-
 export interface LogHistoriqueFilter {
   interventionPar?: string;
   inspectionId?: string;
@@ -28,7 +25,42 @@ export interface LogHistoriqueFilter {
   page?: number;
   limit?: number;
 }
+export interface LogSearchParams {
+  utilisateurId?: string;
+  inspectionId?: string;
+  dateDebut?: Date;
+  dateFin?: Date;
+  ancienEtat?: string[];
+  nouvelEtat?: string[];
+  hasCommentaire?: boolean;
+  searchText?: string;
+}
+export const ETATS_INSPECTION = [
+  'PROGRAMMEE',
+  'EN_COURS', 
+  'TERMINEE',
+  'VALIDEE',
+  'ANNULEE',
+  'REPORTEE'
+] as const;
 
+export interface QuickStats {
+  totalLogs: number;
+  uniqueUsers: number;
+  uniqueInspections: number;
+  actionsToday: number;
+  actionsThisWeek: number;
+}
+
+export type EtatInspection = typeof ETATS_INSPECTION[number];
+
+export interface QuickStats {
+  totalLogs: number;
+  uniqueUsers: number;
+  uniqueInspections: number;
+  actionsToday: number;
+  actionsThisWeek: number;
+}
 export interface StatistiqueEtat {
   ancien: string;
   nouveau: string;

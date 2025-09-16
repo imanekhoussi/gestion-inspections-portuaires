@@ -1,4 +1,3 @@
-<!-- Modern Asset Creation Dialog - FIXED VERSION -->
 <div class="dialog-header">
   <div class="header-content">
     <div class="header-icon">
@@ -16,7 +15,6 @@
 </div>
 
 <mat-dialog-content>
-  <!-- Form Section -->
   <section class="form-section">
     <div class="form-container">
       <div class="section-title">
@@ -25,7 +23,6 @@
       </div>
       
       <form [formGroup]="actifForm" class="form-grid">
-        <!-- Basic Information -->
         <div class="form-row single">
           <mat-form-field appearance="outline">
             <mat-label>Nom de l'actif</mat-label>
@@ -39,7 +36,6 @@
           </mat-form-field>
         </div>
 
-        <!-- ✅ FIXED: Removed [disabled] and [readonly] attributes -->
         <div class="form-row single">
           <mat-form-field appearance="outline">
             <mat-label>Code unique</mat-label>
@@ -55,7 +51,6 @@
           </mat-form-field>
         </div>
 
-        <!-- Location Information -->
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Site portuaire</mat-label>
@@ -82,7 +77,6 @@
           </mat-form-field>
         </div>
 
-        <!-- Classification -->
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Type d'ouvrage</mat-label>
@@ -96,7 +90,6 @@
           </mat-form-field>
         </div>
 
-        <!-- ✅ FIXED: Removed [disabled] attribute -->
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Groupe d'appartenance</mat-label>
@@ -114,7 +107,6 @@
           </mat-form-field>
         </div>
 
-       <!-- État de l'actif - DOIT être ICI -->
   <div class="form-row">
     <mat-form-field appearance="outline">
       <mat-label>État de l'actif</mat-label>
@@ -140,9 +132,7 @@
  
 
 
-  <!-- Map Section -->
   <section class="map-section">
-    <!-- Map Toolbar -->
     <div class="map-toolbar">
       <div class="geometry-status">
         <div class="status-chip" [class.empty]="!hasGeometry" [class.defined]="hasGeometry">
@@ -160,7 +150,6 @@
       </div>
 
       <div class="toolbar-actions">
-        <!-- Creation Mode -->
         <button *ngIf="!hasGeometry" 
                 mat-raised-button 
                 class="draw-menu-trigger"
@@ -169,7 +158,6 @@
           Ajouter géométrie
         </button>
         
-        <!-- Edit Mode -->
         <ng-container *ngIf="hasGeometry">
           <button mat-raised-button 
                   class="geometry-actions-button"
@@ -178,7 +166,6 @@
             Modifier géométrie
           </button>
           
-          <!-- Quick actions -->
           <div class="quick-actions">
             <button mat-fab 
                     size="mini"
@@ -197,19 +184,10 @@
               <mat-icon>center_focus_strong</mat-icon>
             </button>
             
-            <!-- ✅ CORRECTION: Bouton info pour TOUS les types -->
-            <button mat-fab 
-                    size="mini"
-                    class="quick-action-button measure"
-                    (click)="showGeometryInfo()"
-                    [matTooltip]="getInfoTooltip()">
-              <mat-icon>straighten</mat-icon>
-            </button>
+          
           </div>
           
-          <!-- Geometry menu -->
           <mat-menu #geometryMenu="matMenu" class="geometry-menu">
-            <!-- Simple editing -->
             <div class="menu-section">
               <div class="menu-section-title">Édition simple</div>
               <button mat-menu-item (click)="editGeometry()">
@@ -220,7 +198,6 @@
             
             <mat-divider></mat-divider>
             
-            <!-- Advanced editing -->
             <div class="menu-section">
               <div class="menu-section-title">Édition avancée</div>
               <button mat-menu-item (click)="enableAdvancedEdit()">
@@ -231,7 +208,6 @@
             
             <mat-divider></mat-divider>
             
-            <!-- Change type -->
             <div class="menu-section">
               <div class="menu-section-title">Changer le type</div>
               <button mat-menu-item (click)="changeGeometryType('Point')">
@@ -248,9 +224,7 @@
               </button>
             </div>
             
-            <mat-divider></mat-divider>
             
-            <!-- Edit actions -->
             <div class="menu-section" *ngIf="isAdvancedEditActive">
               <div class="menu-section-title">Actions d'édition</div>
               <button mat-menu-item (click)="validateGeometryEdits()">
@@ -263,18 +237,9 @@
               </button>
             </div>
             
-            <!-- ✅ CORRECTION: Info pour TOUS les types -->
-            <div class="menu-section">
-              <div class="menu-section-title">Information</div>
-              <button mat-menu-item (click)="showGeometryInfo()">
-                <mat-icon>straighten</mat-icon>
-                <span>{{ getInfoMenuLabel() }}</span>
-              </button>
-            </div>
             
             <mat-divider></mat-divider>
             
-            <!-- Delete -->
             <div class="menu-section danger">
               <button mat-menu-item (click)="deleteGeometry()" class="delete-option">
                 <mat-icon>delete</mat-icon>
@@ -302,7 +267,6 @@
       </div>
     </div>
 
-    <!-- ✅ CORRECTION: Panel d'info pour TOUS les types avec contenu adaptatif -->
     <div class="geometry-info-panel" *ngIf="showGeometryInfoPanel">
       <div class="panel-header">
         <div>
@@ -313,58 +277,12 @@
           <mat-icon>close</mat-icon>
         </button>
       </div>
-      <div class="panel-content">
-        <!-- ✅ POUR LES POINTS: Latitude/Longitude séparées -->
-        <ng-container *ngIf="actifForm.get('geometryType')?.value === 'Point'">
-          <div class="info-item">
-            <strong>Latitude :</strong>
-            <span>{{ getLatitude() }}</span>
-          </div>
-          <div class="info-item">
-            <strong>Longitude :</strong>
-            <span>{{ getLongitude() }}</span>
-          </div>
-          <div class="info-item">
-            <strong>Coordonnées :</strong>
-            <span>{{ geometryInfo.coordinates }}</span>
-          </div>
-        </ng-container>
-        
-        <!-- ✅ POUR LES LIGNES: Longueur et points -->
-        <ng-container *ngIf="actifForm.get('geometryType')?.value === 'LineString'">
-          <div class="info-item" *ngIf="geometryInfo.length">
-            <strong>Longueur :</strong>
-            <span>{{ geometryInfo.length }}</span>
-          </div>
-          <div class="info-item">
-            <strong>Points :</strong>
-            <span>{{ geometryInfo.coordinates }}</span>
-          </div>
-        </ng-container>
-        
-        <!-- ✅ POUR LES ZONES: Surface, périmètre et sommets -->
-        <ng-container *ngIf="actifForm.get('geometryType')?.value === 'Polygon'">
-          <div class="info-item" *ngIf="geometryInfo.area">
-            <strong>Surface :</strong>
-            <span>{{ geometryInfo.area }}</span>
-          </div>
-          <div class="info-item" *ngIf="geometryInfo.perimeter">
-            <strong>Périmètre :</strong>
-            <span>{{ geometryInfo.perimeter }}</span>
-          </div>
-          <div class="info-item">
-            <strong>Sommets :</strong>
-            <span>{{ geometryInfo.coordinates }}</span>
-          </div>
-        </ng-container>
-      </div>
+     
     </div>
 
-    <!-- Map Container -->
     <div class="map-container-wrapper">
       <div id="drawing-map" class="enhanced-map"></div>
       
-      <!-- Map Controls -->
       <div class="map-controls">
         <button mat-fab 
                 class="control-button"

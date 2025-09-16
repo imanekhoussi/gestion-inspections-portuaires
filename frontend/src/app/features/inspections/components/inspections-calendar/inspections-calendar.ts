@@ -180,17 +180,24 @@ export class InspectionsCalendarComponent implements OnInit {
     mouseLeaveInfo.el.style.boxShadow = 'none';
   }
 
-  // Color mapping for different inspection statuses
-  private getColorForStatus(status: string): string {
-    switch (status) {
-      case 'Planifiée': return '#1976D2';  // Blue
-      case 'En cours': return '#f57c00';   // Orange  
-      case 'Clôturée': return '#7b1fa2';   // Purple
-      case 'Validée': return '#388E3C';    // Green
-      case 'Rejetée': return '#D32F2F';    // Red
-      default: return '#757575';           // Grey
-    }
+private getColorForStatus(status: string): string {
+  switch (status) {
+    case 'Planifiée':
+      return '#2196F3';    // Bleu - Inspection planifiée
+    case 'En cours':
+      return '#FF9800';    // Orange - Inspection en cours  
+    case 'Terminée':
+      return '#4CAF50';    // Vert - Inspection terminée
+    case 'Annulée':
+      return '#F44336';    // Rouge - Inspection annulée
+    case 'Autre':
+      return '#9C27B0';    // Violet - Statut "Autre"
+    case 'Validée':
+      return '#8BC34A';    // Vert clair - Inspection validée
+    default: 
+      return '#9E9E9E';    // Gris - État inconnu
   }
+}
 
   // Map frontend status labels to backend enum values
   private mapStatusToEtat(status: string): EtatInspection {

@@ -96,7 +96,6 @@ export class ActifFormDialogComponent implements OnInit, AfterViewInit, OnDestro
   isEditMode = false;
   dialogTitle = 'Créer un nouvel actif';
 
-  // Simplified editing states
   isAdvancedEditActive = false;
   showGeometryInfoPanel = false;
   geometryInfo: GeometryInfo = {};

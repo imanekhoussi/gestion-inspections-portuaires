@@ -87,7 +87,6 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
   selectedBaseMap = 'osm';
 
-  // This variable will hold the selector for the drag boundary
   dragBoundarySelector: string = '.map-wrapper';
 
   private readonly DEFAULT_COORDS: [number, number] = [-5.50308, 35.88187];
@@ -98,7 +97,7 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef // Inject ChangeDetectorRef
+    private cdr: ChangeDetectorRef 
   ) {}
 
   ngOnInit(): void {
@@ -158,7 +157,6 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       overlays: [this.popupOverlay]
     });
 
-    // --- ROBUST FULLSCREEN LOGIC ---
     const fullScreenControl = new FullScreen();
 
     fullScreenControl.on('enterfullscreen', () => {
@@ -172,7 +170,6 @@ export class ActifsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.map.addControl(fullScreenControl);
-    // --- END OF LOGIC ---
 
     this.map.on('singleclick', (event) => this.handleMapClick(event));
     this.setupPopupCloser();
@@ -239,11 +236,9 @@ private displaySingleActif(actif: Actif): void {
   console.log('🔍 Type geometry:', typeof actif.geometry);
   
   try {
-    // Nettoyer la source vectorielle
     this.actifVectorSource.clear();
     console.log('🧹 Source vectorielle nettoyée');
     
-    // Vérifier si l'actif a une géométrie
     if (!actif.geometry?.coordinates) {
       console.warn('⚠️ Actif sans géométrie valide');
       console.log('📋 Actif complet:', JSON.stringify(actif, null, 2));
@@ -254,10 +249,8 @@ private displaySingleActif(actif: Actif): void {
     console.log('🔍 Coordonnées:', actif.geometry.coordinates);
     console.log('🔧 Type géométrie:', actif.geometry.type);
 
-    // Essayer de créer la feature avec debugging
     console.log('🔄 Tentative de création de feature...');
     
-    // Méthode directe sans passer par createActifFeature
     const geoJsonFormat = new GeoJSON();
     
     const geoJsonFeature = {
@@ -276,13 +269,11 @@ private displaySingleActif(actif: Actif): void {
     
     console.log('🔍 GeoJSON Feature créée:', geoJsonFeature);
     
-    // Fix: Handle the return type properly - readFeature can return Feature or Feature[]
     const featureResult = geoJsonFormat.readFeature(geoJsonFeature, {
       dataProjection: 'EPSG:4326',
       featureProjection: 'EPSG:3857'
     });
     
-    // Ensure we have a single Feature
     const feature = Array.isArray(featureResult) ? featureResult[0] : featureResult;
     
     if (!feature) {
@@ -294,7 +285,6 @@ private displaySingleActif(actif: Actif): void {
     console.log('🔍 Feature geometry:', feature.getGeometry());
     console.log('🔍 Feature geometry type:', feature.getGeometry()?.getType());
     
-    // Vérifier que la géométrie est valide avant d'ajouter
     const geometry = feature.getGeometry();
     if (!geometry) {
       console.error('❌ Pas de géométrie dans la feature');
@@ -305,7 +295,6 @@ private displaySingleActif(actif: Actif): void {
     this.actifVectorSource.addFeature(feature);
     console.log('✅ Feature ajoutée avec succès');
     
-    // Centrer sur la géométrie
     console.log('🔄 Centrage sur la géométrie...');
     const extent = geometry.getExtent();
     console.log('🔍 Extent:', extent);
@@ -318,17 +307,16 @@ private displaySingleActif(actif: Actif): void {
     
     console.log('✅ === FIN displaySingleActif SUCCÈS ===');
     
-  } catch (error: any) { // Fix: Explicitly type error as 'any'
+  } catch (error: any) {
     console.error('❌ === ERREUR displaySingleActif ===');
     console.error('📋 Erreur:', error);
     console.error('📋 Stack:', error?.stack); // Fix: Use optional chaining
     console.error('📋 Actif problématique:', JSON.stringify(actif, null, 2));
     
-    // Tentative de fallback simple
     console.log('🔄 Tentative de fallback...');
     try {
       this.fallbackDisplayActif(actif);
-    } catch (fallbackError: any) { // Fix: Explicitly type fallbackError as 'any'
+    } catch (fallbackError: any) { 
       console.error('❌ Fallback aussi échoué:', fallbackError);
     }
   }
@@ -339,17 +327,14 @@ private fallbackDisplayActif(actif: Actif): void {
   
   console.log('🔄 Fallback: création manuelle de feature');
   
-  // Créer une feature très simple
   const feature = new Feature();
   
-  // Essayer de créer la géométrie manuellement
   const geoJsonFormat = new GeoJSON();
   const geometryResult = geoJsonFormat.readGeometry(actif.geometry, {
     dataProjection: 'EPSG:4326',
     featureProjection: 'EPSG:3857'
   });
   
-  // Handle potential array return (though readGeometry typically returns single geometry)
   const geometry = Array.isArray(geometryResult) ? geometryResult[0] : geometryResult;
   
   if (!geometry) {

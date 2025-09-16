@@ -1,13 +1,19 @@
-<!-- src/app/features/log-historique/components/log-historique-list/log-historique-list.component.html -->
 
 <div class="log-historique-container">
-  <!-- En-tête -->
   <div class="header">
-    <h2 class="title">
-      <mat-icon>history</mat-icon>
-      <span *ngIf="!inspectionId">Historique des Logs</span>
-      <span *ngIf="inspectionId">Historique de l'Inspection</span>
-    </h2>
+    <div class="title-section">
+      <h2 class="title">
+        <mat-icon>history</mat-icon>
+        <span *ngIf="!inspectionIdSignal()">Historique des Logs</span>
+        <span *ngIf="inspectionIdSignal()">Historique de l'Inspection #{{ inspectionIdSignal() }}</span>
+      </h2>
+      
+      <div class="results-indicator" *ngIf="filteredCount() !== totalLogs()">
+        <span class="results-count">
+          {{ filteredCount() }} / {{ totalLogs() }} logs
+        </span>
+      </div>
+    </div>
 
     <div class="header-actions" *ngIf="showActions">
       <button mat-stroked-button (click)="refreshData()" [disabled]="loading()">
@@ -20,12 +26,8 @@
         Voir Statistiques
       </button>
 
-      <button mat-stroked-button (click)="exportLogs()">
-        <mat-icon>download</mat-icon>
-        Exporter
-      </button>
+     
 
-      <!-- Menu activité récente -->
       <button mat-stroked-button [matMenuTriggerFor]="activiteMenu">
         <mat-icon>schedule</mat-icon>
         Activité Récente
@@ -35,52 +37,88 @@
         <button mat-menu-item (click)="loadActiviteRecente(24)">Dernières 24h</button>
         <button mat-menu-item (click)="loadActiviteRecente(168)">Dernière semaine</button>
       </mat-menu>
+
+
+      <mat-menu #filterMenu="matMenu" class="filter-menu">
+        <!-- Filtre par utilisateur -->
+        <div class="filter-section">
+          <div class="filter-header">
+            <mat-icon>person</mat-icon>
+            <span>Par Utilisateur</span>
+          </div>
+          <div class="filter-search">
+            <mat-form-field appearance="outline" class="compact-field">
+              <input matInput 
+                     [(ngModel)]="userSearchText" 
+                     placeholder="Nom ou email de l'utilisateur"
+                     (keyup.enter)="applyUserFilter()">
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+            <div class="filter-buttons">
+              <button mat-button color="primary" (click)="applyUserFilter()" [disabled]="!userSearchText.trim()">
+                Appliquer
+              </button>
+              <button mat-button (click)="clearUserFilter()" *ngIf="userSearchText">
+                Effacer
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtre par inspection -->
+        <div class="filter-section" *ngIf="!inspectionIdSignal()">
+          <div class="filter-header">
+            <mat-icon>assignment</mat-icon>
+            <span>Par Inspection</span>
+          </div>
+          <div class="filter-search">
+            <mat-form-field appearance="outline" class="compact-field">
+              <input matInput 
+                     [(ngModel)]="inspectionSearchText" 
+                     placeholder="Nom ou ID de l'inspection"
+                     (keyup.enter)="applyInspectionFilter()">
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+            <div class="filter-buttons">
+              <button mat-button color="primary" (click)="applyInspectionFilter()" [disabled]="!inspectionSearchText.trim()">
+                Appliquer
+              </button>
+              <button mat-button (click)="clearInspectionFilter()" *ngIf="inspectionSearchText">
+                Effacer
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reset filtres -->
+        <button mat-menu-item (click)="resetFilters()">
+          <mat-icon>clear_all</mat-icon>
+          <span>Réinitialiser les filtres</span>
+        </button>
+      </mat-menu>
     </div>
   </div>
 
-  <!-- Filtres -->
-  <mat-card *ngIf="showFilters && !inspectionId" class="filters-card">
-    <mat-card-content>
-      <form [formGroup]="filterForm" class="filters-form">
-        <div class="filter-row">
-          <!-- Filtre par utilisateur -->
-          <mat-form-field>
-            <mat-label>Utilisateur</mat-label>
-            <input matInput formControlName="interventionPar" placeholder="ID utilisateur">
-          </mat-form-field>
+  <!-- Barre de recherche (du code actuel) -->
+  <div class="search-section">
+    <form [formGroup]="searchForm" class="search-form">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Rechercher dans l'historique</mat-label>
+        <input matInput 
+               formControlName="searchText" 
+               placeholder="Rechercher par nom, inspection, commentaire...">
+        <mat-icon matSuffix>search</mat-icon>
+        <button mat-icon-button matSuffix 
+                *ngIf="searchForm.get('searchText')?.value"
+                (click)="clearSearch()"
+                type="button">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </mat-form-field>
+    </form>
+  </div>
 
-          <!-- Filtre par inspection -->
-          <mat-form-field>
-            <mat-label>Inspection</mat-label>
-            <input matInput formControlName="inspectionId" placeholder="ID inspection">
-          </mat-form-field>
-
-          <!-- Filtre par date de début -->
-          <mat-form-field>
-            <mat-label>Date de début</mat-label>
-            <input matInput [matDatepicker]="startPicker" formControlName="dateDebut">
-            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
-            <mat-datepicker #startPicker></mat-datepicker>
-          </mat-form-field>
-
-          <!-- Filtre par date de fin -->
-          <mat-form-field>
-            <mat-label>Date de fin</mat-label>
-            <input matInput [matDatepicker]="endPicker" formControlName="dateFin">
-            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
-            <mat-datepicker #endPicker></mat-datepicker>
-          </mat-form-field>
-
-          <!-- Bouton reset -->
-          <button mat-stroked-button type="button" (click)="resetFilters()">
-            <mat-icon>clear</mat-icon>
-            Reset
-          </button>
-        </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
-
+ 
   <!-- Message d'erreur -->
   <mat-card *ngIf="error()" class="error-card">
     <mat-card-content>
@@ -94,6 +132,14 @@
     </mat-card-content>
   </mat-card>
 
+  <!-- Résumé des résultats (seulement si filtrés) -->
+  <div class="results-summary" *ngIf="filteredCount() !== totalLogs() && !loading()">
+    <mat-icon>info</mat-icon>
+    <span>
+      {{ filteredCount() }} résultat(s) affiché(s) sur {{ totalLogs() }} log(s) au total
+    </span>
+  </div>
+
   <!-- Tableau des logs -->
   <mat-card class="table-card">
     <!-- Indicateur de chargement -->
@@ -102,6 +148,8 @@
     <mat-card-content>
       <div class="table-container">
         <table mat-table [dataSource]="dataSource" matSort class="logs-table">
+          <!-- LIGNE DES EN-TÊTES -->
+          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
           
           <!-- Colonne Date -->
           <ng-container matColumnDef="dateIntervention">
@@ -146,12 +194,20 @@
           <ng-container matColumnDef="ancienEtat">
             <th mat-header-cell *matHeaderCellDef>Ancien État</th>
             <td mat-cell *matCellDef="let log">
-              <span *ngIf="log.ancienEtat" 
-                    class="etat-badge" 
-                    [ngClass]="getEtatBadgeClass(log.ancienEtat)">
-                {{ log.ancienEtat }}
-              </span>
-              <span *ngIf="!log.ancienEtat" class="nouveau-badge">Nouveau</span>
+              <div class="etat-container">
+                <span *ngIf="log.ancienEtat" 
+                      [class]="getEtatBadgeClass(log.ancienEtat)"
+                      [attr.data-priority]="getLogPriority(log)">
+                  <mat-icon class="etat-icon">
+                    {{ formatEtatWithIcon(log.ancienEtat).icon }}
+                  </mat-icon>
+                  {{ formatEtatWithIcon(log.ancienEtat).text }}
+                </span>
+                <span *ngIf="!log.ancienEtat" class="nouveau-badge">
+                  <mat-icon class="etat-icon">fiber_new</mat-icon>
+                  Nouveau
+                </span>
+              </div>
             </td>
           </ng-container>
 
@@ -159,12 +215,20 @@
           <ng-container matColumnDef="nouvelEtat">
             <th mat-header-cell *matHeaderCellDef>Nouvel État</th>
             <td mat-cell *matCellDef="let log">
-              <span *ngIf="log.nouvelEtat" 
-                    class="etat-badge" 
-                    [ngClass]="getEtatBadgeClass(log.nouvelEtat)">
-                {{ log.nouvelEtat }}
-              </span>
-              <span *ngIf="!log.nouvelEtat" class="supprime-badge">Supprimé</span>
+              <div class="etat-container">
+                <span *ngIf="log.nouvelEtat" 
+                      [class]="getEtatBadgeClass(log.nouvelEtat)"
+                      [attr.data-priority]="getLogPriority(log)">
+                  <mat-icon class="etat-icon">
+                    {{ formatEtatWithIcon(log.nouvelEtat).icon }}
+                  </mat-icon>
+                  {{ formatEtatWithIcon(log.nouvelEtat).text }}
+                </span>
+                <span *ngIf="!log.nouvelEtat" class="supprime-badge">
+                  <mat-icon class="etat-icon">delete</mat-icon>
+                  Supprimé
+                </span>
+              </div>
             </td>
           </ng-container>
 
@@ -183,49 +247,71 @@
             </td>
           </ng-container>
 
-          <!-- Colonne Actions -->
+          <!-- Colonne Actions (FONCTIONNELLES) -->
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let log">
               <div class="actions-cell">
-                <!-- Details button -->
+                <!-- Bouton Détails - FONCTIONNEL avec dialog -->
                 <button mat-icon-button 
-                        [matTooltip]="'Voir détails'" 
-                        (click)="viewDetails(log)">
+                        [class]="getActionButtonClass('details')"
+                        [matTooltip]="'Voir détails du log'" 
+                        (click)="viewDetails(log)"
+                        [attr.aria-label]="'Voir détails du log ' + log.id">
                   <mat-icon>visibility</mat-icon>
                 </button>
                 
-                <!-- Inspection history button -->
+                <!-- Bouton Historique Inspection - FONCTIONNEL -->
                 <button mat-icon-button 
-                        *ngIf="log.inspection && !inspectionId"
-                        [matTooltip]="'Voir historique inspection'" 
-                        (click)="viewInspectionHistory(log.inspection.id)">
+                        *ngIf="log.inspection && !inspectionIdSignal()"
+                        [class]="getActionButtonClass('history')"
+                        [matTooltip]="'Voir historique de l\'inspection'" 
+                        (click)="viewInspectionHistory(log.inspection.id)"
+                        [attr.aria-label]="'Voir historique de l\'inspection ' + log.inspection.titre">
                   <mat-icon>history</mat-icon>
                 </button>
                 
-                <!-- User activity button -->
+                <!-- Bouton Activité Utilisateur - FONCTIONNEL -->
                 <button mat-icon-button 
                         *ngIf="log.intervenant"
-                        [matTooltip]="'Voir activité utilisateur'" 
-                        (click)="viewUserActivity(log.intervenant.id)">
+                        [class]="getActionButtonClass('user')"
+                        [matTooltip]="'Voir activité de l\'utilisateur'" 
+                        (click)="viewUserActivity(log.intervenant.id)"
+                        [attr.aria-label]="'Voir activité de ' + log.intervenant.nom + ' ' + log.intervenant.prenom">
                   <mat-icon>person_search</mat-icon>
                 </button>
               </div>
             </td>
           </ng-container>
 
-          <!-- En-têtes et lignes -->
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <!-- Lignes de données -->
           <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
               class="log-row"
-              [class.highlight-row]="row.nouvelEtat === 'VALIDEE'">
+              [class.highlight-row]="shouldHighlightRow(row)"
+              [attr.data-log-type]="getLogTypeClass(row)"
+              [attr.data-priority]="getLogPriority(row)">
+            <div class="log-type-indicator" 
+                 [class]="getLogTypeClass(row)">
+            </div>
           </tr>
         </table>
 
         <!-- Message si aucune donnée -->
-        <div *ngIf="!loading() && logs().length === 0" class="no-data-message">
-          <mat-icon>inbox</mat-icon>
-          <p>Aucun log trouvé avec les critères sélectionnés</p>
+        <div *ngIf="!loading() && filteredCount() === 0" class="no-data-message">
+          <mat-icon>{{ totalLogs() === 0 ? 'inbox' : 'search_off' }}</mat-icon>
+          <h3>
+            {{ totalLogs() === 0 ? 'Aucun log trouvé' : 'Aucun résultat' }}
+          </h3>
+          <p>
+            {{ totalLogs() === 0 
+               ? 'Il n\'y a pas encore de logs dans le système.' 
+               : 'Aucun log ne correspond aux critères de recherche.' 
+            }}
+          </p>
+          <button mat-stroked-button *ngIf="totalLogs() > 0" (click)="resetFilters()">
+            <mat-icon>clear_all</mat-icon>
+            Réinitialiser les filtres
+          </button>
         </div>
       </div>
 

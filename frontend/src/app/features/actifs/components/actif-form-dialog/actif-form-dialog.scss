@@ -1,9 +1,4 @@
-/*
- * Modern Actif Dialog - Clean, Professional Design
- * Built from scratch with optimal layout and UX
- */
 
-/* === GLOBAL DIALOG OVERRIDES === */
 ::ng-deep .mat-mdc-dialog-container {
   --dialog-border-radius: 16px;
   --dialog-max-width: 1400px;
@@ -32,7 +27,6 @@
   border-radius: var(--dialog-border-radius) !important;
 }
 
-/* === HOST COMPONENT === */
 :host {
   display: flex;
   flex-direction: column;
@@ -43,7 +37,6 @@
   overflow: hidden;
 }
 
-/* === DIALOG HEADER === */
 .dialog-header {
   background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
   color: white;

@@ -1,426 +1,756 @@
-/* src/app/features/log-historique/components/log-historique-list/log-historique-list.component.scss */
+// Correction urgente pour les en-têtes de tableau
+// Ajoutez ceci au début de votre fichier SCSS
 
 .log-historique-container {
-  padding: 20px;
-  min-height: 100vh;
-  background-color: #f5f5f5;
+  .table-container {
+    .logs-table {
+      // Forcer l'affichage des en-têtes
+      .mat-header-row {
+        display: table-row !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: auto !important;
+        min-height: 56px !important;
+      }
 
+      .mat-header-cell {
+        display: table-cell !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: static !important;
+        font-weight: 600 !important;
+        color: rgba(0, 0, 0, 0.87) !important;
+        border-bottom: 2px solid #e0e0e0 !important;
+        background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%) !important;
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+
+        .header-icon {
+          font-size: 1.2rem;
+          width: 1.2rem;
+          height: 1.2rem;
+          margin-right: 6px;
+          color: #1976d2;
+          vertical-align: middle;
+        }
+
+        // Animation au survol
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #1976d2, #2196f3);
+          transform: scaleX(0);
+          transition: transform 0.3s ease;
+        }
+
+        &:hover::after {
+          transform: scaleX(1);
+        }
+      }
+
+      // S'assurer que les lignes de données s'affichent correctement
+      .mat-row {
+        display: table-row !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      .mat-cell {
+        display: table-cell !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        vertical-align: middle !important;
+      }
+    }
+  }
+}
+
+// Styles globaux pour forcer l'affichage correct du tableau Angular Material
+::ng-deep {
+  .logs-table {
+    .mat-table {
+      display: table !important;
+      width: 100% !important;
+    }
+
+    .mat-header-row {
+      display: table-row !important;
+      background-color: #fafafa !important;
+      border-bottom: 2px solid #e0e0e0 !important;
+    }
+
+    .mat-row {
+      display: table-row !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .mat-header-cell, .mat-cell {
+      display: table-cell !important;
+      padding: 12px 8px !important;
+      vertical-align: middle !important;
+    }
+
+    .mat-header-cell {
+      font-weight: 600 !important;
+      background-color: #fafafa !important;
+      color: rgba(0, 0, 0, 0.87) !important;
+    }
+  }
+}
+
+
+.log-historique-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  // ===== HEADER SECTION =====
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 24px;
     gap: 16px;
 
-    .title {
+    .title-section {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 8px;
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 500;
-      color: #333;
 
-      mat-icon {
-        color: #2196f3;
+      .title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: #1976d2;
+
+        mat-icon {
+          font-size: 1.8rem;
+          width: 1.8rem;
+          height: 1.8rem;
+        }
+      }
+
+      .results-indicator {
+        .results-count {
+          color: #666;
+          font-size: 0.875rem;
+          font-style: italic;
+        }
       }
     }
 
     .header-actions {
       display: flex;
-      gap: 12px;
-      align-items: center;
+      gap: 8px;
       flex-wrap: wrap;
 
       button {
-        display: flex;
-        align-items: center;
-        gap: 4px;
+        white-space: nowrap;
       }
     }
   }
 
-  // Filtres
-  .filters-card {
-    margin-bottom: 20px;
-    
-    .filters-form {
-      .filter-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        align-items: center;
+  // ===== SEARCH SECTION =====
+  .search-section {
+    margin-bottom: 24px;
 
-        mat-form-field {
+    .search-form {
+      .search-field {
+        width: 100%;
+        max-width: 600px;
+        
+        .mat-mdc-form-field {
           width: 100%;
         }
 
-        button {
-          height: fit-content;
-          align-self: end;
-          margin-bottom: 1.34375em; // Alignement avec les mat-form-field
+        mat-icon[matSuffix] {
+          color: #666;
+          cursor: pointer;
+          
+          &:hover {
+            color: #1976d2;
+          }
         }
       }
     }
   }
 
-  // Carte d'erreur
+  // ===== RESULTS SUMMARY =====
+  .results-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background-color: #e3f2fd;
+    border: 1px solid #1976d2;
+    border-radius: 6px;
+    color: #1565c0;
+    font-size: 0.9rem;
+
+    mat-icon {
+      color: #1976d2;
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+  }
+
+  // ===== ERROR CARD =====
   .error-card {
-    margin-bottom: 20px;
-    border-left: 4px solid #f44336;
+    margin-bottom: 24px;
+    border-left: 4px solid #d32f2f;
 
     .error-message {
       display: flex;
       align-items: center;
       gap: 12px;
-      color: #f44336;
 
       mat-icon {
-        font-size: 24px;
+        color: #d32f2f;
       }
 
       span {
         flex: 1;
+        color: #c62828;
       }
     }
   }
 
-  // Tableau
+  // ===== TABLE SECTION =====
   .table-card {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    mat-progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1;
+    }
+
     .table-container {
       overflow-x: auto;
-      margin: 0 -24px; // Compensation du padding de mat-card-content
-      
+
       .logs-table {
         width: 100%;
-        background: white;
-        
-        // En-têtes
-        .mat-mdc-header-cell {
-          background-color: #f8f9fa;
+        min-width: 800px;
+
+        // ===== HEADER STYLES =====
+        .mat-header-cell {
           font-weight: 600;
-          color: #333;
-          border-bottom: 2px solid #e9ecef;
-        }
-        
-        // Lignes
-        .mat-mdc-row {
-          transition: background-color 0.2s ease;
-          border-bottom: 1px solid #e9ecef;
-          
-          &:hover {
-            background-color: #f8f9fa;
+          color: rgba(0, 0, 0, 0.87);
+          border-bottom: 2px solid #e0e0e0;
+          background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+          position: relative;
+
+          .header-icon {
+            font-size: 1.2rem;
+            width: 1.2rem;
+            height: 1.2rem;
+            margin-right: 6px;
+            color: #1976d2;
+            vertical-align: middle;
           }
-          
+
+          &::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #1976d2, #2196f3);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+          }
+
+          &:hover::after {
+            transform: scaleX(1);
+          }
+        }
+
+        // ===== ROW STYLES =====
+        .mat-row {
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+          transition: all 0.2s ease;
+          position: relative;
+
+          &:hover {
+            background-color: rgba(25, 118, 210, 0.04) !important;
+            transform: translateX(2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          }
+
           &.highlight-row {
-            background-color: #e8f5e8;
+            background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%);
+            border-left: 4px solid #4caf50;
             
             &:hover {
-              background-color: #d4edda;
+              background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
             }
+          }
+
+          // Types de logs avec bordures colorées
+          &[data-log-type="creation"] {
+            border-left: 3px solid #4caf50;
+            background-color: rgba(76, 175, 80, 0.02);
+          }
+          
+          &[data-log-type="modification"] {
+            border-left: 3px solid #ff9800;
+            background-color: rgba(255, 152, 0, 0.02);
+          }
+          
+          &[data-log-type="suppression"] {
+            border-left: 3px solid #f44336;
+            background-color: rgba(244, 67, 54, 0.02);
+          }
+          
+          &[data-log-type="validation"] {
+            border-left: 3px solid #2196f3;
+            background-color: rgba(33, 150, 243, 0.02);
           }
         }
-        
-        .mat-mdc-cell {
+
+        .mat-cell {
+          border-bottom: none;
           padding: 12px 8px;
-          
-          // Cellule date
-          .date-cell {
-            .date {
-              font-weight: 500;
-              color: #333;
-            }
+        }
+
+        // ===== CELL SPECIFIC STYLES =====
+        .date-cell {
+          .date {
+            font-weight: 500;
+            color: rgba(0, 0, 0, 0.87);
           }
-          
-          // Cellule utilisateur
-          .user-cell {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            
-            .user-icon {
-              color: #666;
-              font-size: 20px;
-            }
-            
-            .user-info {
-              display: flex;
-              flex-direction: column;
-              gap: 2px;
-              
-              .user-name {
-                font-weight: 500;
-                color: #333;
-              }
-              
-              .user-email {
-                font-size: 0.8rem;
-                color: #666;
-              }
-            }
+        }
+
+        .user-cell {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .user-icon {
+            color: #1976d2;
+            font-size: 1.2rem;
           }
-          
-          // Cellule inspection
-          .inspection-cell {
+
+          .user-info {
             display: flex;
             flex-direction: column;
             gap: 2px;
-            
-            .inspection-name {
+
+            .user-name {
               font-weight: 500;
-              color: #333;
+              color: rgba(0, 0, 0, 0.87);
             }
-            
-            .inspection-id {
+
+            .user-email {
               font-size: 0.8rem;
-              color: #666;
-              font-family: 'Courier New', monospace;
+              color: rgba(0, 0, 0, 0.6);
             }
           }
-          
-          // Cellule commentaire
-          .commentaire-cell {
-            max-width: 200px;
-            
-            .commentaire-text {
-              color: #333;
-              word-break: break-word;
-            }
+        }
+
+        .inspection-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+
+          .inspection-name {
+            font-weight: 500;
+            color: rgba(0, 0, 0, 0.87);
           }
+
+          .inspection-id {
+            font-size: 0.8rem;
+            color: rgba(0, 0, 0, 0.6);
+            font-family: 'Courier New', monospace;
+          }
+        }
+
+        .commentaire-cell {
+          max-width: 200px;
+
+          .commentaire-text {
+            display: block;
+            word-wrap: break-word;
+            color: rgba(0, 0, 0, 0.87);
+          }
+        }
+
+        // ===== ÉTAT BADGES =====
+        .etat-container {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .etat-icon {
+            font-size: 1rem;
+            width: 1rem;
+            height: 1rem;
+            margin-right: 4px;
+          }
+        }
+
+        .etat-badge, .nouveau-badge, .supprime-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 12px;
+          border-radius: 16px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border: 1px solid transparent;
+          min-width: 80px;
+          justify-content: center;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          transition: all 0.2s ease;
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+          }
+        }
+
+        // États spécifiques avec couleurs
+        .badge-en-cours {
+          background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+          color: #e65100;
+          border-color: #ff9800;
+        }
+
+        .badge-programmee {
+          background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+          color: #0d47a1;
+          border-color: #2196f3;
+        }
+
+        .badge-cloturee {
+          background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+          color: #1b5e20;
+          border-color: #4caf50;
+        }
+
+        .badge-validee {
+          background: linear-gradient(135deg, #e8f5e8 0%, #a5d6a7 100%);
+          color: #2e7d32;
+          border-color: #66bb6a;
+          box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .badge-annulee {
+          background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+          color: #c62828;
+          border-color: #f44336;
+        }
+
+        .badge-suspendue {
+          background: linear-gradient(135deg, #fafafa 0%, #e0e0e0 100%);
+          color: #424242;
+          border-color: #757575;
+        }
+
+        .badge-en-attente {
+          background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+          color: #f57f17;
+          border-color: #ffc107;
+        }
+
+        .badge-light {
+          background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+          color: #616161;
+          border-color: #9e9e9e;
+        }
+
+        .nouveau-badge {
+          background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+          color: #2e7d32;
+          border-color: #4caf50;
           
-          // Cellule actions
-          .actions-cell {
-            display: flex;
-            gap: 4px;
-            
-            button {
+          &::before {
+            content: "✨";
+            margin-right: 4px;
+          }
+        }
+
+        .supprime-badge {
+          background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+          color: #c62828;
+          border-color: #f44336;
+          
+          &::before {
+            content: "🗑️";
+            margin-right: 4px;
+          }
+        }
+
+        // ===== ACTIONS CELL =====
+        .actions-cell {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+
+          button {
+            min-width: 36px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+
+            &::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: -100%;
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+              transition: left 0.5s;
+            }
+
+            &:hover::before {
+              left: 100%;
+            }
+
+            mat-icon {
+              font-size: 1.2rem;
+              width: 1.2rem;
+              height: 1.2rem;
+              transition: transform 0.2s ease;
+            }
+
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
               mat-icon {
-                font-size: 18px;
+                transform: scale(1.1);
               }
             }
           }
+        }
+
+        // Classes pour les boutons d'action
+        .action-details {
+          background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
+          color: #1976d2 !important;
+          border: 1px solid #2196f3 !important;
           
-          // Données vides
-          .no-data {
-            color: #999;
-            font-style: italic;
-            font-size: 0.9rem;
+          &:hover {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
           }
         }
+
+        .action-history {
+          background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%) !important;
+          color: #f57c00 !important;
+          border: 1px solid #ff9800 !important;
+          
+          &:hover {
+            background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3) !important;
+          }
+        }
+
+        .action-user {
+          background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%) !important;
+          color: #7b1fa2 !important;
+          border: 1px solid #9c27b0 !important;
+          
+          &:hover {
+            background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(123, 31, 162, 0.3) !important;
+          }
+        }
+
+        .no-data {
+          color: rgba(0, 0, 0, 0.38);
+          font-style: italic;
+          font-size: 0.9rem;
+        }
       }
-      
-      // Message aucune donnée
+
+      // ===== NO DATA MESSAGE =====
       .no-data-message {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
         text-align: center;
-        padding: 60px 20px;
-        color: #666;
-        
+        color: rgba(0, 0, 0, 0.6);
+
         mat-icon {
-          font-size: 48px;
-          width: 48px;
-          height: 48px;
-          color: #ccc;
+          font-size: 3rem;
+          width: 3rem;
+          height: 3rem;
+          color: rgba(0, 0, 0, 0.38);
           margin-bottom: 16px;
         }
-        
+
+        h3 {
+          margin: 0 0 8px 0;
+          font-weight: 500;
+          color: rgba(0, 0, 0, 0.87);
+        }
+
         p {
-          margin: 0;
-          font-size: 1.1rem;
+          margin: 0 0 24px 0;
+          max-width: 400px;
+          line-height: 1.5;
         }
       }
     }
   }
-}
 
-// Badges d'état
-.etat-badge {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  
-  &.badge-warning {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
-  }
-  
-  &.badge-info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #74c0fc;
-  }
-  
-  &.badge-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #51cf66;
-  }
-  
-  &.badge-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #ff6b6b;
-  }
-  
-  &.badge-secondary {
-    background-color: #e2e3e5;
-    color: #383d41;
-    border: 1px solid #ced4da;
-  }
-  
-  &.badge-light {
-    background-color: #f8f9fa;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-  }
-}
+  // ===== FILTER MENU =====
+  .filter-menu {
+    min-width: 320px;
+    max-width: 400px;
 
-.nouveau-badge {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background-color: #e3f2fd;
-  color: #1565c0;
-  border: 1px solid #2196f3;
-}
+    .filter-section {
+      padding: 8px;
+      
+      .filter-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        font-weight: 500;
+        color: #1976d2;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        margin-bottom: 8px;
 
-.supprime-badge {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background-color: #fce4ec;
-  color: #c2185b;
-  border: 1px solid #e91e63;
-}
+        mat-icon {
+          font-size: 1.2rem;
+          width: 1.2rem;
+          height: 1.2rem;
+        }
+      }
 
-// Responsive Design
-@media (max-width: 768px) {
-  .log-historique-container {
+      .filter-search {
+        margin-bottom: 8px;
+
+        .compact-field {
+          width: 100%;
+          
+          .mat-mdc-form-field {
+            font-size: 0.875rem;
+          }
+        }
+
+        .filter-buttons {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+          
+          button {
+            flex: 1;
+          }
+        }
+      }
+    }
+  }
+
+  // ===== PRIORITY INDICATORS =====
+  [data-priority="high"] {
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(255, 82, 82, 0.3) !important;
+  }
+
+  [data-priority="medium"] {
+    box-shadow: 0 0 6px rgba(255, 193, 7, 0.2) !important;
+  }
+
+  [data-priority="low"] {
+    opacity: 0.8;
+  }
+
+  // ===== ANIMATIONS =====
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(255, 82, 82, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
+    }
+  }
+
+  // ===== RESPONSIVE DESIGN =====
+  @media (max-width: 1200px) {
     padding: 16px;
-    
+
     .header {
       flex-direction: column;
       align-items: stretch;
-      gap: 12px;
-      
+      gap: 16px;
+
       .header-actions {
-        justify-content: center;
+        justify-content: flex-start;
       }
     }
-    
-    .filters-card .filters-form .filter-row {
-      grid-template-columns: 1fr;
-      
-      button {
-        margin-bottom: 0;
-        align-self: stretch;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+
+    .search-section {
+      .search-form {
+        .search-field {
+          max-width: 100%;
+        }
       }
     }
-    
-    .table-card .table-container {
-      margin: 0 -16px; // Ajustement pour mobile
-      
+
+    .table-container {
       .logs-table {
-        .mat-mdc-cell, .mat-mdc-header-cell {
-          padding: 8px 4px;
-          font-size: 0.9rem;
-          
-          &:first-child {
-            padding-left: 16px;
-          }
-          
-          &:last-child {
-            padding-right: 16px;
-          }
-        }
-        
-        // Masquer certaines colonnes sur mobile
-        .mat-column-commentaire,
-        .mat-column-inspection {
-          display: none;
-        }
+        font-size: 0.875rem;
       }
     }
-  }
-}
 
-@media (max-width: 480px) {
-  .log-historique-container {
-    .table-card .table-container .logs-table {
-      // Sur très petit écran, masquer encore plus de colonnes
-      .mat-column-ancienEtat {
-        display: none;
+    .etat-badge, .nouveau-badge, .supprime-badge {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      min-width: 60px;
+      
+      .etat-icon {
+        font-size: 0.9rem;
+        width: 0.9rem;
+        height: 0.9rem;
       }
     }
-  }
-}
-
-// Animations
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.mat-mdc-row {
-  animation: fadeIn 0.3s ease-out;
-}
-
-// Loading states
-.mat-mdc-progress-bar {
-  height: 3px;
-  margin: 0 -24px 16px -24px;
-}
-
-// Ajustements pour les versions plus récentes d'Angular Material
-::ng-deep {
-  .mat-mdc-table {
-    .mat-mdc-header-row {
-      background-color: #f8f9fa;
-    }
     
-    .mat-mdc-row:hover .mat-mdc-cell {
-      background-color: transparent;
-    }
-  }
-  
-  .mat-mdc-paginator {
-    background-color: transparent;
-  }
-  
-  .mat-mdc-form-field {
-    .mat-mdc-text-field-wrapper {
-      background-color: white;
-    }
-  }
-}
-
-// Styles spécifiques pour les boutons d'action
-.actions-cell {
-  .mat-mdc-icon-button {
-    width: 36px;
-    height: 36px;
-    
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.04);
-    }
-    
-    .mat-mdc-button-touch-target {
-      width: 36px;
-      height: 36px;
+    .actions-cell button {
+      min-width: 32px;
+      width: 32px;
+      height: 32px;
+      
+      mat-icon {
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
+      }
     }
   }
 }

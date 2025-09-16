@@ -19,9 +19,9 @@ export interface Inspection {
 export enum InspectionStatut {
   PROGRAMMEE = 'PROGRAMMEE',
   EN_COURS = 'EN_COURS',
-  TERMINEE = 'TERMINEE',
+  CLOTUREE = 'CLOTUREE', 
   VALIDEE = 'VALIDEE',
-  ANNULEE = 'ANNULEE'
+  REJETEE = 'REJETEE'
 }
 
 export enum InspectionPriorite {

@@ -66,13 +66,11 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
     this.dataSource.sort = this.sort;
   }
 
-  // 🔥 UNE SEULE méthode openAddActifDialog - CORRIGÉE
   openAddActifDialog(): void {
     console.log('➕ Ouverture du dialog de création d\'actif');
     
     const dialogData = {
-      mode: 'create' as const  // Mode explicite
-      // Pas d'actif car c'est une création
+      mode: 'create' as const  
     };
     
     const dialogRef = this.dialog.open(ActifFormDialogComponent, {
@@ -150,10 +148,9 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
     this.loadActifs();
   }
   
-  // 🗺️ BOUTON 1: Localiser sur la carte
   showOnMap(actif: Actif): void {
     if (actif.geometry && actif.geometry.coordinates) {
-      // 🔥 REDIRECTION vers la carte avec l'ID de l'actif
+      //  REDIRECTION vers la carte avec l'ID de l'actif
       this.router.navigate(['/actifs/map'], { 
         queryParams: { 
           actifId: actif.id,
@@ -174,7 +171,6 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // 👁️ BOUTON 2: Voir les détails (version simple)
   viewDetails(actif: Actif): void {
     const dialogRef = this.dialog.open(ActifDetailsDialogComponent, {
       width: '700px',
@@ -185,20 +181,19 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result === 'edit') {
-        // Si l'utilisateur clique sur "Modifier" dans les détails
+       
         this.editActif(actif);
       }
     });
   }
 
-  // ✏️ BOUTON 3: Modifier l'actif - CORRIGÉ
+ 
   editActif(actif: Actif): void {
     console.log('🔧 Ouverture du dialog d\'édition pour:', actif);
     
-    // 🔥 CORRECTION: S'assurer que toutes les données nécessaires sont passées
     const dialogData = {
-      actif: actif,           // L'actif complet à modifier
-      mode: 'edit' as const   // Mode explicite avec typage strict
+      actif: actif,           
+      mode: 'edit' as const   
     };
     
     console.log('📦 Données passées au dialog:', dialogData);
@@ -208,7 +203,7 @@ export class ActifsListComponent implements OnInit, AfterViewInit {
       maxWidth: '1400px',
       height: '95vh',
       maxHeight: '900px',
-      data: dialogData,  // 🔥 Utiliser l'objet structuré
+      data: dialogData,  
       disableClose: true,
       panelClass: 'custom-dialog-container'
     });

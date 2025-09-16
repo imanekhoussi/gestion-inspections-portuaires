@@ -27,7 +27,6 @@ export class ActifsService {
         catchError(this.handleError)
       );
   }
-  // Basic CRUD operations
   getActifs(): Observable<Actif[]> {
     return this.http.get<Actif[]>(`${this.API_URL}/actifs`)
       .pipe(
@@ -73,14 +72,13 @@ export class ActifsService {
  updateActifGeometry(actifId: number, geometryData: any): Observable<any> {
     console.log('Service: Mise à jour géométrie actif', actifId, geometryData);
     
-    // Corrigé: API_URL au lieu de apiUrl
     const url = `${this.API_URL}/actifs/${actifId}/geometry`;
     
     return this.http.patch(url, geometryData).pipe(
-      tap((response: any) => { // Typage explicite
+      tap((response: any) => { 
         console.log('Service: Géométrie mise à jour', response);
       }),
-      catchError((error: any) => { // Typage explicite
+      catchError((error: any) => { 
         console.error('Service: Erreur mise à jour géométrie', error);
         return throwError(() => error);
       })
@@ -94,7 +92,6 @@ export class ActifsService {
     );
 }
 
-  // Family and Group operations
   getFamilles(): Observable<ActifFamille[]> {
     return this.http.get<ActifFamille[]>(`${this.API_URL}/familles`)
       .pipe(
@@ -120,7 +117,6 @@ export class ActifsService {
       );
   }
 
-  // Filtering operations
   getActifsBySite(site: string): Observable<Actif[]> {
     return this.http.get<Actif[]>(`${this.API_URL}/actifs/by-site?site=${encodeURIComponent(site)}`)
       .pipe(
@@ -145,7 +141,6 @@ export class ActifsService {
       );
   }
 
-  // Statistics
   getStatistiques(): Observable<StatistiquesActifs> {
     return this.http.get<StatistiquesActifs>(`${this.API_URL}/actifs/statistiques`)
       .pipe(
@@ -162,7 +157,6 @@ export class ActifsService {
       );
   }
 
-  // Search operations
   searchActifs(query: string): Observable<Actif[]> {
     const params = new HttpParams().set('q', query);
     return this.http.get<Actif[]>(`${this.API_URL}/actifs/search`, { params })
@@ -172,7 +166,6 @@ export class ActifsService {
       );
   }
 
-  // Geographic operations
   getActifsByCoordinates(lat: number, lng: number, radius: number = 1000): Observable<Actif[]> {
     const params = new HttpParams()
       .set('lat', lat.toString())
@@ -186,7 +179,6 @@ export class ActifsService {
       );
   }
 
-  // Filter options for UI
   getFilterOptions(): Observable<{
     sites: string[];
     zones: string[];
@@ -209,7 +201,6 @@ export class ActifsService {
       // Client-side error
       errorMessage = `Erreur client: ${error.error.message}`;
     } else {
-      // Server-side error
       switch (error.status) {
         case 0:
           errorMessage = 'Impossible de se connecter au serveur';

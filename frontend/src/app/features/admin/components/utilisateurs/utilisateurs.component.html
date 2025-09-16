@@ -166,16 +166,6 @@
             </td>
           </ng-container>
 
-          <!-- Colonne Date de création -->
-          <ng-container matColumnDef="createdAt">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Créé le</th>
-            <td mat-cell *matCellDef="let user">
-              <div class="date-cell">
-                <mat-icon class="date-icon">schedule</mat-icon>
-                {{ user.createdAt | date:'dd/MM/yyyy' }}
-              </div>
-            </td>
-          </ng-container>
 
           <!-- Colonne Actions -->
           <ng-container matColumnDef="actions">

@@ -45,7 +45,8 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
   styleUrls: ['./utilisateurs.component.scss']
 })
 export class UtilisateursComponent implements OnInit, AfterViewInit {
-  displayedColumns: string[] = ['nom', 'email', 'role', 'telephone', 'createdAt', 'actions'];
+  // CORRECTION: Retirer 'createdAt' du tableau des colonnes affichées
+  displayedColumns: string[] = ['nom', 'email', 'role', 'telephone', 'actions'];
   dataSource = new MatTableDataSource<Utilisateur>();
   isLoading = true;
   
@@ -87,7 +88,7 @@ export class UtilisateursComponent implements OnInit, AfterViewInit {
       nom: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      role: ['inspecteur', Validators.required],
+      role: ['operateur', Validators.required], // CORRECTION: Changer la valeur par défaut
       telephone: ['', [Validators.pattern(/^[0-9\+\-\s\(\)]*$/)]]
     });
   }
@@ -121,7 +122,7 @@ export class UtilisateursComponent implements OnInit, AfterViewInit {
     this.selectedUser = null;
     this.showForm = true;
     this.userForm.reset();
-    this.userForm.patchValue({ role: 'inspecteur' });
+    this.userForm.patchValue({ role: 'operateur' }); // CORRECTION: Changer la valeur par défaut
   }
 
   openEditForm(user: Utilisateur): void {
@@ -154,8 +155,8 @@ export class UtilisateursComponent implements OnInit, AfterViewInit {
       if (this.isEditMode && this.selectedUser) {
         // En mode édition, ne pas envoyer le mot de passe s'il est vide
         if (!formData.password) {
-  delete (formData as any).password;
-}
+          delete (formData as any).password;
+        }
         
         this.adminService.updateUtilisateur(this.selectedUser.id, formData).subscribe({
           next: () => {
@@ -219,8 +220,8 @@ export class UtilisateursComponent implements OnInit, AfterViewInit {
   getRoleClass(role: string): string {
     switch (role) {
       case 'admin': return 'role-admin';
-      case 'inspecteur': return 'role-inspecteur';
-      case 'viewer': return 'role-viewer';
+      case 'operateur': return 'role-operateur'; // CORRECTION: Ajouter la classe pour opérateur
+      case 'maitre_ouvrage': return 'role-maitre-ouvrage'; // CORRECTION: Ajouter la classe pour maître d'ouvrage
       default: return '';
     }
   }

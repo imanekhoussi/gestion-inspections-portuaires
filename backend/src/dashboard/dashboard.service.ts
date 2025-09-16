@@ -13,33 +13,31 @@ export class DashboardService {
     private actifRepository: Repository<Actif>,
   ) {}
 
-  async getKPIs() {
-    const [
-      totalInspections,
-      inspectionsProgrammees,
-      inspectionsRealisees,
-      inspectionsValidees,
-      inspectionsRejetees,
-      totalActifs
-    ] = await Promise.all([
-      this.inspectionRepository.count(),
-      this.inspectionRepository.count({ where: { etat: EtatInspection.PROGRAMMEE } }),
-      this.inspectionRepository.count({ where: { etat: EtatInspection.CLOTUREE } }),
-      this.inspectionRepository.count({ where: { etat: EtatInspection.VALIDEE } }),
-      this.inspectionRepository.count({ where: { etat: EtatInspection.REJETEE } }),
-      this.actifRepository.count(),
-    ]);
+ async getKPIs() {
+  const [
+    totalInspections,
+    inspectionsPlanifiees,    // PROGRAMMEE
+    inspectionsEnCours,       // EN_COURS  
+    inspectionsCloturees,     // CLOTUREE
+    inspectionsValidees   // VALIDEE
+  
+  ] = await Promise.all([
+    this.inspectionRepository.count(),
+    this.inspectionRepository.count({ where: { etat: EtatInspection.PROGRAMMEE } }),
+    this.inspectionRepository.count({ where: { etat: EtatInspection.EN_COURS } }),
+    this.inspectionRepository.count({ where: { etat: EtatInspection.CLOTUREE } }),
+    this.inspectionRepository.count({ where: { etat: EtatInspection.VALIDEE } }),
+    this.actifRepository.count(),
+  ]);
 
-    return {
-      totalInspections,
-      inspectionsProgrammees,
-      inspectionsRealisees,
-      inspectionsValidees,
-      inspectionsRejetees,
-      totalActifs,
-      tauxConformite: totalInspections > 0 ? (inspectionsValidees / totalInspections) * 100 : 0,
-    };
-  }
+  return {
+    totalInspections,
+    inspectionsPlanifiees,
+    inspectionsEnCours,  
+    inspectionsCloturees,
+    inspectionsValidees,
+  };
+}
 
   async getStatistiquesParFamille() {
     return this.inspectionRepository

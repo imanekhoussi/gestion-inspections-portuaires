@@ -1,6 +1,8 @@
+
 export interface DashboardKpis {
   totalInspections: number;
-  inspectionsProgrammees: number;
+  inspectionsPlanifiees: number;
+  inspectionsEnCours: number;
+  inspectionsCloturees: number;
   inspectionsValidees: number;
-  tauxConformite: number;
 }

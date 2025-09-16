@@ -9,12 +9,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
+@Get('kpis')
+@ApiOperation({ summary: 'Récupérer les KPIs du tableau de bord' })
+async getKPIs() {
+  return this.dashboardService.getKPIs();  // Appel au service
+}
 
-  @Get('kpis')
-  @ApiOperation({ summary: 'Récupérer les KPIs du tableau de bord' })
-  async getKPIs() {
-    return this.dashboardService.getKPIs();
-  }
+
 
   @Get('stats-famille')
   @ApiOperation({ summary: 'Statistiques par famille d\'actifs' })

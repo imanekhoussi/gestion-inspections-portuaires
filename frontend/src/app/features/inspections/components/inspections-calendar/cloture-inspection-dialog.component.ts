@@ -1,4 +1,3 @@
-// src/app/components/inspection-details-dialog/cloture-inspection-dialog.component.ts
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -48,7 +47,7 @@ import {
     <div class="dialog-header">
       <h2 mat-dialog-title>
         <mat-icon>check_circle</mat-icon>
-        Clôturer l'inspection
+        {{ TEXTS.DIALOG_TITLE }}
       </h2>
       <button mat-icon-button mat-dialog-close [disabled]="isSubmitting">
         <mat-icon>close</mat-icon>
@@ -63,16 +62,16 @@ import {
           <mat-card-header>
             <mat-card-title>
               <mat-icon>comment</mat-icon>
-              Commentaires généraux
+              {{ TEXTS.GENERAL_COMMENTS }}
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <mat-form-field class="full-width">
-              <mat-label>Commentaire de clôture (optionnel)</mat-label>
+              <mat-label>{{ TEXTS.CLOSURE_COMMENT }}</mat-label>
               <textarea matInput 
                         formControlName="commentaire" 
                         rows="3" 
-                        placeholder="Décrivez le déroulement de l'inspection...">
+                        [placeholder]="TEXTS.DESCRIBE_INSPECTION">
               </textarea>
             </mat-form-field>
           </mat-card-content>
@@ -94,7 +93,7 @@ import {
                    (drop)="onDrop($event)"
                    [class.drag-over]="isDragOver">
                 <mat-icon>cloud_upload</mat-icon>
-                <p>Cliquez ou glissez-déposez vos fichiers ici</p>
+                <p>{{ TEXTS.DRAG_DROP_FILES }}</p>
                 <small>Images (JPG, PNG, GIF), PDF, Documents (DOC, XLS)</small>
               </div>
               
@@ -107,7 +106,7 @@ import {
 
               <!-- Selected Files List -->
               <div *ngIf="selectedFiles.length > 0" class="selected-files">
-                <h4>Fichiers sélectionnés :</h4>
+                <h4>{{ TEXTS.SELECTED_FILES }}</h4>
                 <mat-list>
                   <mat-list-item *ngFor="let file of selectedFiles; let i = index">
                     <mat-icon matListItemIcon>{{ getFileIcon(file.name) }}</mat-icon>
@@ -137,10 +136,10 @@ import {
           <mat-card-header>
             <mat-card-title>
               <mat-icon>build</mat-icon>
-              État des actifs (optionnel)
+              {{ TEXTS.ASSET_STATE }}
             </mat-card-title>
             <mat-card-subtitle>
-              Mise à jour de l'indice d'état des actifs inspectés
+              {{ TEXTS.UPDATE_ASSET_INDEX }}
             </mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
@@ -152,20 +151,20 @@ import {
                   <small *ngIf="actif.site">{{ actif.site }}</small>
                   <mat-chip *ngIf="actif.indiceEtat" 
                             [ngClass]="getIndiceEtatClass(actif.indiceEtat!)">
-                    État actuel: {{ getIndiceEtatLabel(actif.indiceEtat!) }}
+                    {{ TEXTS.CURRENT_STATE }} {{ getIndiceEtatLabel(actif.indiceEtat!) }}
                   </mat-chip>
                 </div>
                 
                 <div class="actif-controls" *ngIf="getActifUpdateFormGroup(i) as actifForm" 
                      [formGroup]="actifForm">
                   <mat-form-field>
-                    <mat-label>Nouvel indice d'état</mat-label>
+                    <mat-label>{{ TEXTS.NEW_STATE_INDEX }}</mat-label>
                     <mat-select formControlName="nouvelIndiceEtat">
-                      <mat-option [value]="1">1 - Très mauvais</mat-option>
-                      <mat-option [value]="2">2 - Mauvais</mat-option>
-                      <mat-option [value]="3">3 - Moyen</mat-option>
-                      <mat-option [value]="4">4 - Bon</mat-option>
-                      <mat-option [value]="5">5 - Très bon</mat-option>
+                      <mat-option [value]="1">1 - {{ TEXTS.VERY_BAD }}</mat-option>
+                      <mat-option [value]="2">2 - {{ TEXTS.BAD }}</mat-option>
+                      <mat-option [value]="3">3 - {{ TEXTS.AVERAGE }}</mat-option>
+                      <mat-option [value]="4">4 - {{ TEXTS.GOOD }}</mat-option>
+                      <mat-option [value]="5">5 - {{ TEXTS.VERY_GOOD }}</mat-option>
                     </mat-select>
                   </mat-form-field>
                   
@@ -191,15 +190,15 @@ import {
           <mat-card-content>
             <div class="time-info">
               <div class="time-item">
-                <strong>Date de début prévue:</strong>
+                <strong>{{ TEXTS.START_DATE_PLANNED }}</strong>
                 <span>{{ formatDateTime(inspection.dateDebut) }}</span>
               </div>
               <div class="time-item">
-                <strong>Date de fin prévue:</strong>
+                <strong>{{ TEXTS.END_DATE_PLANNED }}</strong>
                 <span>{{ formatDateTime(inspection.dateFin) }}</span>
               </div>
               <div class="time-item">
-                <strong>Clôture:</strong>
+                <strong>{{ TEXTS.CLOSURE }}</strong>
                 <span>{{ getCurrentDateTime() }}</span>
               </div>
             </div>
@@ -213,7 +212,7 @@ import {
       <button mat-button 
               mat-dialog-close 
               [disabled]="isSubmitting">
-        Annuler
+        {{ TEXTS.CANCEL }}
       </button>
       
       <button mat-raised-button 
@@ -225,7 +224,7 @@ import {
                               mode="indeterminate">
         </mat-progress-spinner>
         <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
-        {{ isSubmitting ? 'Clôture en cours...' : 'Clôturer l\'inspection' }}
+        {{ isSubmitting ? TEXTS.BUTTON_CLOSING : TEXTS.BUTTON_CLOSE }}
       </button>
     </mat-dialog-actions>
   `,
@@ -404,7 +403,6 @@ import {
       }
     }
 
-    // Indice état classes
     .indice-1, .indice-2 {
       background-color: #ffebee !important;
       color: #d32f2f !important;
@@ -443,6 +441,35 @@ export class ClotureInspectionDialogComponent implements OnInit {
   isDragOver = false;
   isSubmitting = false;
   isUploading = false;
+
+  readonly TEXTS = {
+    DIALOG_TITLE: 'Clôturer l\'inspection',
+    BUTTON_CLOSING: 'Clôture en cours...',
+    BUTTON_CLOSE: 'Clôturer l\'inspection',
+    GENERAL_COMMENTS: 'Commentaires généraux',
+    CLOSURE_COMMENT: 'Commentaire de clôture (optionnel)',
+    DESCRIBE_INSPECTION: 'Décrivez le déroulement de l\'inspection...',
+    SELECTED_FILES: 'Fichiers sélectionnés :',
+    DRAG_DROP_FILES: 'Cliquez ou glissez-déposez vos fichiers ici',
+    ASSET_STATE: 'État des actifs (optionnel)',
+    UPDATE_ASSET_INDEX: 'Mise à jour de l\'indice d\'état des actifs inspectés',
+    NEW_STATE_INDEX: 'Nouvel indice d\'état',
+    CURRENT_STATE: 'État actuel:',
+    VERY_BAD: 'Très mauvais',
+    BAD: 'Mauvais',
+    AVERAGE: 'Moyen',
+    GOOD: 'Bon',
+    VERY_GOOD: 'Très bon',
+    START_DATE_PLANNED: 'Date de début prévue:',
+    END_DATE_PLANNED: 'Date de fin prévue:',
+    CLOSURE: 'Clôture:',
+    CANCEL: 'Annuler',
+    ERROR_CLOSURE: 'Erreur lors de la clôture',
+    CLOSE: 'Fermer',
+    FILES_IGNORED: 'Certains fichiers ont été ignorés (type non supporté)',
+    INSPECTION_CLOSED_UPLOAD_ERROR: 'Inspection clôturée mais erreur lors de l\'upload des fichiers',
+    NOT_DEFINED: 'Non défini'
+  };
 
   constructor(
     public dialogRef: MatDialogRef<ClotureInspectionDialogComponent>,
@@ -486,7 +513,6 @@ export class ClotureInspectionDialogComponent implements OnInit {
     return actifsArray.at(index) as FormGroup;
   }
 
-  // File handling methods
   onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files) {
@@ -513,7 +539,7 @@ export class ClotureInspectionDialogComponent implements OnInit {
     this.selectedFiles.push(...validFiles);
 
     if (validFiles.length !== files.length) {
-      this.snackBar.open('Certains fichiers ont été ignorés (type non supporté)', 'Fermer', {
+      this.snackBar.open(this.TEXTS.FILES_IGNORED, this.TEXTS.CLOSE, {
         duration: 3000,
         panelClass: ['snackbar-warning']
       });
@@ -535,7 +561,6 @@ export class ClotureInspectionDialogComponent implements OnInit {
     this.selectedFiles.splice(index, 1);
   }
 
-  // Submit form
   onSubmit(): void {
     if (this.cloturerForm.invalid || this.isSubmitting) {
       return;
@@ -543,21 +568,18 @@ export class ClotureInspectionDialogComponent implements OnInit {
 
     this.isSubmitting = true;
 
-    // Prepare the form data
     const formValue = this.cloturerForm.value;
     const cloturerDto: CloturerInspectionDto = {
       commentaire: formValue.commentaire || undefined,
       actifsUpdates: this.prepareActifsUpdates(formValue.actifsUpdates)
     };
 
-    // First, close the inspection
     this.inspectionsService.cloturerInspection(this.inspection.id, cloturerDto)
       .pipe(
         finalize(() => this.isSubmitting = false)
       )
       .subscribe({
         next: (updatedInspection) => {
-          // If there are files, upload them
           if (this.selectedFiles.length > 0) {
             this.uploadFiles(updatedInspection);
           } else {
@@ -569,8 +591,8 @@ export class ClotureInspectionDialogComponent implements OnInit {
         },
         error: (error) => {
           this.snackBar.open(
-            error.message || 'Erreur lors de la clôture', 
-            'Fermer', 
+            error.message || this.TEXTS.ERROR_CLOSURE, 
+            this.TEXTS.CLOSE, 
             { duration: 5000, panelClass: ['snackbar-error'] }
           );
         }
@@ -595,10 +617,9 @@ export class ClotureInspectionDialogComponent implements OnInit {
           });
         },
         error: (error) => {
-          // Even if upload fails, the inspection was closed successfully
           this.snackBar.open(
-            'Inspection clôturée mais erreur lors de l\'upload des fichiers', 
-            'Fermer',
+            this.TEXTS.INSPECTION_CLOSED_UPLOAD_ERROR, 
+            this.TEXTS.CLOSE,
             { duration: 5000, panelClass: ['snackbar-warning'] }
           );
           this.dialogRef.close({ 
@@ -630,7 +651,6 @@ export class ClotureInspectionDialogComponent implements OnInit {
     return this.formatDateTime(new Date());
   }
 
-  // Helper methods
   formatDateTime(date: Date | string): string {
     const d = new Date(date);
     return d.toLocaleDateString('fr-FR', {
@@ -667,12 +687,12 @@ export class ClotureInspectionDialogComponent implements OnInit {
 
   getIndiceEtatLabel(indice: number): string {
     switch (indice) {
-      case 1: return 'Très mauvais';
-      case 2: return 'Mauvais';
-      case 3: return 'Moyen';
-      case 4: return 'Bon';
-      case 5: return 'Très bon';
-      default: return 'Non défini';
+      case 1: return this.TEXTS.VERY_BAD;
+      case 2: return this.TEXTS.BAD;
+      case 3: return this.TEXTS.AVERAGE;
+      case 4: return this.TEXTS.GOOD;
+      case 5: return this.TEXTS.VERY_GOOD;
+      default: return this.TEXTS.NOT_DEFINED;
     }
   }
 
