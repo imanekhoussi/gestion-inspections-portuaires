@@ -153,7 +153,6 @@ export class UtilisateursComponent implements OnInit, AfterViewInit {
       const formData: CreateUtilisateurDto = this.userForm.value;
       
       if (this.isEditMode && this.selectedUser) {
-        // En mode édition, ne pas envoyer le mot de passe s'il est vide
         if (!formData.password) {
           delete (formData as any).password;
         }

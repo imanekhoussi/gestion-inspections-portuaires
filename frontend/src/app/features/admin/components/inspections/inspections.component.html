@@ -10,11 +10,6 @@
       <p>Création, planification et suivi des inspections portuaires</p>
     </div>
     <div class="header-actions">
-      <button mat-stroked-button color="primary" routerLink="/admin/types-inspection">
-        <mat-icon>rule</mat-icon>
-        Gérer les Types
-      </button>
-      <!-- MODIFIED: Click handler now opens the dialog -->
       <button mat-raised-button color="primary" (click)="openInspectionDialog()">
         <mat-icon>add_task</mat-icon>
         Nouvelle inspection
@@ -89,8 +84,7 @@
       </mat-card-content>
     </mat-card>
 
-    <!-- REMOVED: The entire form card is now in the dialog component -->
-    <!-- REMOVED: The state change dialog card is also removed, as that logic can be handled in a dialog too -->
+   
 
     <!-- Inspections Table -->
     <mat-card class="table-card">
@@ -156,9 +150,7 @@
                 <button mat-icon-button color="primary" (click)="openInspectionDialog(inspection)" matTooltip="Modifier">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button (click)="duplicateInspection(inspection)" matTooltip="Dupliquer">
-                  <mat-icon>content_copy</mat-icon>
-                </button>
+               
                 <button mat-icon-button color="warn" (click)="deleteInspection(inspection)" matTooltip="Supprimer">
                   <mat-icon>delete</mat-icon>
                 </button>
