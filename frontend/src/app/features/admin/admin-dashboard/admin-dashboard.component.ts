@@ -5,6 +5,16 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
+import { AdminService } from '../services/admin.service';
+
+interface DashboardStats {
+  utilisateurs: number;
+  familles: number;
+  groupes: number;
+  typesInspection: number;
+  inspections: number;
+  actifs: number;
+}
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -34,6 +44,10 @@ import { RouterModule } from '@angular/router';
               <h3>Utilisateurs</h3>
             </div>
             <p>Gestion des comptes et rôles</p>
+            <div class="card-count" *ngIf="stats">
+              <span class="count">{{ stats.utilisateurs }}</span>
+              <span class="label">utilisateur{{ stats.utilisateurs > 1 ? 's' : '' }}</span>
+            </div>
           </mat-card-content>
         </mat-card>
 
@@ -44,6 +58,10 @@ import { RouterModule } from '@angular/router';
               <h3>Familles</h3>
             </div>
             <p>Organisation des équipements</p>
+            <div class="card-count" *ngIf="stats">
+              <span class="count">{{ stats.familles }}</span>
+              <span class="label">famille{{ stats.familles > 1 ? 's' : '' }}</span>
+            </div>
           </mat-card-content>
         </mat-card>
 
@@ -54,6 +72,10 @@ import { RouterModule } from '@angular/router';
               <h3>Groupes</h3>
             </div>
             <p>Regroupement par catégories</p>
+            <div class="card-count" *ngIf="stats">
+              <span class="count">{{ stats.groupes }}</span>
+              <span class="label">groupe{{ stats.groupes > 1 ? 's' : '' }}</span>
+            </div>
           </mat-card-content>
         </mat-card>
 
@@ -64,6 +86,10 @@ import { RouterModule } from '@angular/router';
               <h3>Types d'inspection</h3>
             </div>
             <p>Configuration des contrôles</p>
+            <div class="card-count" *ngIf="stats">
+              <span class="count">{{ stats.typesInspection }}</span>
+              <span class="label">type{{ stats.typesInspection > 1 ? 's' : '' }}</span>
+            </div>
           </mat-card-content>
         </mat-card>
 
@@ -74,6 +100,10 @@ import { RouterModule } from '@angular/router';
               <h3>Inspections</h3>
             </div>
             <p>Planification et suivi</p>
+            <div class="card-count" *ngIf="stats">
+              <span class="count">{{ stats.inspections }}</span>
+              <span class="label">inspection{{ stats.inspections > 1 ? 's' : '' }}</span>
+            </div>
           </mat-card-content>
         </mat-card>
 
@@ -84,8 +114,17 @@ import { RouterModule } from '@angular/router';
               <h3>Arborescence</h3>
             </div>
             <p>Vue hiérarchique</p>
+            <div class="card-count" *ngIf="stats">
+              <span class="count">{{ stats.actifs }}</span>
+              <span class="label">actif{{ stats.actifs > 1 ? 's' : '' }}</span>
+            </div>
           </mat-card-content>
         </mat-card>
+      </div>
+
+      <div class="loading-overlay" *ngIf="loading">
+        <mat-icon>refresh</mat-icon>
+        <p>Chargement des statistiques...</p>
       </div>
     </div>
   `,
@@ -94,6 +133,7 @@ import { RouterModule } from '@angular/router';
       padding: 24px;
       max-width: 1200px;
       margin: 0 auto;
+      position: relative;
     }
 
     .dashboard-header {
@@ -135,6 +175,7 @@ import { RouterModule } from '@angular/router';
       transition: all 0.3s ease;
       border-radius: 12px;
       overflow: hidden;
+      position: relative;
     }
 
     .dashboard-card:hover {
@@ -164,9 +205,62 @@ import { RouterModule } from '@angular/router';
     }
 
     .dashboard-card p {
-      margin: 0;
+      margin: 0 0 16px 0;
       color: #666;
       font-size: 14px;
+    }
+
+    .card-count {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .card-count .count {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1976d2;
+    }
+
+    .card-count .label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 1000;
+    }
+
+    .loading-overlay mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: #1976d2;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-overlay p {
+      color: #666;
+      font-size: 16px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     @media (max-width: 768px) {
@@ -185,10 +279,48 @@ import { RouterModule } from '@angular/router';
   `]
 })
 export class AdminDashboardComponent implements OnInit {
+  stats: DashboardStats | null = null;
+  loading = true;
   
-  constructor() {}
+  constructor(private adminService: AdminService) {}
 
   ngOnInit(): void {
-    // Initialisation simple
+    this.loadStatistics();
+  }
+
+  private loadStatistics(): void {
+    this.loading = true;
+
+    // Load all counts in parallel
+    Promise.all([
+      this.adminService.getUtilisateurs().toPromise(),
+      this.adminService.getFamilles().toPromise(),
+      this.adminService.getGroupes().toPromise(),
+      this.adminService.getTypesInspection().toPromise(),
+      this.adminService.getInspections().toPromise(),
+      this.adminService.getActifs().toPromise()
+    ]).then(([utilisateurs, familles, groupes, typesInspection, inspections, actifs]) => {
+      this.stats = {
+        utilisateurs: utilisateurs?.length || 0,
+        familles: familles?.length || 0,
+        groupes: groupes?.length || 0,
+        typesInspection: typesInspection?.length || 0,
+        inspections: inspections?.total || inspections?.data?.length || 0,
+        actifs: actifs?.total || actifs?.data?.length || 0
+      };
+      this.loading = false;
+    }).catch(error => {
+      console.error('Error loading statistics:', error);
+      this.loading = false;
+      // Set default stats on error
+      this.stats = {
+        utilisateurs: 0,
+        familles: 0,
+        groupes: 0,
+        typesInspection: 0,
+        inspections: 0,
+        actifs: 0
+      };
+    });
   }
 }
