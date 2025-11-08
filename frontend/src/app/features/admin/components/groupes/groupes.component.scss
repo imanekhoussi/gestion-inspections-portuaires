@@ -1,11 +1,45 @@
 // src/app/features/admin/components/groupes/groupes.component.scss
 
 .admin-section {
+  // Section Header avec bouton aligné à droite
   .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 20px;
+
+    .header-content {
+      h1 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 2rem;
+        font-weight: 400;
+        color: #2c3e50;
+        margin: 0;
+
+        mat-icon {
+          font-size: 2rem;
+          height: 2rem;
+          width: 2rem;
+        }
+      }
+    }
+
     .header-actions {
       display: flex;
       gap: 12px;
       align-items: center;
+    }
+
+    .add-button {
+      white-space: nowrap;
+      height: 40px;
+      
+      mat-icon {
+        margin-right: 8px;
+      }
     }
   }
 }
@@ -89,6 +123,30 @@
 }
 
 .table-card {
+  .mat-mdc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e0e0e0;
+
+    .mat-mdc-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      color: #2c3e50;
+      margin: 0;
+    }
+
+    .header-actions {
+      .search-field {
+        width: 300px;
+        margin: 0;
+      }
+    }
+  }
+
   .filter-indicator {
     color: #9b59b6;
     font-size: 0.9rem;
@@ -97,22 +155,30 @@
 }
 
 .table-container {
+  overflow-x: auto;
+
   .groupes-table {
     width: 100%;
     
-    th {
+    // Styles pour les en-têtes violets
+    .mat-mdc-header-row {
       background-color: #9b59b6;
-      color: white;
-      font-weight: 600;
-      padding: 16px 8px;
     }
     
-    td {
-      padding: 16px 8px;
+    th.mat-mdc-header-cell {
+      background-color: #9b59b6 !important;
+      color: white !important;
+      font-weight: 600;
+      padding: 16px 12px;
+      border: none;
+    }
+    
+    td.mat-mdc-cell {
+      padding: 16px 12px;
       border-bottom: 1px solid #ecf0f1;
     }
     
-    tr:hover {
+    tr.mat-mdc-row:hover {
       background-color: #f8f9fa;
     }
     
@@ -360,12 +426,16 @@
 @media (max-width: 768px) {
   .admin-section .section-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 16px;
     
     .header-actions {
       width: 100%;
       justify-content: space-between;
+    }
+
+    .add-button {
+      width: 100%;
     }
   }
   

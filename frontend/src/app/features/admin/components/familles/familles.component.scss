@@ -1,4 +1,40 @@
 .admin-section {
+  // Section Header avec bouton aligné à droite
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 20px;
+
+    .header-content {
+      h1 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 2rem;
+        font-weight: 400;
+        color: #2c3e50;
+        margin: 0;
+
+        mat-icon {
+          font-size: 2rem;
+          height: 2rem;
+          width: 2rem;
+        }
+      }
+    }
+
+    .add-button {
+      white-space: nowrap;
+      height: 40px;
+      
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+
   .famille-form {
     .form-row {
       display: flex;
@@ -16,11 +52,37 @@
       
       .generate-code-btn {
         height: 56px;
-        margin-bottom: 1.34375em; // Align avec mat-form-field
+        margin-bottom: 1.34375em;
         
         mat-icon {
           margin-right: 8px;
         }
+      }
+    }
+  }
+}
+
+.table-card {
+  .mat-mdc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e0e0e0;
+
+    .mat-mdc-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      color: #2c3e50;
+      margin: 0;
+    }
+
+    .header-actions {
+      .search-field {
+        width: 300px;
+        margin: 0;
       }
     }
   }
@@ -93,19 +155,10 @@
         color: #9b59b6;
       }
     }
-    
-    .date-cell {
+
+    .action-buttons {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-      
-      .date-icon {
-        font-size: 1.2rem;
-        height: 1.2rem;
-        width: 1.2rem;
-        color: #7f8c8d;
-      }
+      gap: 4px;
     }
   }
 }
@@ -187,6 +240,31 @@
 
 // Responsive design
 @media (max-width: 768px) {
+  .admin-section {
+    .section-header {
+      flex-direction: column;
+      align-items: stretch;
+
+      .add-button {
+        width: 100%;
+      }
+    }
+  }
+
+  .table-card {
+    .mat-mdc-card-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+
+      .header-actions {
+        .search-field {
+          width: 100%;
+        }
+      }
+    }
+  }
+
   .famille-form .form-row {
     flex-direction: column;
     
