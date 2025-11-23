@@ -1,364 +1,412 @@
-# 🚢 Gestion des Inspections – Application Web SIG
+# 🚢 Port Inspection Management System
 
-> Système complet de gestion des inspections des actifs portuaires pour Tanger Med Engineering
+> Complete GIS-based Web Application for Port Asset Inspection Management
 
 [![Angular](https://img.shields.io/badge/Angular-20-red.svg)](https://angular.io/)
 [![NestJS](https://img.shields.io/badge/NestJS-10-ea2845.svg)](https://nestjs.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
 [![PostGIS](https://img.shields.io/badge/PostGIS-3+-green.svg)](https://postgis.net/)
-[![OpenLayers](https://img.shields.io/badge/OpenLayers-latest-1f6b75.svg)](https://openlayers.org/)
+[![OpenLayers](https://img.shields.io/badge/OpenLayers-9-1f6b75.svg)](https://openlayers.org/)
 
 ---
 
-## 📌 Description
+## 📌 Overview
 
-Application web full-stack pour la gestion digitalisée des inspections des infrastructures portuaires. Le système intègre :
+A full-stack web application designed for **Tanger Med Engineering** to digitalize and streamline the inspection management of port infrastructures. The system provides:
 
-- ✅ **Backend NestJS** – API RESTful sécurisée avec authentification JWT
-- ✅ **Frontend Angular** – Interface utilisateur moderne et responsive
-- ✅ **Base de données PostgreSQL/PostGIS** – Gestion des données relationnelles et géospatiales
-- ✅ **Cartographie OpenLayers** – Visualisation SIG interactive
-- ✅ **Workflow d'inspection** – Planification, exécution, validation
-- ✅ **Calendrier FullCalendar** – Planification visuelle des inspections
-- ✅ **Tableaux de bord analytiques** – Indicateurs de performance en temps réel
+- ✅ **NestJS Backend** – Secure RESTful API with JWT authentication
+- ✅ **Angular Frontend** – Modern, responsive user interface
+- ✅ **PostgreSQL/PostGIS** – Relational and geospatial data management
+- ✅ **OpenLayers GIS** – Interactive map visualization
+- ✅ **Inspection Workflow** – Planning, execution, validation cycle
+- ✅ **FullCalendar Integration** – Visual inspection scheduling
+- ✅ **Analytics Dashboards** – Real-time performance indicators
 
 ---
 
-## 🏗️ Architecture du Projet
+## 🏗️ Project Architecture
 
 ```
 gestion-inspections/
-├── backend/                    # API NestJS
+├── backend/                    # NestJS API
 │   ├── src/
-│   │   ├── auth/              # Authentification JWT
-│   │   ├── users/             # Gestion des utilisateurs
-│   │   ├── actifs/            # Gestion des actifs
-│   │   ├── inspections/       # Workflow d'inspection
-│   │   ├── livrables/         # Upload de fichiers
-│   │   └── database/          # Configuration TypeORM
-│   ├── uploads/               # Fichiers téléversés
-│   ├── .env                   # Variables d'environnement
-│   ├── package.json
-│   └── tsconfig.json
+│   │   ├── auth/              # JWT authentication
+│   │   ├── users/             # User management
+│   │   ├── actifs/            # Asset management
+│   │   ├── inspections/       # Inspection workflow
+│   │   ├── livrables/         # File uploads
+│   │   └── database/          # TypeORM configuration
+│   ├── uploads/               # Uploaded files
+│   ├── .env                   # Environment variables
+│   └── package.json
 │
-├── frontend/                   # Client Angular
+├── frontend/                   # Angular Client
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── components/   # Composants UI
-│   │   │   ├── services/     # Services API
-│   │   │   ├── guards/       # Guards d'authentification
-│   │   │   └── models/       # Interfaces TypeScript
-│   │   ├── assets/           # Ressources statiques
-│   │   └── environments/     # Configuration environnements
-│   ├── package.json
-│   └── angular.json
+│   │   │   ├── components/   # UI components
+│   │   │   ├── services/     # API services
+│   │   │   ├── guards/       # Auth guards
+│   │   │   └── models/       # TypeScript interfaces
+│   │   ├── assets/           # Static resources
+│   │   └── environments/     # Environment config
+│   └── package.json
 │
-├── database/                   # Scripts SQL
-│   ├── init.sql              # Initialisation de la BD
-│   └── seed.sql              # Données de test
-│
-├── docs/                      # Documentation
-│   └── ANDALOUSSI_RKIOUAK_KHOUSSI.pdf
-│
-├── README.md                  # Ce fichier
-├── INSTALL.md                 # Guide d'installation détaillé
-└── install.sh                 # Script d'installation automatique
+├── README.md
+├── INSTALL.md
+└── install.sh
 ```
 
 ---
 
-## 🛠️ Stack Technologique
+## 🛠️ Technology Stack
 
-### Backend (NestJS)
-| Package | Version | Usage |
-|---------|---------|-------|
-| `@nestjs/common` | ^10.0.0 | Framework core |
-| `@nestjs/jwt` | ^10.0.0 | Authentification JWT |
-| `@nestjs/passport` | ^10.0.0 | Stratégies d'auth |
-| `@nestjs/typeorm` | ^10.0.0 | ORM base de données |
-| `typeorm` | ^0.3.0 | Mapping objet-relationnel |
-| `pg` | ^8.11.0 | Driver PostgreSQL |
-| `bcrypt` | ^5.1.0 | Hachage de mots de passe |
-| `multer` | ^1.4.5 | Upload de fichiers |
-| `@nestjs/swagger` | ^7.0.0 | Documentation API |
+### Backend
+- **Framework**: NestJS 10
+- **ORM**: TypeORM
+- **Database**: PostgreSQL 15+ with PostGIS 3+
+- **Authentication**: JWT with Passport
+- **Validation**: class-validator, class-transformer
+- **File Upload**: Multer
+- **Documentation**: Swagger/OpenAPI
 
-### Frontend (Angular)
-| Package | Version | Usage |
-|---------|---------|-------|
-| `@angular/core` | ^20.0.0 | Framework Angular |
-| `@angular/forms` | ^20.0.0 | Gestion des formulaires |
-| `@angular/router` | ^20.0.0 | Navigation |
-| `ol` | ^9.0.0 | Cartographie OpenLayers |
-| `ol-ext` | ^4.0.0 | Extensions OpenLayers |
-| `@fullcalendar/angular` | ^6.1.0 | Calendrier |
-| `@fullcalendar/core` | ^6.1.0 | Core FullCalendar |
-| `@swimlane/ngx-charts` | ^20.5.0 | Visualisations de données |
+### Frontend
+- **Framework**: Angular 20
+- **Mapping**: OpenLayers 9 + ol-ext
+- **Calendar**: FullCalendar 6
+- **Charts**: ngx-charts with D3
+- **HTTP**: Angular HttpClient with RxJS
 
-### Base de données
-- **PostgreSQL** 15+ – Base de données relationnelle
-- **PostGIS** 3+ – Extension géospatiale
+### Database
+- **PostgreSQL** – Relational data
+- **PostGIS** – Geospatial extension for GIS features
 
 ---
 
-## 🚀 Installation Rapide
+## 🚀 Quick Start
 
-### Prérequis
-- **Node.js** 20+ ([télécharger](https://nodejs.org/))
-- **npm** 10+ (inclus avec Node.js)
-- **PostgreSQL** 15+ ([télécharger](https://www.postgresql.org/download/))
-- **Git** ([télécharger](https://git-scm.com/))
+### Prerequisites
+- Node.js 20+
+- npm 10+
+- PostgreSQL 15+
+- Git
 
-### Option 1 : Installation Automatique (Linux/Mac)
+### Installation
 
 ```bash
-# Cloner le dépôt
-git clone https://github.com/votre-repo/gestion-inspections.git
+# Clone repository
+git clone https://github.com/your-org/gestion-inspections.git
 cd gestion-inspections
 
-# Rendre le script exécutable
+# Run automated installation
 chmod +x install.sh
-
-# Lancer l'installation
 ./install.sh
+
+# Start application
+./start-dev.sh
 ```
 
-### Option 2 : Installation Manuelle
+### Access Points
+- **Frontend**: http://localhost:4200
+- **Backend API**: http://localhost:3000
+- **Swagger Docs**: http://localhost:3000/api
 
-#### 1️⃣ Configuration de la Base de Données
+### Default Login
+```
+Email:    admin@tangermed.ma
+Password: admin123
+```
+⚠️ **Change password immediately after first login**
 
-```bash
-# Se connecter à PostgreSQL
-psql -U postgres
+---
 
-# Créer la base de données
-CREATE DATABASE gestion_inspections;
+## 👥 User Roles & Features
 
-# Activer PostGIS
-\c gestion_inspections
-CREATE EXTENSION postgis;
+### 🔑 Administrator
+- Manage users and roles
+- Create and organize assets (Family → Group → Asset)
+- Schedule inspections
+- Configure inspection types
+- Access global dashboards
+
+### 👷 Operator
+- View assigned inspections
+- Start/close inspections
+- Upload reports and photos
+- Update asset status
+- View assets on map
+
+### 👔 Manager
+- Validate or reject inspections
+- View complete inspection history
+- Analyze performance metrics
+- Export reports
+- Monitor compliance
+
+---
+
+## 📸 Application Screenshots
+
+### 1. Login Interface
+![Login Screen](docs/images/login.png)
+*Secure authentication with JWT tokens*
+
+---
+
+### 2. Administrator Dashboard
+![Admin Dashboard](docs/images/admin-dashboard.png)
+*Overview of users, assets, and inspections with quick access to management modules*
+
+---
+
+### 3. Asset Management
+![Asset Management](docs/images/asset-management.png)
+*Hierarchical organization: Family → Group → Asset with create/edit/delete operations*
+
+---
+
+### 4. Interactive GIS Map
+![GIS Map](docs/images/gis-map-osm.png)
+*OpenLayers-based map with OpenStreetMap view showing asset locations*
+
+![Satellite View](docs/images/gis-map-satellite.png)
+*Satellite imagery mode for detailed asset visualization*
+
+![Map Filtering](docs/images/map-filtering.png)
+*Dynamic filtering by asset status (Good/Average/Poor) with color-coded markers*
+
+---
+
+### 5. Inspection Planning
+![Inspection Management](docs/images/inspection-list.png)
+*Comprehensive inspection management with status tracking*
+
+![Calendar View](docs/images/calendar-view.png)
+*FullCalendar integration for visual inspection scheduling*
+
+---
+
+### 6. Operator Interface
+![Operator Dashboard](docs/images/operator-dashboard.png)
+*Operator-specific dashboard showing assigned inspections and performance metrics*
+
+![Inspection Form](docs/images/inspection-form.png)
+*Complete inspection form with asset details, comments, and file upload*
+
+---
+
+### 7. Manager Validation
+![Manager Dashboard](docs/images/manager-dashboard.png)
+*Manager dashboard with pending validations and analytics*
+
+![Inspection Validation](docs/images/validation-interface.png)
+*Validate or reject inspections with mandatory comments*
+
+---
+
+### 8. Inspection History & Traceability
+![Inspection Logs](docs/images/inspection-logs.png)
+*Complete audit trail of all inspection transitions with timestamps and user actions*
+
+---
+
+## 🗺️ GIS Features
+
+### Interactive Mapping (OpenLayers)
+- 🗺️ OpenStreetMap base layer
+- 🛰️ Satellite imagery support
+- 📍 Precise geolocation (EPSG:26191 → WGS84)
+- 🎨 Dynamic symbology based on asset status
+- 🔍 Zoom, pan, smooth navigation
+- 🔎 Spatial filtering by zone/site
+- 💬 Contextual popups with asset details
+
+### Supported Geometry Types
+- **Point**: Cameras, equipment, sensors
+- **LineString**: Roads, quays, pipelines
+- **Polygon**: Warehouses, zones, buildings
+
+---
+
+## 📅 Inspection Workflow
+
+```
+┌─────────────┐
+│  Planned    │ ──► Administrator creates inspection
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  In Progress│ ──► Operator starts and performs inspection
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   Closed    │ ──► Operator uploads report and closes
+└──────┬──────┘
+       │
+       ├──────────────┐
+       ▼              ▼
+┌─────────────┐  ┌──────────┐
+│  Validated  │  │ Rejected │ ──► Manager validates or rejects
+└─────────────┘  └────┬─────┘
+                      │
+                      └─► Return to Planned (with corrections)
 ```
 
-#### 2️⃣ Installation du Backend
+**States:**
+1. **Planned** – Scheduled by administrator
+2. **In Progress** – Operator executing on-site
+3. **Closed** – Report uploaded, awaiting validation
+4. **Validated** – Approved by manager
+5. **Rejected** – Requires corrections
 
-```bash
-cd backend
+---
 
-# Installer les dépendances
-npm install
+## 🔒 Security Features
 
-# Configurer les variables d'environnement
-cp .env.example .env
-# Éditer .env avec vos paramètres
+- 🔐 **JWT Authentication** – Token-based secure access
+- 🛡️ **Role-Based Access Control** – Granular permissions
+- 🔑 **bcrypt Password Hashing** – Industry-standard encryption
+- 🚫 **Input Validation** – class-validator on all endpoints
+- 📝 **Complete Audit Trail** – All actions logged
 
-# Lancer en mode développement
-npm run start:dev
-```
+---
 
-**Fichier `.env` requis :**
+## 📦 Installation Guide
+
+### Environment Configuration
+
+**Backend `.env` file:**
 ```env
-# Base de données
+# Database
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=postgres
-DB_PASSWORD=geoinfo
+DB_PASSWORD=your_password
 DB_NAME=gestion_inspections
 
-# Sécurité
-JWT_SECRET=votre_cle_secrete_tres_longue_et_securisee_ici
+# Security
+JWT_SECRET=your_long_secure_random_secret_key
 
-# Environnement
+# Application
 NODE_ENV=development
 PORT=3000
 ```
 
-#### 3️⃣ Installation du Frontend
+**Frontend `environment.development.ts`:**
+```typescript
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:3000/api'
+};
+```
 
+### Manual Installation
+
+**Backend:**
+```bash
+cd backend
+npm install
+npm run start:dev
+```
+
+**Frontend:**
 ```bash
 cd frontend
-
-# Installer les dépendances
 npm install
-
-# Lancer l'application
 ng serve
 ```
 
-#### 4️⃣ Accéder à l'Application
-
-- **Frontend** : http://localhost:4200
-- **Backend API** : http://localhost:3000
-- **Swagger Documentation** : http://localhost:3000/api
-
----
-
-## 👥 Rôles et Fonctionnalités
-
-### 🔑 Administrateur
-- ✅ Gérer les utilisateurs et leurs rôles
-- ✅ Créer et organiser les actifs (Famille → Groupe → Actif)
-- ✅ Planifier les inspections
-- ✅ Configurer les types d'inspection
-- ✅ Consulter les tableaux de bord globaux
-
-### 👷 Opérateur
-- ✅ Consulter son planning d'inspections
-- ✅ Démarrer une inspection
-- ✅ Clôturer une inspection avec rapport
-- ✅ Téléverser des documents
-- ✅ Visualiser les actifs sur la carte
-
-### 👔 Manager (Maître d'Ouvrage)
-- ✅ Valider ou rejeter les inspections
-- ✅ Consulter l'historique complet
-- ✅ Analyser les indicateurs de performance
-- ✅ Exporter des rapports
-
----
-
-## 🗺️ Fonctionnalités SIG
-
-### Cartographie Interactive (OpenLayers)
-- 🗺️ Visualisation des actifs sur carte OpenStreetMap
-- 🛰️ Mode satellite disponible
-- 📍 Géolocalisation précise (EPSG:26191 → WGS84)
-- 🎨 Symbologie dynamique selon l'état des actifs
-- 🔍 Zoom, pan, navigation fluide
-- 🔎 Filtrage spatial par zone/site
-- 💬 Popups contextuelles avec détails
-
-### Types de Géométries Supportés
-- **Point** : Caméras, bornes, équipements ponctuels
-- **Ligne** : Routes, quais, conduites
-- **Polygone** : Entrepôts, zones, bâtiments
-
----
-
-## 📅 Workflow d'Inspection
-
-```mermaid
-graph LR
-    A[Planifiée] -->|Opérateur démarre| B[En Cours]
-    B -->|Opérateur clôture| C[Clôturée]
-    C -->|Manager valide| D[Validée]
-    C -->|Manager rejette| E[Rejetée]
-    E -->|Correction| A
+**Database:**
+```sql
+CREATE DATABASE gestion_inspections;
+\c gestion_inspections
+CREATE EXTENSION postgis;
 ```
 
-1. **Planification** – Administrateur crée l'inspection
-2. **Exécution** – Opérateur démarre et réalise sur terrain
-3. **Clôture** – Opérateur téléverse rapport et photos
-4. **Validation** – Manager approuve ou rejette
-5. **Traçabilité** – Historique complet des actions
+For detailed instructions, see [INSTALL.md](INSTALL.md)
 
 ---
 
-## 📊 Captures d'Écran
-
-### Tableau de Bord Administrateur
-![Dashboard Admin](docs/images/admin-dashboard.png)
-
-### Carte Interactive SIG
-![Carte OpenLayers](docs/images/gis-map.png)
-
-### Interface Opérateur
-![Interface Opérateur](docs/images/operator-interface.png)
-
----
-
-## 🔒 Sécurité
-
-- 🔐 **Authentification JWT** – Tokens sécurisés avec expiration
-- 🛡️ **Guards basés sur les rôles** – Contrôle d'accès granulaire
-- 🔑 **Hachage bcrypt** – Mots de passe chiffrés
-- 🚫 **Validation des entrées** – class-validator sur toutes les routes
-- 📝 **Traçabilité complète** – Logs de toutes les actions
-
----
-
-## 🧪 Tests
+## 🧪 Testing
 
 ```bash
-# Backend - Tests unitaires
+# Backend unit tests
 cd backend
 npm run test
 
-# Backend - Tests e2e
+# Backend e2e tests
 npm run test:e2e
 
-# Frontend - Tests unitaires
+# Frontend tests
 cd frontend
 ng test
-
-# Frontend - Tests e2e
-ng e2e
 ```
 
 ---
 
-## 📦 Build Production
+## 📦 Production Build
 
-### Backend
+**Backend:**
 ```bash
 cd backend
 npm run build
 npm run start:prod
 ```
 
-### Frontend
+**Frontend:**
 ```bash
 cd frontend
 ng build --configuration production
-# Les fichiers sont dans dist/frontend/
+# Output in dist/frontend/
 ```
 
 ---
 
-## 🐳 Déploiement Docker (optionnel)
+## 📚 API Documentation
 
-```bash
-# Construire les images
-docker-compose build
-
-# Lancer les services
-docker-compose up -d
-
-# Arrêter les services
-docker-compose down
-```
+Complete API documentation available via Swagger UI:
+- **URL**: http://localhost:3000/api
+- **Format**: OpenAPI 3.0
+- **Endpoints**: Auth, Users, Assets, Inspections, Files
 
 ---
 
-## 📚 Documentation API
+## 🤝 Project Team
 
-La documentation complète de l'API est disponible via Swagger :
-- **URL** : http://localhost:3000/api
-- **Format** : OpenAPI 3.0
-- **Endpoints** : Auth, Users, Actifs, Inspections, Livrables
+**Developed by:**
+- **KHOUSSI Imane** 
+- **ANDALOUSSI RKIOUAK Malak** 
 
----
-
-## 🤝 Contribution
-
-Ce projet a été réalisé par :
-- **KHOUSSI Imane** – Développement backend & intégration SIG
-- **ANDALOUSSI RKIOUAK Malak** – Développement frontend & UX/UI
-
-**Encadrement** :
+**Supervised by:**
 - M. Driss KHARBACH – Tanger Med Engineering
----
 
-
-## 🔮 Perspectives Futures
-
-- 📱 Application mobile terrain (mode hors ligne)
-- 🤖 Maintenance prédictive par Machine Learning
-- 🌐 Interopérabilité avec GMAO/ERP
-- 🏗️ Jumeau numérique (Digital Twin) du port
-- 📊 Tableaux de bord BI avancés
-- 🛰️ Intégration données drones/satellites
+**Organization:** Tanger Med Engineering  
+**Academic Year:** 2024/2025
 
 ---
 
-**Développé avec ❤️ pour Tanger Med Engineering**
+## 🔮 Future Enhancements
 
-*Année universitaire 2024/2025 – FST Tanger*
+- 📱 **Mobile App** – Offline-capable field inspection app
+- 🤖 **Predictive Maintenance** – Machine learning for failure prediction
+- 🌐 **ERP Integration** – Connect with existing management systems
+- 🏗️ **Digital Twin** – 3D port model with real-time data
+- 📊 **Advanced BI** – Enhanced analytics and reporting
+- 🛰️ **Drone Integration** – Aerial imagery and automated inspections
+
+---
+
+
+## 🙏 Acknowledgments
+
+Special thanks to:
+- **Tanger Med Engineering** for project opportunity
+- **FST Tangier** for academic support
+- **Open-source community** for excellent frameworks and libraries
+
+---
+
+**Built with ❤️ for Tanger Med Port Complex**
+
+*Faculty of Sciences and Technology, Tangier – Geoinformation Engineering Program*
